@@ -387,6 +387,9 @@ function pieChart(segments, opts = {}) {
   const cx = size / 2, cy = size / 2;
   const r = opts.r || size / 2 - 4;
   const total = segments.reduce((s, x) => s + (x.v || 0), 0) || 1;
+  if (segments.length === 1) {
+    return `<svg viewBox="0 0 ${size} ${size}" role="img" xmlns="http://www.w3.org/2000/svg"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${segments[0].color}"/></svg>`;
+  }
   let ang = -90;
   let idx = 0;
   let paths = "";
@@ -712,7 +715,7 @@ async function renderPage() {
     ];
     const hitPct = hitTot > 0 ? ((ca / hitTot) * 100).toFixed(1) : "0.0";
     // 会话内模型分布：外部只显示当前所选供应商模型占比，完整图例进放大详情
-    const models = stats.models && stats.models.length > 1 ? stats.models : null;
+    const models = stats.models && stats.models.length > 0 ? stats.models : null;
     let modelsHtml = "";
     if (models) {
       const totalTurns = models.reduce((a, x) => a + x.turns, 0) || 1;
@@ -1072,7 +1075,9 @@ async function renderPage() {
       `<div class="si-modal-body" style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;justify-content:center">${body}</div>` +
       `</div>`;
     document.body.appendChild(modal);
-    requestAnimationFrame(() => modal.classList.add("open"));
+    // 一次渲染完整内容（含图表）；双 rAF 等浏览器完成解析/布局/首绘后再启动动画，
+    // 动画期间主线程空闲 → 放大全程纯合成，流畅无分步、无复读、无闪
+    requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add("open")));
     const close = () => {
       modal.classList.remove("open");
       modal.classList.add("closing");
@@ -1179,9 +1184,6 @@ async function renderPage() {
   // 图表放大详情：同步渲染（立即响应），调用方决定是否后台升级
   function showChartModal(stats, chart, title) {
     if (!stats || !stats.series || stats.series.length === 0) return;
-    // 移除同图表旧 modal（升级数据时重建）
-    const old = document.querySelector('.si-modal[data-chart="' + chart + '"]');
-    if (old) old.remove();
     const series = stats.series;
     const values = series.map((s) =>
       chart === "tokens" ? s.total : chart === "hit" ? s.hit : chart === "cost" ? s.cost : s.total
@@ -1225,6 +1227,13 @@ async function renderPage() {
     }
     const modal = document.createElement("div");
     modal.className = "si-modal";
+    // 已有同图表 modal（500 轮数据升级）：直接更新内容，不重建，避免动画中途被移除重放
+    const existing = document.querySelector('.si-modal[data-chart="' + chart + '"]');
+    if (existing) {
+      const mb = existing.querySelector(".si-modal-body");
+      if (mb) mb.innerHTML = body;
+      return;
+    }
     modal.dataset.chart = chart;
     modal.innerHTML =
       `<div class="si-modal-bg"></div>` +
@@ -1422,6 +1431,7 @@ async function renderPage() {
         if (lc) lc.innerHTML = `<h3>全局用量总览</h3><div class="empty">渲染错误：${esc(e.message || e)}</div>`;
       }
       renderFoot(stats);
+      invalidateGlowCache();
       animateNumbers(root);
     } catch (e) {
       const metricsEl = document.getElementById("heroMetrics");
@@ -1539,6 +1549,42 @@ async function renderPage() {
       return;
     }
   });
+
+  // 卡片按下回弹动效：mousedown 压缩，mouseup/移出回弹（带 overshoot）
+  const cardSel = ".hm, .chart-card, .ua-pie, .lg-cell";
+  const pressCard = (el) => {
+    if (el.classList.contains("ua-disabled")) return;
+    el.classList.remove("si-release");
+    el.classList.add("si-press");
+  };
+  const releaseCard = (el) => {
+    if (!el || !el.classList.contains("si-press")) return;
+    el.classList.remove("si-press");
+    el.classList.add("si-release");
+    clearTimeout(el.__siRel);
+    el.__siRel = setTimeout(() => el.classList.remove("si-release"), 650);
+  };
+  document.addEventListener("mousedown", (e) => {
+    const card = e.target.closest(cardSel);
+    if (card) pressCard(card);
+  }, true);
+  document.addEventListener("mouseup", (e) => {
+    const card = e.target.closest(cardSel);
+    if (card) releaseCard(card);
+  }, true);
+  document.addEventListener("mouseleave", (e) => {
+    const card = e.target.closest(cardSel);
+    if (card) releaseCard(card);
+  }, true);
+  document.addEventListener("touchstart", (e) => {
+    const card = e.target.closest(cardSel);
+    if (card) pressCard(card);
+  }, true);
+  document.addEventListener("touchend", (e) => {
+    const card = e.target.closest(cardSel);
+    if (card) releaseCard(card);
+  }, true);
+
   // 点击外部关闭下拉（供应商切换 + 会话选择）
   document.addEventListener("click", (e) => {
     if (bbOpen && !e.target.closest("#bbToggle") && !e.target.closest("#bbPop")) {
@@ -1568,6 +1614,28 @@ function ensureGlowSpot(card) {
   }
 }
 
+/* ── 文字提亮位置缓存：消除 mousemove 时逐元素 getBoundingClientRect 的 layout thrash ── */
+let glowCache = null;
+const GLOW_SEL = ".hm .hml, .hm .hmv, h3, .legend span, .ua-t, .ua-pv, .ua-pv-num, .ua-lg span, .ua-detail span, .ctx-labels span, .ctx-note, .lg-t, .lg-sub, .ab-n, .ab-v, .foot-file, .fb-li, .model, .bar-metrics b, .bar-metrics .bal";
+function buildGlowCache(card) {
+  const r = card.getBoundingClientRect();
+  const els = card.querySelectorAll(GLOW_SEL);
+  // 提亮范围：光晕半径与卡片尺寸取较小值，避免小卡片整卡都在半径内导致"未靠近就亮"
+  const glowR = parseFloat(getComputedStyle(card).getPropertyValue("--glow-r")) || 175;
+  const cardSize = Math.max(r.width, r.height);
+  glowCache = {
+    card,
+    maxD: Math.min(glowR, cardSize * 0.5),
+    els: Array.from(els, (el) => {
+      const er = el.getBoundingClientRect();
+      return { el, rx: er.left + er.width / 2 - r.left, ry: er.top + er.height / 2 - r.top };
+    }),
+  };
+}
+function invalidateGlowCache() {
+  glowCache = null;
+}
+
 function initGlow(container) {
   const selector = ".hm, .chart-card, .bar, .foot";
   let raf = null;
@@ -1591,6 +1659,21 @@ function initGlow(container) {
       const cy = r.top + r.height / 2;
       const ang = (Math.atan2(my - cy, mx - cx) * 180) / Math.PI + 90;
       card.style.setProperty("--ang", ang.toFixed(1) + "deg");
+      // 文字提亮跟随鼠标：位置缓存 + 亮度量化，效果不变但消除 layout thrash
+      if (!glowCache || glowCache.card !== card) buildGlowCache(card);
+      if (glowCache.els.length) {
+        const rl = r.left, rt = r.top;
+        for (const item of glowCache.els) {
+          const dx = item.rx - (mx - rl);
+          const dy = item.ry - (my - rt);
+          const g = 1 - Math.sqrt(dx * dx + dy * dy) / glowCache.maxD;
+          const q = g > 0 ? Math.round(Math.max(0, g) * 20) / 20 : 0; // 0.05 步进量化，减少 filter 重绘
+          if (item.el.__glow !== q) {
+            item.el.__glow = q;
+            item.el.style.setProperty("--glow", q.toFixed(2));
+          }
+        }
+      }
     });
   });
 }
