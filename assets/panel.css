@@ -8,42 +8,13 @@ body {
   font-family: var(--font-ui, Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif);
   font-size: 13px;
   background: var(--bg, #f8f5ed);
-  /* logo 水印：固定右上方，半透明，每家供应商不同 */
-  --si-logo: none;
 }
 
-/* ── 供应商品牌背景（明暗自适应：品牌色混合主题底色） ── */
-
-/* ── 供应商品牌背景 ────────────────────────────── */
-/* （无背景渐变，仅 logo 水印区分供应商） */
-/* logo 水印层：大尺寸海报水印，居中略偏上，半透明
-   logo png 为透明底，直接绘制即可（无需 mask，mask 会误伤低亮度彩色） */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: var(--si-logo, none) no-repeat 50% 42% / 50vw auto;
-  opacity: 0.22;
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity 0.4s ease, background 0.4s ease;
-}
 .panel {
   position: relative;
   z-index: 1;
 }
-body.si-bg-deepseek { --si-logo: url("logos/deepseek.png"); }
-body.si-bg-moonshot { --si-logo: url("logos/moonshot.png"); }
-body.si-bg-mimo     { --si-logo: url("logos/mimo.png"); }
-body.si-bg-zhipu    { --si-logo: url("logos/zhipu.png"); }
-body.si-bg-agnes    { --si-logo: url("logos/agnes.png"); }
-body.si-bg-openai   { --si-logo: url("logos/openai.png"); }
-body.si-bg-gemini   { --si-logo: url("logos/gemini.png"); }
-/* 浅色模式 logo 适配：降低透明度，保持自然 */
 @media (prefers-color-scheme: light) {
-  body::before {
-    opacity: 0.14;
-  }
   /* 浅色模式光晕：更浅更亮、饱和度更低的灰蓝 */
   .si-glow-spot {
     background: radial-gradient(
@@ -67,21 +38,12 @@ body.si-bg-gemini   { --si-logo: url("logos/gemini.png"); }
   }
 }
 
-/* 深色模式 logo 适配：提亮 logo 自然融入深色底 */
-@media (prefers-color-scheme: dark) {
-  body::before {
-    opacity: 0.26;
-    filter: brightness(1.3);
-  }
-}
-
 /* 卡片逐层淡入：切换时从上到下依次显现（配合整体下沉，灵动不卡顿） */
 .panel.si-switch .balance-block { animation: si-layer-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) both; animation-delay: 0.05s; }
 .panel.si-switch .hero-metrics { animation: si-layer-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) both; animation-delay: 0.12s; }
 .panel.si-switch #ctxCard { animation: si-layer-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) both; animation-delay: 0.19s; }
 .panel.si-switch #usageCard { animation: si-layer-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) both; animation-delay: 0.26s; }
 .panel.si-switch .chart-grid { animation: si-layer-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) both; animation-delay: 0.33s; }
-.panel.si-switch #ledgerCard { animation: si-layer-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) both; animation-delay: 0.40s; }
 .panel.si-switch .foot { animation: si-layer-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) both; animation-delay: 0.47s; }
 @keyframes si-layer-in {
   from { opacity: 0; transform: translateY(14px); }
@@ -726,26 +688,6 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
 .chart-card .si-glow-spot {
   --glow-r: 350px;
 }
-/* 全局用量总览大卡：与其他卡片一致（默认 .glass 效果，无特殊背景） */
-/* 光晕半径扩大两倍（700px） */
-#ledgerCard .si-glow-spot {
-  --glow-r: 700px;
-}
-/* 其文字提亮半径同步扩大两倍 */
-#ledgerCard:hover .ua-lg span,
-#ledgerCard:hover .lg-t,
-#ledgerCard:hover .lg-note {
-  background: radial-gradient(
-    340px circle at var(--mx, 50%) var(--my, 50%),
-    var(--text, #3b3d3f) 0%,
-    color-mix(in srgb, var(--text, #3b3d3f) 55%, var(--text-muted, #8e9196)) 46%,
-    var(--text-muted, #8e9196) 82%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-}
 /* 边框光边：conic 从鼠标方位最亮，多段 stop 向两侧平滑渐隐（避免角向层纹） */
 .si-border-glow {
   position: absolute;
@@ -807,7 +749,6 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
   -webkit-text-fill-color: var(--text, #3b3d3f);
   color: var(--text, #3b3d3f);
 }
-
 
 /* ── 用量分析（双实心扇形） ────────────────────── */
 #usageCard { margin-bottom: 16px; }
@@ -1058,7 +999,6 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
   transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
 
-
 .chart-card h3 {
   margin: 0 0 10px;
   font-size: 13px;
@@ -1211,63 +1151,6 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
   word-break: break-all;
   position: relative;
   overflow: hidden;
-}
-
-/* ── 全局用量总览 ──────────────────────────────── */
-#ledgerCard { margin-top: 16px; }
-#ledgerCard .lg-sub {
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--text-muted, #8e9196);
-  margin-left: 8px;
-}
-.lg-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  margin-top: 6px;
-}
-@media (max-width: 760px) {
-  .lg-grid { grid-template-columns: 1fr; }
-}
-.lg-cell {
-  border-radius: var(--si-radius-md, 12px);
-  padding: 10px 12px;
-  /* 与指标卡（.hm）同款：垂直渐变 + 内顶高光 + 细边框 */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--bg-card, #fcfaf5) 44%, transparent),
-    color-mix(in srgb, var(--bg-card, #fcfaf5) 26%, transparent)
-  );
-  border: 1px solid color-mix(in srgb, var(--text, #3b3d3f) 6%, transparent);
-  box-shadow: inset 0 1px 0 var(--si-glass-hi);
-  cursor: pointer;
-  transition: transform 0.15s var(--si-ease), box-shadow 0.15s ease, border-color 0.15s ease;
-}
-.lg-cell:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--accent, #537d96) 35%, transparent);
-  box-shadow: inset 0 1px 0 var(--si-glass-hi), 0 4px 16px var(--si-glow);
-}
-.lg-cell:active {
-  transform: translateY(0) scale(0.98);
-}
-.lg-t {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-light, #6b6f73);
-  margin-bottom: 8px;
-}
-.lg-chart svg {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-.lg-note {
-  margin-top: 6px;
-  font-size: 10.5px;
-  color: var(--text-muted, #8e9196);
-  font-variant-numeric: tabular-nums;
 }
 
 /* 页脚用量可视化（紧凑小占比） */
