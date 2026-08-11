@@ -151,6 +151,8 @@ function computeLedgerStats(provider) {
 
 const DEFAULT_SESSIONS_DIR = "D:\\AI\\Hanako\\agents\\hanako\\sessions";
 const PROVIDER_CATALOG = "D:\\AI\\Hanako\\provider-catalog.json";
+const MODELS_FILE = "D:\\AI\\Hanako\\models.json";
+const AUTH_FILE = "D:\\AI\\Hanako\\auth.json";
 
 // 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），兜底写死路径
 function getProviderCatalogPath(ctx) {
@@ -198,6 +200,8 @@ const NO_BALANCE_API = {
   agnes: "余额接口未开放",
   openai: "官方无余额查询",
   gemini: "按计费账户计费",
+  "openai-codex": "ChatGPT Plus / Pro 订阅账户",
+  "xai-oauth": "xAI Grok OAuth 账户",
 };
 
 function getSessionsDir(ctx) {
@@ -220,11 +224,42 @@ function listSessionFiles(dir) {
     .sort((a, b) => b.mtime - a.mtime);
 }
 
-// 会话标题：取首条用户消息的文本摘要（只读头部，快）
+// 会话标题：优先使用 HanaAgent 的正式标题（session-titles.json），首条用户消息仅作兜底
+let sessionTitlesCache = { path: "", mtime: 0, data: {} };
+function readSessionTitles(dir) {
+  try {
+    const full = join(dir, "session-titles.json");
+    if (!existsSync(full)) return {};
+    const mtime = statSync(full).mtimeMs;
+    if (sessionTitlesCache.path === full && sessionTitlesCache.mtime === mtime) return sessionTitlesCache.data;
+    const data = JSON.parse(readFileSync(full, "utf8"));
+    sessionTitlesCache = { path: full, mtime, data: data && typeof data === "object" ? data : {} };
+    return sessionTitlesCache.data;
+  } catch {
+    return {};
+  }
+}
+
 function detectSessionTitle(dir, name) {
   try {
-    // 读全文件（提前终止：找到第一条真实 user 消息即返回）
+    const titles = readSessionTitles(dir);
+    let sessionId = "";
+    // HanaAgent 为有附件/SessionFile 的会话写入同名侧车文件，里面有稳定 sessionId
+    const sidecar = join(dir, name + ".files.json");
+    if (existsSync(sidecar)) {
+      try {
+        sessionId = JSON.parse(readFileSync(sidecar, "utf8"))?.sessionId || "";
+      } catch {}
+    }
+
+    // 侧车不存在时，从 JSONL 中的 SessionFile 引用提取 sessionId；同时保留首句标题兜底
     const fd = readFileSync(join(dir, name), { encoding: "utf8" });
+    if (!sessionId) {
+      const idMatch = fd.match(/"sessionId"\s*:\s*"(sess_[^"]+)"/);
+      if (idMatch) sessionId = idMatch[1];
+    }
+    if (sessionId && titles[sessionId]) return String(titles[sessionId]).trim();
+
     const lines = fd.split("\n");
     for (const line of lines) {
       if (!line.trim()) continue;
@@ -298,6 +333,26 @@ function readProviderCatalog(ctx) {
   return null;
 }
 
+function readModelsConfig(ctx) {
+  try {
+    const catalogPath = getProviderCatalogPath(ctx);
+    const inferred = catalogPath ? join(catalogPath, "..", "models.json") : MODELS_FILE;
+    const p = existsSync(inferred) ? inferred : MODELS_FILE;
+    if (existsSync(p)) return JSON.parse(readFileSync(p, "utf8"));
+  } catch {}
+  return null;
+}
+
+function readAuthConfig(ctx) {
+  try {
+    const catalogPath = getProviderCatalogPath(ctx);
+    const inferred = catalogPath ? join(catalogPath, "..", "auth.json") : AUTH_FILE;
+    const p = existsSync(inferred) ? inferred : AUTH_FILE;
+    if (existsSync(p)) return JSON.parse(readFileSync(p, "utf8"));
+  } catch {}
+  return {};
+}
+
 export default function registerPluginApiRoutes(app, ctx) {
   // 会话列表（含模型识别）
   app.get("/api/sessions", (c) => {
@@ -326,7 +381,7 @@ export default function registerPluginApiRoutes(app, ctx) {
     if (!result) {
       return c.json({ error: "no usage data in session", file: name });
     }
-    result.title = detectSessionTitle(dir, name); // 对话第一句话作为标题
+    result.title = detectSessionTitle(dir, name); // HanaAgent 正式会话标题优先，首句兜底
     return c.json(result);
   });
 
@@ -337,14 +392,36 @@ let providersCache = { at: 0, data: null };
 function computeActiveProviders(ctx) {
   const now = Date.now();
   if (now - providersCache.at < 30000 && providersCache.data) return providersCache.data;
+  // models.json 是能力全集；真正启用集合必须由 API Key 配置或 OAuth 登录凭据证明
+  const modelsConfig = readModelsConfig(ctx);
   const catalog = readProviderCatalog(ctx);
-  if (!catalog?.providers) {
-    providersCache = { at: now, data: { providers: [] } };
-    return providersCache.data;
+  const auth = readAuthConfig(ctx);
+  const modelProviders = modelsConfig?.providers || {};
+  const active = new Set();
+
+  // API 供应商：只收录实际配置了 api_key 的条目
+  for (const [id, cfg] of Object.entries(catalog?.providers || {})) {
+    if (!cfg?.api_key) continue;
+    if (modelProviders[id]) active.add(id);
+    else if (id.endsWith("-oauth") && modelProviders[id.slice(0, -6)]) active.add(id.slice(0, -6));
+    else active.add(id);
   }
-  const list = Object.keys(catalog.providers)
-    .filter((id) => catalog.providers[id]?.api_key)
-    .map((id) => ({ id }));
+
+  // OAuth 供应商：只收录 auth.json 中已有有效登录凭据的条目；不返回任何凭据内容
+  for (const [authId, cfg] of Object.entries(auth || {})) {
+    if (cfg?.type !== "oauth" || (!cfg?.access && !cfg?.refresh)) continue;
+    const candidates = [authId, authId + "-oauth", authId.replace(/-oauth$/, "")];
+    const providerId = candidates.find((id) => modelProviders[id]);
+    if (providerId) active.add(providerId);
+  }
+
+  const source = Object.keys(modelProviders).length ? modelProviders : (catalog?.providers || {});
+  const list = Object.entries(source)
+    .filter(([id]) => active.has(id))
+    .map(([id, cfg]) => ({
+      id,
+      models: (cfg?.models || []).map((m) => (typeof m === "string" ? m : m?.id)).filter(Boolean),
+    }));
   providersCache = { at: now, data: { providers: list } };
   return providersCache.data;
 }
@@ -407,10 +484,9 @@ app.get("/api/balance", async (c) => {
     const balances = await Promise.all(tasks);
     // 未接入的供应商
     const unsupported = [];
+    const activeIds = new Set(computeActiveProviders(ctx).providers.map((p) => p.id));
     for (const [provider, note] of Object.entries(NO_BALANCE_API)) {
-      if (catalog.providers[provider]?.api_key) {
-        unsupported.push({ provider, note });
-      }
+      if (activeIds.has(provider)) unsupported.push({ provider, note });
     }
     balanceCache = { at: now, data: { balances, unsupported } };
     return c.json(balanceCache.data);
@@ -442,6 +518,8 @@ app.get("/api/balance", async (c) => {
       "apihub.agnes-ai.com",
       "platform.openai.com",
       "aistudio.google.com",
+      "chatgpt.com",
+      "grok.com",
     ];
     try {
       const u = new URL(url);
