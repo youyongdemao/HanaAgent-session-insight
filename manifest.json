@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "session-insight",
   "name": "Session Insight",
-  "version": "0.23.35",
+  "version": "0.23.36",
   "description": "会话用量可视化：tokens、缓存命中率、费用、余额，widget 常驻状态条 + 图表页。",
   "minAppVersion": "0.159.0",
   "trust": "full-access",
@@ -12,10 +12,18 @@
       "clipboard.writeText"
     ]
   },
-  "capabilities": ["resource.read", "network.fetch"],
+  "capabilities": [
+    "resource.read",
+    "network.fetch"
+  ],
   "network": {
-    "allowedHosts": ["api.deepseek.com", "api.moonshot.cn"],
-    "methods": ["GET"],
+    "allowedHosts": [
+      "api.deepseek.com",
+      "api.moonshot.cn"
+    ],
+    "methods": [
+      "GET"
+    ],
     "defaultTimeoutMs": 15000,
     "maxResponseBytes": 65536
   },
@@ -42,22 +50,28 @@
           "type": "string",
           "title": "会话目录",
           "description": "Hana 会话 JSONL 所在目录。默认读取 Hana 自带的 agents/<agent>/sessions。",
-          "default": "",
-          "ui": { "control": "text" }
+          "default": "D:\\AI\\Hanako\\agents\\hanako\\sessions",
+          "ui": {
+            "control": "text"
+          }
         },
         "deepseekApiKey": {
           "type": "string",
           "title": "DeepSeek API Key（可选）",
           "description": "用于余额查询。留空时自动从 Hana 的 provider-catalog.json 读取。",
           "default": "",
-          "ui": { "control": "text" }
+          "ui": {
+            "control": "text"
+          }
         },
         "refreshSeconds": {
           "type": "integer",
           "title": "widget 刷新间隔（秒）",
           "description": "侧边状态条自动刷新频率。",
           "default": 30,
-          "ui": { "control": "number" }
+          "ui": {
+            "control": "number"
+          }
         }
       }
     }
