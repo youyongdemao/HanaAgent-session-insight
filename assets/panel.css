@@ -17,6 +17,7 @@ body {
 @media (prefers-color-scheme: light) {
   /* 浅色模式光晕：更浅更亮、饱和度更低的灰蓝 */
   .si-glow-spot {
+    contain: paint;
     background: radial-gradient(
       var(--glow-r) circle at var(--mx, 50%) var(--my, 50%),
       rgba(180, 200, 215, 0.22) 0%,
@@ -727,28 +728,16 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
 /* 文字跟随鼠标提亮：鼠标位置最亮，向外渐暗（仅卡片内文字） */
 .hm:hover .hml, .hm:hover .hmv,
 .chart-card:hover h3, .chart-card:hover .legend span, .chart-card:hover .ua-t,
+.chart-card:hover .ua-pv, .chart-card:hover .ua-pv-num,
 .chart-card:hover .ua-lg span, .chart-card:hover .ua-detail span,
 .chart-card:hover .ctx-labels span, .chart-card:hover .ctx-note,
+.chart-card:hover .lg-t, .chart-card:hover .lg-sub,
 .acct-btn:hover .ab-n, .acct-btn:hover .ab-v,
 .foot:hover .foot-file, .foot:hover .fb-li,
-.bar:hover .model {
-  background: radial-gradient(
-    170px circle at var(--mx, 50%) var(--my, 50%),
-    var(--text, #3b3d3f) 0%,
-    var(--text-muted, #8e9196) 78%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+.bar:hover .model, .bar:hover .bar-metrics b, .bar:hover .bar-metrics .bal {
+  filter: brightness(calc(1 + var(--glow, 0) * 0.7));
 }
-/* 转轮数字不参与文字提亮：保持实色填充，避免透明化后渐变不可见 */
-.hm:hover .hmv .cnt .od-d,
-.acct-btn:hover .ab-v .cnt .od-d,
-.foot:hover .fb-li .cnt .od-d {
-  -webkit-text-fill-color: var(--text, #3b3d3f);
-  color: var(--text, #3b3d3f);
-}
+
 
 /* ── 用量分析（双实心扇形） ────────────────────── */
 #usageCard { margin-bottom: 16px; }
@@ -1466,4 +1455,29 @@ button.loading .btn-tx {
 * {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--text, #3b3d3f) 22%, transparent) transparent;
+}
+
+/* ── 统一卡片动效：hover 上浮 + 点击按下回弹 ── */
+.hm, .chart-card, .ua-pie, .lg-cell {
+  transition: transform 0.5s cubic-bezier(0.22, 0.75, 0.25, 1), box-shadow 0.45s ease, border-color 0.45s ease;
+}
+.hm:hover, .chart-card:hover, .ua-pie:hover, .lg-cell:hover {
+  transform: translateY(-3px) scale(1.02);
+  border-color: color-mix(in srgb, var(--accent, #537d96) 45%, transparent);
+  box-shadow: 0 14px 34px var(--si-glow), inset 0 1px 0 var(--si-glass-hi);
+}
+.hm:active, .chart-card:active, .ua-pie:active, .lg-cell:active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 0.09s, 0.09s, 0.09s;
+}
+/* 按下压缩（JS 加类，瞬时） */
+.si-press, .si-press:hover {
+  transform: translateY(0) scale(0.955) !important;
+  transition: transform 0.07s ease-out !important;
+  box-shadow: inset 0 2px 8px color-mix(in srgb, var(--accent, #537d96) 14%, transparent) !important;
+}
+/* 松开回弹（带 overshoot 弹跳） */
+.si-release, .si-release:hover {
+  transform: translateY(0) scale(1) !important;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
