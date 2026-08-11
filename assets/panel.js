@@ -447,6 +447,7 @@ const getStats = (file) => fetchJson("/api/stats" + (file ? `?file=${encodeURICo
 const getBalance = () => fetchJson("/api/balance");
 const getSessions = () => fetchJson("/api/sessions");
 const getTotalCost = () => fetchJson("/api/total-cost");
+const getLedgerStats = () => fetchJson("/api/ledger-stats");
 
 /* ── widget 状态条 ──────────────────────────────── */
 
@@ -531,6 +532,7 @@ async function renderPage() {
       <div class="chart-card glass" data-chart="cost"><h3>每轮费用（元） <span class="cc-zoom" title="放大查看">⤢</span></h3><div id="chCost">加载中…</div></div>
       <div class="chart-card glass" data-chart="stack"><h3>输入构成：未命中 / 缓存命中 / 输出 <span class="cc-zoom" title="放大查看">⤢</span></h3><div id="chStack">加载中…</div></div>
     </div>
+    <div class="chart-card glass" id="ledgerCard"></div>
     <div class="foot" id="foot"></div>
     </div>
   `;
@@ -549,6 +551,7 @@ async function renderPage() {
   let viewProvider = null; // 手动切换的供应商视图
   let selectedFile = null; // 当前选中的会话
   let lastStats = null; // 最近一次统计（图表放大用）
+  let lastLedger = null; // 全局用量总览数据（放大详情用）
 
   const PROVIDER_CN = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini" };
   const PROVIDER_ORDER = ["deepseek", "moonshot", "mimo", "zhipu", "agnes", "openai", "gemini"];
@@ -587,6 +590,64 @@ async function renderPage() {
 
 
 
+  // 全局用量总览：agent 消耗饼图 / 每日费用趋势 / 延迟分布 / 模型对比
+  function renderLedger(ls) {
+    const el = document.getElementById("ledgerCard");
+    if (!el) return;
+    if (!ls || ls.empty || !ls.calls) {
+      el.innerHTML = `<h3>全局用量总览</h3><div class="empty">暂无全局数据</div>`;
+      return;
+    }
+    const AGENT_COLORS = {
+      "session:hanako": "rgba(83,125,150,0.8)",
+      "automation:ming": "rgba(157,95,77,0.75)",
+      "automation:hanako": "rgba(27,54,93,0.75)",
+      "automation:butter": "rgba(74,107,74,0.8)",
+      "session:ming": "rgba(143,134,123,0.7)",
+      "memory:hanako": "rgba(83,125,150,0.5)",
+      "session:butter": "rgba(167,139,250,0.7)",
+      "utility:hanako": "rgba(157,95,77,0.5)",
+    };
+    const agents = Object.entries(ls.agents || {}).sort((a, b) => b[1].cost - a[1].cost).slice(0, 6);
+    const agentSegs = agents.map(([k, v]) => ({ v: v.cost, color: AGENT_COLORS[k] || "rgba(143,134,123,0.6)" }));
+    const agentLegend = agents
+      .map(([k, v]) => `<span><i class="fb-dot" style="background:${AGENT_COLORS[k] || "rgba(143,134,123,0.6)"}"></i>${esc(k.replace(":", "·"))} ${fmtCny(v.cost)} · ${v.calls} 次</span>`)
+      .join("");
+    const days = Object.keys(ls.days || {});
+    const dayCost = days.map((d) => ls.days[d].cost);
+    const dayToks = days.map((d) => ls.days[d].tokens);
+    const dayLabel = days.length > 0 ? days[0].slice(5) + "~" + days[days.length - 1].slice(5) + " · " + days.length + " 天" : "";
+    const lb = (ls.latency && ls.latency.buckets) || {};
+    const latVals = [lb.lt1 || 0, lb["1_3"] || 0, lb["3_10"] || 0, lb.gt10 || 0];
+    const models = Object.entries(ls.models || {}).sort((a, b) => b[1].cost - a[1].cost);
+    const modelVals = models.map(([, v]) => v.cost);
+    const modelLegend = models
+      .map(([m, v], i) => `<span><i class="fb-dot" style="background:${["rgba(83,125,150,0.75)", "rgba(157,95,77,0.7)", "rgba(74,107,74,0.8)", "rgba(167,139,250,0.7)"][i % 4]}"></i>${esc(m)} ${fmtCny(v.cost)} · ${v.calls} 次</span>`)
+      .join("");
+    const lat = ls.latency || {};
+    el.innerHTML =
+      `<h3>全局用量总览 <span class="lg-sub">${ls.calls} 次调用 · 错误 ${ls.errors} · 平均延迟 ${lat.avg ? (lat.avg / 1000).toFixed(1) + "s" : "–"}</span></h3>` +
+      `<div class="lg-grid">` +
+      `<div class="lg-cell" data-lg="agent" title="点击放大查看"><div class="lg-t">Agent 消耗</div>` +
+      `<div class="ua-donut-wrap">` +
+      `<div class="ua-donut">${pieChart(agentSegs, { size: 110 })}</div>` +
+      `<div class="ua-lg">${agentLegend}</div>` +
+      `</div></div>` +
+      `<div class="lg-cell" data-lg="day" title="点击放大查看"><div class="lg-t">每日费用趋势</div>` +
+      `<div class="lg-chart">${lineChart(dayCost, { h: 130, stroke: "var(--accent)", fill: "rgba(83,125,150,0.10)", format: fmtCostVal, xLabel: dayLabel })}</div>` +
+      `<div class="lg-note">日 tokens：${fmtTokens(dayToks.reduce((a, b) => a + b, 0))}</div>` +
+      `</div>` +
+      `<div class="lg-cell" data-lg="lat" title="点击放大查看"><div class="lg-t">请求延迟分布</div>` +
+      `<div class="lg-chart">${barChart(latVals, { h: 130, fill: "rgba(83,125,150,0.55)", format: (v) => String(v), xLabel: "<1s / 1-3s / 3-10s / >10s" })}</div>` +
+      `<div class="lg-note">P50 ${lat.p50 ? (lat.p50 / 1000).toFixed(1) + "s" : "–"} · P95 ${lat.p95 ? (lat.p95 / 1000).toFixed(1) + "s" : "–"} · 峰值 ${lat.max ? (lat.max / 1000).toFixed(1) + "s" : "–"}</div>` +
+      `</div>` +
+      `<div class="lg-cell" data-lg="model" title="点击放大查看"><div class="lg-t">模型费用对比</div>` +
+      `<div class="ua-donut-wrap">` +
+      `<div class="ua-donut">${pieChart(modelVals.map((v, i) => ({ v, color: ["rgba(83,125,150,0.75)", "rgba(157,95,77,0.7)", "rgba(74,107,74,0.8)", "rgba(167,139,250,0.7)"][i % 4] })), { size: 110 })}</div>` +
+      `<div class="ua-lg">${modelLegend}</div>` +
+      `</div></div>` +
+      `</div>`;
+  }
   function renderFoot(stats) {
     const el = document.getElementById("foot");
     if (!stats) {
@@ -946,6 +1007,86 @@ async function renderPage() {
 
 
 
+  // 全局用量总览放大详情
+  function openLgModal(kind) {
+    const ls = lastLedger;
+    if (!ls || ls.empty || !ls.calls) return;
+    const AGENT_COLORS = {
+      "session:hanako": "rgba(83,125,150,0.8)",
+      "automation:ming": "rgba(157,95,77,0.75)",
+      "automation:hanako": "rgba(27,54,93,0.75)",
+      "automation:butter": "rgba(74,107,74,0.8)",
+      "session:ming": "rgba(143,134,123,0.7)",
+      "memory:hanako": "rgba(83,125,150,0.5)",
+      "session:butter": "rgba(167,139,250,0.7)",
+      "utility:hanako": "rgba(157,95,77,0.5)",
+    };
+    let title = "";
+    let body = "";
+    if (kind === "agent") {
+      title = "Agent 消耗";
+      const agents = Object.entries(ls.agents || {}).sort((a, b) => b[1].cost - a[1].cost);
+      const segs = agents.map(([k, v]) => ({ v: v.cost, color: AGENT_COLORS[k] || "rgba(143,134,123,0.6)" }));
+      const legend = agents
+        .map(([k, v]) => `<span><i class="fb-dot" style="background:${AGENT_COLORS[k] || "rgba(143,134,123,0.6)"}"></i>${esc(k.replace(":", "·"))} ${fmtCny(v.cost)} · ${v.calls} 次 · ${fmtTokens(v.tokens)}</span>`)
+        .join("");
+      body = `<div class="ua-donut" style="width:250px;height:250px">${pieChart(segs, { size: 250 })}</div><div class="ua-lg ua-lg-modal">${legend}</div>`;
+    } else if (kind === "day") {
+      title = "每日费用趋势";
+      const days = Object.keys(ls.days || {});
+      const dayCost = days.map((d) => ls.days[d].cost);
+      const legend = days
+        .map((d) => `<span>${esc(d.slice(5))} <b>${fmtCny(ls.days[d].cost)}</b> · ${ls.days[d].calls} 次 · ${fmtTokens(ls.days[d].tokens)}</span>`)
+        .join("");
+      body = `<div class="lg-chart" style="width:100%">${lineChart(dayCost, { w: 780, h: 260, stroke: "var(--accent)", fill: "rgba(83,125,150,0.10)", format: fmtCostVal, xLabel: (days[0] || "").slice(5) + "~" + (days[days.length - 1] || "").slice(5) })}</div><div class="ua-lg ua-lg-modal" style="margin-top:10px">${legend}</div>`;
+    } else if (kind === "lat") {
+      title = "请求延迟分布";
+      const lb = (ls.latency && ls.latency.buckets) || {};
+      const latVals = [lb.lt1 || 0, lb["1_3"] || 0, lb["3_10"] || 0, lb.gt10 || 0];
+      const latSum = latVals.reduce((a, b) => a + b, 0) || 1;
+      const l = ls.latency || {};
+      const legend =
+        `<span><i class="fb-dot" style="background:rgba(83,125,150,0.75)"></i>&lt;1s <b>${latVals[0]}</b> · ${((latVals[0] / latSum) * 100).toFixed(0)}%</span>` +
+        `<span><i class="fb-dot" style="background:rgba(83,125,150,0.55)"></i>1-3s <b>${latVals[1]}</b> · ${((latVals[1] / latSum) * 100).toFixed(0)}%</span>` +
+        `<span><i class="fb-dot" style="background:rgba(157,95,77,0.7)"></i>3-10s <b>${latVals[2]}</b> · ${((latVals[2] / latSum) * 100).toFixed(0)}%</span>` +
+        `<span><i class="fb-dot" style="background:rgba(27,54,93,0.75)"></i>&gt;10s <b>${latVals[3]}</b> · ${((latVals[3] / latSum) * 100).toFixed(0)}%</span>` +
+        `<span class="lg-detail">样本 ${l.n} · 平均 ${l.avg ? (l.avg / 1000).toFixed(1) + "s" : "–"} · P50 ${l.p50 ? (l.p50 / 1000).toFixed(1) + "s" : "–"} · P95 ${l.p95 ? (l.p95 / 1000).toFixed(1) + "s" : "–"} · 峰值 ${l.max ? (l.max / 1000).toFixed(1) + "s" : "–"}</span>`;
+      body = `<div class="lg-chart" style="width:100%">${barChart(latVals, { w: 780, h: 260, fill: "rgba(83,125,150,0.55)", format: (v) => String(v), xLabel: "<1s / 1-3s / 3-10s / >10s" })}</div><div class="ua-lg ua-lg-modal" style="margin-top:10px">${legend}</div>`;
+    } else if (kind === "model") {
+      title = "模型费用对比";
+      const models = Object.entries(ls.models || {}).sort((a, b) => b[1].cost - a[1].cost);
+      const segs = models.map(([m, v], i) => ({ v: v.cost, color: ["rgba(83,125,150,0.75)", "rgba(157,95,77,0.7)", "rgba(74,107,74,0.8)", "rgba(167,139,250,0.7)"][i % 4] }));
+      const legend = models
+        .map(([m, v], i) => `<span><i class="fb-dot" style="background:${["rgba(83,125,150,0.75)", "rgba(157,95,77,0.7)", "rgba(74,107,74,0.8)", "rgba(167,139,250,0.7)"][i % 4]}"></i>${esc(m)} ${fmtCny(v.cost)} · ${v.calls} 次</span>`)
+        .join("");
+      body = `<div class="ua-donut" style="width:250px;height:250px">${pieChart(segs, { size: 250 })}</div><div class="ua-lg ua-lg-modal">${legend}</div>`;
+    } else {
+      return;
+    }
+    const modal = document.createElement("div");
+    modal.className = "si-modal";
+    modal.innerHTML =
+      `<div class="si-modal-bg"></div>` +
+      `<div class="si-modal-card glass">` +
+      `<div class="si-modal-head"><h3>${esc(title)}</h3><button type="button" class="si-modal-close" title="关闭">×</button></div>` +
+      `<div class="si-modal-body" style="display:flex;align-items:center;gap:32px;flex-wrap:wrap;justify-content:center">${body}</div>` +
+      `</div>`;
+    document.body.appendChild(modal);
+    requestAnimationFrame(() => modal.classList.add("open"));
+    const close = () => {
+      modal.classList.remove("open");
+      modal.classList.add("closing");
+      setTimeout(() => modal.remove(), 220);
+      document.removeEventListener("keydown", escHandler);
+    };
+    const escHandler = (e) => {
+      if (e.key === "Escape") close();
+    };
+    modal.addEventListener("click", (e) => {
+      if (e.target.closest(".si-modal-close") || e.target.classList.contains("si-modal-bg")) close();
+    });
+    document.addEventListener("keydown", escHandler);
+  }
   // 用量分析放大详情（环形图大图）
   function openUaModal(kind) {
     if (!lastStats) return;
@@ -1210,9 +1351,10 @@ async function renderPage() {
 
   async function loadData(file, opts = {}) {
     try {
-      const [stats, total] = await Promise.all([
+      const [stats, total, ledger] = await Promise.all([
         getStats(file),
         getTotalCost().catch(() => null),
+        getLedgerStats().catch(() => null),
       ]);
       if (!stats || stats.error) throw new Error(stats?.error || "no usage data");
       if (!opts.preserveView) viewProvider = null; // 切会话时重置视图；刷新时保留手动选的供应商
@@ -1272,6 +1414,13 @@ async function renderPage() {
       const gridEl = document.querySelector(".chart-grid");
       if (gridEl) gridEl.classList.remove("si-anim");
 
+      try {
+        renderLedger(ledger);
+        if (ledger && !ledger.empty) lastLedger = ledger;
+      } catch (e) {
+        const lc = document.getElementById("ledgerCard");
+        if (lc) lc.innerHTML = `<h3>全局用量总览</h3><div class="empty">渲染错误：${esc(e.message || e)}</div>`;
+      }
       renderFoot(stats);
       animateNumbers(root);
     } catch (e) {
@@ -1376,6 +1525,11 @@ async function renderPage() {
     const uaPane = e.target.closest(".ua-pie[data-ua]");
     if (uaPane) {
       openUaModal(uaPane.dataset.ua);
+      return;
+    }
+    const lgCell = e.target.closest(".lg-cell[data-lg]");
+    if (lgCell) {
+      openLgModal(lgCell.dataset.lg);
       return;
     }
     const btn = e.target.closest(".acct-btn[data-provider]");
