@@ -1,4 +1,4 @@
-# HanaAgent 会话用量全景面板
+# HanaAgent 会话用量统计面板插件
 
 > Hana Agent 会话用量统计面板插件 — 多供应商余额、Token 消耗、缓存命中率、费用与图表分析。
 
