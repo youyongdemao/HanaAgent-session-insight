@@ -557,20 +557,20 @@ async function renderPage() {
   let lastLedger = null; // 全局用量总览数据（放大详情用）
 
   const PROVIDER_CN = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini" };
-  const PROVIDER_ORDER = ["deepseek", "moonshot", "mimo", "zhipu", "agnes", "openai", "gemini"];
+  // 供应商列表：默认兜底，打开插件时从 HanaAgent 的 provider-catalog 动态同步（新增/删减自动适配）
+  let providerOrder = ["deepseek", "moonshot", "mimo", "zhipu", "agnes", "openai", "gemini"];
   function cycleProvider() {
     const cur = viewProvider || (lastStats && lastStats.provider) || "deepseek";
-    const idx = PROVIDER_ORDER.indexOf(cur);
-    const next = PROVIDER_ORDER[(idx + 1) % PROVIDER_ORDER.length];
+    const idx = providerOrder.indexOf(cur);
+    const next = providerOrder[(idx + 1) % providerOrder.length];
     selectProvider(next);
   }
-  const SI_BG_CLASSES = ["si-bg-deepseek", "si-bg-moonshot", "si-bg-mimo", "si-bg-zhipu", "si-bg-agnes", "si-bg-openai", "si-bg-gemini"];
   let lastBgProvider = null; // 记录上一个背景供应商，切换时才播放面板过渡
   let siSwitchTimer = null; // 切换动效播完后的清理计时器
   function setProviderBg(provider) {
     const changed = provider !== lastBgProvider;
     lastBgProvider = provider;
-    document.body.classList.remove(...SI_BG_CLASSES);
+    providerOrder.forEach((p) => document.body.classList.remove("si-bg-" + p));
     if (provider) document.body.classList.add("si-bg-" + provider);
     // 供应商切换动效：仅供应商真正变化时播放，刷新不触发（避免页面下沉）
     if (changed) {
@@ -585,6 +585,24 @@ async function renderPage() {
         siSwitchTimer = setTimeout(() => p.classList.remove("si-switch"), 1100);
       }
     }
+  }
+
+  // 打开插件时同步 HanaAgent 供应商配置：新增/改动/删减自动适配（重渲染余额块/账户菜单/徽章/背景）
+  async function syncProviders() {
+    try {
+      const res = await fetchJson("/api/providers");
+      const list = res && Array.isArray(res.providers) ? res.providers.map((p) => p && p.id).filter(Boolean) : [];
+      if (!list.length) return;
+      providerOrder = list;
+      if (lastBalance) {
+        const cur = viewProvider || (lastStats && lastStats.provider);
+        renderBalanceBlock(lastBalance, cur, lastStats && lastStats.model);
+        renderAcctMenu(lastBalance, cur);
+        setProviderBg(cur);
+        const badge = document.getElementById("modelBadge");
+        if (badge && lastStats && lastStats.model) badge.textContent = (PROVIDER_CN[cur] || cur || "") + " · " + lastStats.model;
+      }
+    } catch (e) {}
   }
 
   function fmtNum(n) {
@@ -798,7 +816,7 @@ async function renderPage() {
       openai: "无余额查询",
       gemini: "按计费账户",
     };
-    const opts = PROVIDER_ORDER.map((p) => {
+    const opts = providerOrder.map((p) => {
       const nm = PROVIDER_CN[p] || p;
       const b = ok.find((x) => x.provider === p);
       const note = b ? `¥${fmtNum(b.total)}` : (shortNote[p] || "");
@@ -1483,6 +1501,7 @@ async function renderPage() {
   await loadSessions();
   if (sessions.length > 0 && !selectedFile) selectedFile = sessions[0].name;
   await loadData(selectedFile);
+  syncProviders(); // 打开时同步 HanaAgent 供应商配置（新增/删减自动适配）
 
   // 事件委托：下拉选择 + 折叠菜单 + 官网跳转 + 供应商切换
   root.addEventListener("click", (e) => {
