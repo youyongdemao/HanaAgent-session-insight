@@ -66,6 +66,7 @@ function computeTotalCost() {
 }
 
 
+
 let ledgerStatsCache = { at: 0, provider: null };
 
 // 全局用量总览：按 agent/来源/日期/模型聚合 + 延迟分布 + 错误数（30s 缓存）
@@ -203,7 +204,7 @@ function listSessionFiles(dir) {
     .sort((a, b) => b.mtime - a.mtime);
 }
 
-// 会话标题：取首条真实用户消息的文本摘要
+// 会话标题：取首条用户消息的文本摘要（只读头部，快）
 function detectSessionTitle(dir, name) {
   try {
     // 读全文件（提前终止：找到第一条真实 user 消息即返回）
@@ -237,7 +238,7 @@ function detectSessionTitle(dir, name) {
   return "";
 }
 
-// 读文件头部识别会话使用的模型
+// 读文件头部识别会话使用的模型（不解析全文，快）
 function detectSessionModel(dir, name) {  try {
     const fd = openFileHead(join(dir, name), 4096);
     return fd;
@@ -380,18 +381,19 @@ export default function registerPluginApiRoutes(app, ctx) {
     return c.json(balanceCache.data);
   });
 
-  // 总消费金额（按用量总账计算，30s 缓存）
-  app.get("/api/total-cost", (c) => {
-    const r = computeTotalCost();
-    return c.json(r);
-  });
-
   // 全局用量总览（agent/来源/日期/模型/延迟聚合，30s 缓存，可传 ?provider= 过滤）
   app.get("/api/ledger-stats", (c) => {
     const provider = c.req.query("provider") || null;
     const r = computeLedgerStats(provider);
     return c.json(r);
   });
+
+  // 总消费金额（按用量总账计算，30s 缓存）
+  app.get("/api/total-cost", (c) => {
+    const r = computeTotalCost();
+    return c.json(r);
+  });
+
 
   // 用系统默认程序打开链接（绕过 Electron 内置窗口）
   app.get("/api/open", (c) => {
