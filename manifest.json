@@ -1,0 +1,65 @@
+{
+  "manifestVersion": 1,
+  "id": "session-insight",
+  "name": "Session Insight",
+  "version": "0.23.34",
+  "description": "会话用量可视化：tokens、缓存命中率、费用、余额，widget 常驻状态条 + 图表页。",
+  "minAppVersion": "0.159.0",
+  "trust": "full-access",
+  "ui": {
+    "hostCapabilities": [
+      "external.open",
+      "clipboard.writeText"
+    ]
+  },
+  "capabilities": ["resource.read", "network.fetch"],
+  "network": {
+    "allowedHosts": ["api.deepseek.com", "api.moonshot.cn"],
+    "methods": ["GET"],
+    "defaultTimeoutMs": 15000,
+    "maxResponseBytes": 65536
+  },
+  "contributes": {
+    "page": {
+      "title": {
+        "zh": "会话用量",
+        "en": "Session Insight"
+      },
+      "route": "/page",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 5h16v14H4z\"/><path d=\"M7 15l3-4 2 2 3-5 2 3\"/></svg>"
+    },
+    "widget": {
+      "title": {
+        "zh": "用量状态条",
+        "en": "Usage Bar"
+      },
+      "route": "/widget",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 12h3l2-5 3 10 2-7 2 2h4\"/></svg>"
+    },
+    "configuration": {
+      "properties": {
+        "sessionsDir": {
+          "type": "string",
+          "title": "会话目录",
+          "description": "Hana 会话 JSONL 所在目录。默认读取 Hana 自带的 agents/<agent>/sessions。",
+          "default": "",
+          "ui": { "control": "text" }
+        },
+        "deepseekApiKey": {
+          "type": "string",
+          "title": "DeepSeek API Key（可选）",
+          "description": "用于余额查询。留空时自动从 Hana 的 provider-catalog.json 读取。",
+          "default": "",
+          "ui": { "control": "text" }
+        },
+        "refreshSeconds": {
+          "type": "integer",
+          "title": "widget 刷新间隔（秒）",
+          "description": "侧边状态条自动刷新频率。",
+          "default": 30,
+          "ui": { "control": "number" }
+        }
+      }
+    }
+  }
+}
