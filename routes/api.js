@@ -152,6 +152,22 @@ function computeLedgerStats(provider) {
 const DEFAULT_SESSIONS_DIR = "D:\\AI\\Hanako\\agents\\hanako\\sessions";
 const PROVIDER_CATALOG = "D:\\AI\\Hanako\\provider-catalog.json";
 
+// 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），兜底写死路径
+function getProviderCatalogPath(ctx) {
+  try {
+    const p = ctx.config?.get?.("providerCatalogPath") || ctx.config?.get?.("dataDir");
+    if (p && existsSync(p)) return existsSync(p) && p.endsWith(".json") ? p : join(p, "provider-catalog.json");
+  } catch {}
+  try {
+    const sd = ctx.config?.get?.("sessionsDir");
+    if (sd) {
+      const cand = join(sd, "..", "..", "..", "provider-catalog.json");
+      if (existsSync(cand)) return cand;
+    }
+  } catch {}
+  return PROVIDER_CATALOG;
+}
+
 // 供应商余额适配器：url 拼接 + 响应解析
 const BALANCE_ADAPTERS = {
   deepseek: {
@@ -272,10 +288,11 @@ function readSession(dir, name, limitTurns) {
 }
 
 // 读 provider-catalog 拿 key（脱敏使用）
-function readProviderCatalog() {
+function readProviderCatalog(ctx) {
   try {
-    if (existsSync(PROVIDER_CATALOG)) {
-      return JSON.parse(readFileSync(PROVIDER_CATALOG, "utf8"));
+    const p = getProviderCatalogPath(ctx);
+    if (p && existsSync(p)) {
+      return JSON.parse(readFileSync(p, "utf8"));
     }
   } catch {}
   return null;
@@ -315,12 +332,30 @@ export default function registerPluginApiRoutes(app, ctx) {
 
   // 多供应商余额（并行查询 + 60s 缓存，避免每次进入都全量查询）
   let balanceCache = { at: 0, data: null };
-  app.get("/api/balance", async (c) => {
+  // 动态供应商列表：从 HanaAgent provider-catalog 同步（只返回 id，绝不返回 api_key）
+let providersCache = { at: 0, data: null };
+function computeActiveProviders(ctx) {
+  const now = Date.now();
+  if (now - providersCache.at < 30000 && providersCache.data) return providersCache.data;
+  const catalog = readProviderCatalog(ctx);
+  if (!catalog?.providers) {
+    providersCache = { at: now, data: { providers: [] } };
+    return providersCache.data;
+  }
+  const list = Object.keys(catalog.providers)
+    .filter((id) => catalog.providers[id]?.api_key)
+    .map((id) => ({ id }));
+  providersCache = { at: now, data: { providers: list } };
+  return providersCache.data;
+}
+app.get("/api/providers", (c) => c.json(computeActiveProviders(ctx)));
+
+app.get("/api/balance", async (c) => {
     const now = Date.now();
     if (now - balanceCache.at < 60000 && balanceCache.data) {
       return c.json(balanceCache.data);
     }
-    const catalog = readProviderCatalog();
+    const catalog = readProviderCatalog(ctx);
     if (!catalog?.providers) {
       dbg("balance: provider catalog unavailable");
       return c.json({ error: "provider catalog unavailable" });
