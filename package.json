@@ -1,0 +1,7 @@
+{
+  "name": "session-insight",
+  "version": "0.23.34",
+  "private": true,
+  "type": "module",
+  "description": "Hana Agent 会话用量可视化：tokens、缓存命中率、费用、余额"
+}
