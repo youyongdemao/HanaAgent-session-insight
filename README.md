@@ -1,4 +1,4 @@
-# Session Insight
+# HanaAgent 会话用量全景面板
 
 > Hana Agent 会话用量全景面板 — 多供应商余额、Token 消耗、缓存命中率、费用与图表分析。
 
@@ -34,8 +34,7 @@ session-insight/
 ├── manifest.json        # 插件清单
 ├── assets/
 │   ├── panel.js         # 前端逻辑
-│   ├── panel.css        # 样式
-│   └── logos/           # 供应商 logo 水印
+│   └── panel.css        # 样式
 ├── routes/
 │   ├── api.js           # 数据接口（统计/余额/全局总览）
 │   └── ui.js            # 页面与 widget 路由
