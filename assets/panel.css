@@ -1153,6 +1153,62 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
   overflow: hidden;
 }
 
+/* ── 全局用量总览 ──────────────────────────────── */
+#ledgerCard { margin-top: 16px; }
+#ledgerCard .lg-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted, #8e9196);
+  margin-left: 8px;
+}
+.lg-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 6px;
+}
+@media (max-width: 760px) {
+  .lg-grid { grid-template-columns: 1fr; }
+}
+.lg-cell {
+  border-radius: var(--si-radius-md, 12px);
+  padding: 10px 12px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-card, #fcfaf5) 44%, transparent),
+    color-mix(in srgb, var(--bg-card, #fcfaf5) 26%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--text, #3b3d3f) 6%, transparent);
+  box-shadow: inset 0 1px 0 var(--si-glass-hi);
+  cursor: pointer;
+  transition: transform 0.15s var(--si-ease), box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.lg-cell:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent, #537d96) 35%, transparent);
+  box-shadow: inset 0 1px 0 var(--si-glass-hi), 0 4px 16px var(--si-glow);
+}
+.lg-cell:active {
+  transform: translateY(0) scale(0.98);
+}
+.lg-t {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-light, #6b6f73);
+  margin-bottom: 8px;
+}
+.lg-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.lg-note {
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--text-muted, #8e9196);
+  font-variant-numeric: tabular-nums;
+}
+
 /* 页脚用量可视化（紧凑小占比） */
 .foot-file {
   font-size: 10.5px;
