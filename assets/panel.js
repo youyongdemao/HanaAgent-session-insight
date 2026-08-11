@@ -556,8 +556,8 @@ async function renderPage() {
   let lastStats = null; // 最近一次统计（图表放大用）
   let lastLedger = null; // 全局用量总览数据（放大详情用）
 
-  const PROVIDER_CN = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini" };
-  // 供应商列表：默认兜底，打开插件时从 HanaAgent 的 provider-catalog 动态同步（新增/删减自动适配）
+  const PROVIDER_CN = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini", "openai-codex": "ChatGPT Plus / Pro", "xai-oauth": "xAI Grok" };
+  // 供应商列表：默认兜底，打开插件时从 HanaAgent 的 models.json 动态同步（含 API Key 与 OAuth）
   let providerOrder = ["deepseek", "moonshot", "mimo", "zhipu", "agnes", "openai", "gemini"];
   function cycleProvider() {
     const cur = viewProvider || (lastStats && lastStats.provider) || "deepseek";
@@ -594,6 +594,10 @@ async function renderPage() {
       const list = res && Array.isArray(res.providers) ? res.providers.map((p) => p && p.id).filter(Boolean) : [];
       if (!list.length) return;
       providerOrder = list;
+      // 后端同时返回每家已加载模型，动态补全模型→供应商归属（支持 OAuth 与后续新增供应商）
+      for (const p of res.providers) {
+        for (const model of p.models || []) MODEL_PROVIDER[model] = p.id;
+      }
       if (lastBalance) {
         const cur = viewProvider || (lastStats && lastStats.provider);
         renderBalanceBlock(lastBalance, cur, lastStats && lastStats.model);
@@ -739,7 +743,7 @@ async function renderPage() {
       const totalTurns = models.reduce((a, x) => a + x.turns, 0) || 1;
       const dispProv = viewProvider || stats.provider || "unknown"; // 跟随当前所选供应商
       // 当前供应商模型合计轮次占比
-      const provTurns = models.filter((x) => MODEL_PROVIDER[x.model] === dispProv).reduce((a, x) => a + (x.turns || 0), 0);
+      const provTurns = models.filter((x) => (x.provider || MODEL_PROVIDER[x.model]) === dispProv).reduce((a, x) => a + (x.turns || 0), 0);
       const provPct = ((provTurns / totalTurns) * 100).toFixed(1);
       const MODEL_COLORS = ["rgba(83,125,150,0.8)", "rgba(157,95,77,0.75)", "rgba(74,107,74,0.8)", "rgba(167,139,250,0.75)", "rgba(143,134,123,0.7)", "rgba(27,54,93,0.75)"];
       const segs = models.map((x, i) => ({ v: x.turns, color: MODEL_COLORS[i % MODEL_COLORS.length] }));
@@ -815,6 +819,8 @@ async function renderPage() {
       agnes: "未开放",
       openai: "无余额查询",
       gemini: "按计费账户",
+      "openai-codex": "订阅账户",
+      "xai-oauth": "OAuth 账户",
     };
     const opts = providerOrder.map((p) => {
       const nm = PROVIDER_CN[p] || p;
@@ -891,6 +897,8 @@ async function renderPage() {
     agnes: "https://apihub.agnes-ai.com",
     openai: "https://platform.openai.com",
     gemini: "https://aistudio.google.com",
+    "openai-codex": "https://chatgpt.com",
+    "xai-oauth": "https://grok.com",
   };
 
   function renderAcctMenu(balance, provider) {
@@ -907,6 +915,8 @@ async function renderPage() {
       agnes: "余额接口未开放",
       openai: "无余额查询",
       gemini: "按计费账户",
+      "openai-codex": "ChatGPT 订阅账户",
+      "xai-oauth": "Grok OAuth 账户",
     };
     let html = `<button type="button" class="acct-toggle" id="acctToggle"><span class="tg-label">其他账户</span><span class="tg-count">${ok.length + unsupported.length}</span><span class="tg-arrow">${acctOpen ? "▴" : "▾"}</span></button>`;
     html += `<div class="acct-list${acctOpen ? " open" : ""}" id="acctList">`;
