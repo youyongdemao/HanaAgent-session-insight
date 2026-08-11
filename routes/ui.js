@@ -12,7 +12,7 @@ function renderShell(c, ctx, surface) {
   const withToken = (url) => {
     let u = url;
     if (token) u += `${u.includes("?") ? "&" : "?"}${new URLSearchParams({ token })}`;
-    return u + `${u.includes("?") ? "&" : "?"}si_v=0.23.34`;
+    return u + `${u.includes("?") ? "&" : "?"}si_v=0.23.36`;
   };
   const panelCss = withToken(`${base}/assets/panel.css`);
   const panelJs = withToken(`${base}/assets/panel.js`);
