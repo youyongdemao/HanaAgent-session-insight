@@ -258,7 +258,11 @@ function detectSessionTitle(dir, name) {
       const idMatch = fd.match(/"sessionId"\s*:\s*"(sess_[^"]+)"/);
       if (idMatch) sessionId = idMatch[1];
     }
+    // 与 HanaAgent 左侧会话列表同源：session-titles.json 的 key 随版本演进，
+    // 新条目是 sessionId，旧条目可能是完整路径或文件名，三种都兼容
     if (sessionId && titles[sessionId]) return String(titles[sessionId]).trim();
+    if (titles[join(dir, name)]) return String(titles[join(dir, name)]).trim();
+    if (titles[name]) return String(titles[name]).trim();
 
     const lines = fd.split("\n");
     for (const line of lines) {
@@ -376,7 +380,10 @@ export default function registerPluginApiRoutes(app, ctx) {
     if (files.length === 0) {
       return c.json({ error: "no sessions found", dir });
     }
-    const name = query.file && files.some((f) => f.name === query.file) ? query.file : files[0].name;
+    if (query.file && !files.some((f) => f.name === query.file)) {
+      return c.json({ error: "session not found", file: query.file }, 404);
+    }
+    const name = query.file || files[0].name;
     const result = readSession(dir, name, limit);
     if (!result) {
       return c.json({ error: "no usage data in session", file: name });
