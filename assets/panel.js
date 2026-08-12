@@ -456,52 +456,199 @@ const getLedgerStats = () => fetchJson("/api/ledger-stats");
 
 async function renderWidget() {
   if (!root) return;
-  root.innerHTML = `<div class="panel"><div class="bar glass"><div class="bar-head"><span class="dot" id="dot"></span><span class="model" id="model">加载中…</span><span class="bar-title" id="barTitle"></span></div><div class="bar-metrics" id="metrics"></div><div class="bar-meta" id="meta"></div></div></div>`;
+  root.innerHTML = `
+    <div class="panel widget-panel">
+      <section class="widget-card">
+        <header class="w-head">
+          <div class="w-identity">
+            <span class="dot" id="dot"></span>
+            <div class="w-id-copy">
+              <div class="w-title" id="barTitle">正在读取当前会话</div>
+              <div class="model" id="model">加载中…</div>
+            </div>
+          </div>
+          <span class="w-turns" id="wTurns">– 轮</span>
+        </header>
+
+        <div class="w-overview">
+          <div class="w-ring" id="wRing">
+            <svg viewBox="0 0 100 100" aria-hidden="true">
+              <circle class="w-ring-track" cx="50" cy="50" r="42"></circle>
+              <circle class="w-ring-progress" id="wRingProgress" cx="50" cy="50" r="42" pathLength="100"></circle>
+            </svg>
+            <div class="w-ring-core">
+              <strong id="wContextPct">0%</strong>
+              <span>上下文</span>
+            </div>
+          </div>
+          <div class="w-money">
+            <div class="w-money-row"><span>会话 tokens</span><b id="wOverviewTokens">–</b></div>
+            <div class="w-money-row"><span>会话费用</span><b class="bal" id="wCost">–</b></div>
+          </div>
+        </div>
+
+        <div class="w-context">
+          <div class="w-section-head"><span>上下文窗口</span><b id="wContextText">– / –</b></div>
+          <div class="w-context-track"><i id="wContextFill"></i><em id="wContextThreshold"></em></div>
+          <div class="w-context-note" id="wContextNote">压缩阈值 80%</div>
+        </div>
+
+        <div class="w-grid" id="metrics">
+          <div class="w-metric"><span>本次命中</span><b id="wHit">–</b></div>
+          <div class="w-metric"><span>平均命中</span><b id="wAvgHit">–</b></div>
+          <div class="w-metric"><span>会话 tokens</span><b id="wTokens">–</b></div>
+          <div class="w-metric"><span>运行时长</span><b id="wDuration">–</b></div>
+        </div>
+
+        <div class="w-composition">
+          <div class="w-section-head"><span>用量结构</span><b id="wCompTotal">–</b></div>
+          <div class="w-comp-track" id="wCompTrack"><i class="cache"></i><i class="input"></i><i class="output"></i></div>
+          <div class="w-legend"><span><i class="cache"></i>缓存命中</span><span><i class="input"></i>未命中</span><span><i class="output"></i>输出</span></div>
+        </div>
+
+        <div class="w-providers">
+          <div class="w-section-head"><span>本会话供应商</span><b id="wProviderCount">0 家</b></div>
+          <div class="w-provider-list" id="wProviderList"></div>
+        </div>
+        <div class="w-error" id="meta"></div>
+      </section>
+    </div>`;
 
   const dot = document.getElementById("dot");
   const modelEl = document.getElementById("model");
   const titleEl = document.getElementById("barTitle");
-  const metricsEl = document.getElementById("metrics");
   const metaEl = document.getElementById("meta");
+  const ringProgressEl = document.getElementById("wRingProgress");
+  const contextPctEl = document.getElementById("wContextPct");
+  const contextTextEl = document.getElementById("wContextText");
+  const contextFillEl = document.getElementById("wContextFill");
+  const contextThresholdEl = document.getElementById("wContextThreshold");
+  const contextNoteEl = document.getElementById("wContextNote");
+  const turnsEl = document.getElementById("wTurns");
+  const costEl = document.getElementById("wCost");
+  const overviewTokensEl = document.getElementById("wOverviewTokens");
+  const providerCountEl = document.getElementById("wProviderCount");
+  const providerListEl = document.getElementById("wProviderList");
+  const hitEl = document.getElementById("wHit");
+  const avgHitEl = document.getElementById("wAvgHit");
+  const tokensEl = document.getElementById("wTokens");
+  const durationEl = document.getElementById("wDuration");
+  const compTotalEl = document.getElementById("wCompTotal");
+  const compTrackEl = document.getElementById("wCompTrack");
+
+  let activeSessionFile = null;
+  let refreshSeq = 0;
+
+  function sessionFileFromPath(sessionPath) {
+    if (typeof sessionPath !== "string" || !sessionPath.trim()) return null;
+    const name = sessionPath.trim().replace(/\\/g, "/").split("/").pop();
+    return name && name.endsWith(".jsonl") ? name : null;
+  }
 
   async function tick() {
+    const thisRefresh = ++refreshSeq;
     try {
-      const stats = await getStats();
+      const requestedFile = activeSessionFile;
+      const stats = await getStats(requestedFile);
       const balance = await getBalance().catch(() => null);
+      if (thisRefresh !== refreshSeq || requestedFile !== activeSessionFile) return;
       if (!stats || stats.error) throw new Error(stats?.error || "no data");
 
       dot.className = "dot";
       modelEl.textContent = stats.model || "unknown";
-      // 多模型会话：模型名加 ×N 标记，tooltip 显示分布
       if (stats.models && stats.models.length > 1) {
         modelEl.textContent = (stats.model || "unknown") + " ×" + stats.models.length;
         modelEl.title = "会话内模型分布：\n" + stats.models.map((x) => `  ${x.model}：${x.turns} 轮`).join("\n");
       } else {
         modelEl.title = "";
       }
-      titleEl.textContent = stats.title ? `当前对话：${stats.title}` : "";
+      titleEl.textContent = stats.title ? stats.title : "当前会话";
       titleEl.title = stats.title || "";
-      const okBal = (balance?.balances || []).find((b) => b.status === "ok");
-      const balText = okBal ? `<b class="bal">${fmtCny(okBal.total, 2)}</b>` : "<b>–</b>";
-      metricsEl.innerHTML =
-        `<span>命中 <b class="hit">${fmtPct(stats.lastHitPercent)}</b></span>` +
-        `<span>平均 <b class="hit">${fmtPct(stats.avgHitPercent)}</b></span>` +
-        `<span>会话 <b>${fmtTokens(stats.sessionTokens)}</b></span>` +
-        `<span>费用 <b>${fmtCny(stats.sessionCostCny)}</b></span>` +
-        `<span>余额 <b>${balText}</b></span>`;
-      metaEl.innerHTML = `${stats.turns} 轮 · 窗口 ${fmtTokens(stats.contextWindow)}`;
-      // 心跳：数据刷新成功时绿点脉冲一次
+
+      const balances = balance?.balances || [];
+      const unsupported = balance?.unsupported || [];
+      const pct = Math.max(0, Math.min(100, Number(stats.contextPercent) || 0));
+      const threshold = Math.round((stats.compactThreshold ?? 0.8) * 100);
+      const remain = Math.max(0, Number(stats.remainingToCompact) || 0);
+      ringProgressEl.style.strokeDasharray = `${pct} ${100 - pct}`;
+      contextPctEl.textContent = fmtPct(pct);
+      contextTextEl.textContent = `${fmtTokens(stats.lastWindowTokens || 0)} / ${fmtTokens(stats.contextWindow || 0)}`;
+      contextFillEl.style.width = pct + "%";
+      contextThresholdEl.style.left = threshold + "%";
+      contextNoteEl.textContent = `距压缩约 ${fmtTokens(remain)} · 阈值 ${threshold}%`;
+
+      turnsEl.textContent = `${stats.turns || 0} 轮`;
+      overviewTokensEl.textContent = fmtTokens(stats.sessionTokens);
+
+      const providerNames = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini", "openai-codex": "ChatGPT Plus / Pro", "xai-oauth": "xAI Grok" };
+      const usedProviders = Array.isArray(stats.providers) && stats.providers.length
+        ? stats.providers
+        : [{ provider: stats.provider || "unknown", turns: stats.turns || 0, tokens: stats.sessionTokens || 0, cost: stats.sessionCostCny, costComplete: stats.sessionCostCny != null }];
+      const hasUnpricedProvider = usedProviders.some((p) => p.cost == null || p.costComplete === false);
+      costEl.textContent = fmtCny(stats.sessionCostCny) + (hasUnpricedProvider ? "+" : "");
+      costEl.title = hasUnpricedProvider ? "仅包含已有定价的供应商费用；订阅制或未定价供应商未计入" : "";
+      providerCountEl.textContent = `${usedProviders.length} 家`;
+      const usedProviderTokens = usedProviders.reduce((sum, p) => sum + (Number(p.tokens) || 0), 0) || 1;
+      providerListEl.innerHTML = usedProviders
+        .sort((a, b) => (b.tokens || 0) - (a.tokens || 0))
+        .map((p) => {
+          const bal = balances.find((b) => b.provider === p.provider && b.status === "ok");
+          const uns = unsupported.find((u) => u.provider === p.provider);
+          const oauth = p.provider === "openai-codex" || p.provider === "xai-oauth";
+          const costText = p.cost == null ? (oauth ? "订阅制" : "未定价") : `${fmtCny(p.cost)}${p.costComplete === false ? "+" : ""}`;
+          const balanceText = bal ? fmtCny(bal.total, 2) : (oauth ? "订阅账户" : (uns ? "不可查询" : "–"));
+          const share = Math.max(0, Math.min(100, ((Number(p.tokens) || 0) / usedProviderTokens) * 100));
+          return `<div class="w-provider-row" title="${esc((p.models || []).map((m) => `${m.model}：${m.turns} 轮`).join("\n"))}">` +
+            `<div class="w-provider-share"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="w-share-track" cx="50" cy="50" r="42"></circle><circle class="w-share-progress" cx="50" cy="50" r="42" pathLength="100" style="stroke-dasharray:${share.toFixed(2)} ${(100 - share).toFixed(2)}"></circle></svg><span>${share >= 10 ? share.toFixed(0) : share.toFixed(1)}%</span></div>` +
+            `<div class="w-provider-name"><strong>${esc(providerNames[p.provider] || p.provider)}</strong><span>${p.turns || 0} 轮</span></div>` +
+            `<div class="w-provider-values">` +
+              `<div class="w-provider-stat"><span>tokens</span><b>${fmtTokens(p.tokens || 0)}</b></div>` +
+              `<div class="w-provider-stat"><span>费用</span><b>${costText}</b></div>` +
+              `<div class="w-provider-stat balance"><span>余额</span><b>${balanceText}</b></div>` +
+            `</div>` +
+            `</div>`;
+        }).join("");
+
+      hitEl.textContent = fmtPct(stats.lastHitPercent);
+      avgHitEl.textContent = fmtPct(stats.avgHitPercent);
+      tokensEl.textContent = fmtTokens(stats.sessionTokens);
+      durationEl.textContent = fmtDuration(stats.durationMinutes);
+
+      const cache = Math.max(0, Number(stats.sumCacheRead) || 0);
+      const input = Math.max(0, Number(stats.sumInput) || 0);
+      const output = Math.max(0, (Number(stats.sumOutput) || 0) + (Number(stats.sumReasoning) || 0));
+      const total = cache + input + output || 1;
+      compTotalEl.textContent = fmtTokens(cache + input + output);
+      compTrackEl.querySelector(".cache").style.width = (cache / total) * 100 + "%";
+      compTrackEl.querySelector(".input").style.width = (input / total) * 100 + "%";
+      compTrackEl.querySelector(".output").style.width = (output / total) * 100 + "%";
+      metaEl.textContent = "";
+      requestAnimationFrame(() => hana.ui.resize({ height: Math.ceil(root.scrollHeight + 8) }));
+
       dot.classList.remove("pulse");
       void dot.offsetWidth;
       dot.classList.add("pulse");
     } catch (e) {
       dot.className = "dot err";
       modelEl.textContent = "数据不可用";
-      metricsEl.innerHTML = "";
+      titleEl.textContent = "无法读取当前会话";
       metaEl.innerHTML = `<span class="err-text">${esc(e.message || e)}</span>`;
     }
   }
 
+  function onHostContext(evt) {
+    if (evt.source !== window.parent) return;
+    const origin = targetOrigin();
+    if (origin !== "*" && evt.origin !== origin) return;
+    const msg = evt.data || {};
+    if (msg.type !== "hana.host.context") return;
+    const nextFile = sessionFileFromPath(msg.payload?.sessionPath);
+    if (!nextFile || nextFile === activeSessionFile) return;
+    activeSessionFile = nextFile;
+    tick();
+  }
+
+  window.addEventListener("message", onHostContext);
   await tick();
   setInterval(tick, 30000);
 }
@@ -555,6 +702,26 @@ async function renderPage() {
   let selectedFile = null; // 当前选中的会话
   let lastStats = null; // 最近一次统计（图表放大用）
   let lastLedger = null; // 全局用量总览数据（放大详情用）
+
+  // 宿主会话切换事件：必须在首个 await 之前同步注册，否则宿主 ready 消息早于监听器而丢失
+  function sessionFileFromPath(sessionPath) {
+    if (typeof sessionPath !== "string" || !sessionPath.trim()) return null;
+    const name = sessionPath.trim().replace(/\\/g, "/").split("/").pop();
+    return name && name.endsWith(".jsonl") ? name : null;
+  }
+  function onHostContext(evt) {
+    if (evt.source !== window.parent) return;
+    const origin = targetOrigin();
+    if (origin !== "*" && evt.origin !== origin) return;
+    const msg = evt.data || {};
+    if (msg.type !== "hana.host.context") return;
+    const file = sessionFileFromPath(msg.payload?.sessionPath);
+    if (!file || file === selectedFile) return;
+    selectedFile = file;
+    setSelected(file);
+    loadData(file);
+  }
+  window.addEventListener("message", onHostContext);
 
   const PROVIDER_CN = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini", "openai-codex": "ChatGPT Plus / Pro", "xai-oauth": "xAI Grok" };
   // 供应商列表：默认兜底，打开插件时从 HanaAgent 的 models.json 动态同步（含 API Key 与 OAuth）
@@ -1580,7 +1747,7 @@ async function renderPage() {
   });
 
   // 卡片按下回弹动效：mousedown 压缩，mouseup/移出回弹（带 overshoot）
-  const cardSel = ".hm, .chart-card, .ua-pie, .lg-cell";
+  const cardSel = ".hm, .chart-card, .ua-pie, .lg-cell, .w-overview, .w-metric, .w-provider-row";
   const pressCard = (el) => {
     if (el.classList.contains("ua-disabled")) return;
     el.classList.remove("si-release");
@@ -1645,7 +1812,7 @@ function ensureGlowSpot(card) {
 
 /* ── 文字提亮位置缓存：消除 mousemove 时逐元素 getBoundingClientRect 的 layout thrash ── */
 let glowCache = null;
-const GLOW_SEL = ".hm .hml, .hm .hmv, h3, .legend span, .ua-t, .ua-pv, .ua-pv-num, .ua-lg span, .ua-detail span, .ctx-labels span, .ctx-note, .lg-t, .lg-sub, .ab-n, .ab-v, .foot-file, .fb-li, .model, .bar-metrics b, .bar-metrics .bal";
+const GLOW_SEL = ".hm .hml, .hm .hmv, h3, .legend span, .ua-t, .ua-pv, .ua-pv-num, .ua-lg span, .ua-detail span, .ctx-labels span, .ctx-note, .lg-t, .lg-sub, .ab-n, .ab-v, .foot-file, .fb-li, .model, .w-title, .w-turns, .w-money-row span, .w-money-row b, .w-section-head span, .w-section-head b, .w-context-note, .w-metric span, .w-metric b, .w-legend span, .w-provider-share span, .w-provider-name strong, .w-provider-name span, .w-provider-stat span, .w-provider-stat b";
 function buildGlowCache(card) {
   const r = card.getBoundingClientRect();
   const els = card.querySelectorAll(GLOW_SEL);
@@ -1666,7 +1833,7 @@ function invalidateGlowCache() {
 }
 
 function initGlow(container) {
-  const selector = ".hm, .chart-card, .bar, .foot";
+  const selector = ".hm, .chart-card, .bar, .foot, .w-overview, .w-metric, .w-provider-row";
   let raf = null;
   let mx = 0, my = 0;
   container.addEventListener("mousemove", (e) => {
@@ -1709,7 +1876,7 @@ function initGlow(container) {
 
 if (surface === "widget") {
   renderWidget();
-  hana.ui.resize({ height: 96 });
+  hana.ui.resize({ height: 760 });
 } else {
   renderPage();
   hana.ui.resize({ height: 900 });
