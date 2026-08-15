@@ -516,6 +516,39 @@ async function fetchJson(path) {
   return res.json();
 }
 
+/* 纯插件主题同步：通过插件后端读取 user/preferences.json，不依赖宿主 renderer。 */
+function initAppearancePolling() {
+  let busy = false;
+  const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+  const sync = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      const appearance = await fetchJson("/api/appearance");
+      const configured = String(appearance?.theme || "").trim();
+      if (!configured) return;
+      const resolved = configured === "auto"
+        ? (media?.matches ? "midnight" : "warm-paper")
+        : configured;
+      applyHostTheme(resolved);
+    } catch {
+      // 旧版宿主或文件不可读时，继续使用 URL / postMessage / parent 兜底。
+    } finally {
+      busy = false;
+    }
+  };
+  sync();
+  const timer = window.setInterval(sync, 500);
+  const onSystemTheme = () => sync();
+  media?.addEventListener?.("change", onSystemTheme);
+  window.addEventListener("beforeunload", () => {
+    window.clearInterval(timer);
+    media?.removeEventListener?.("change", onSystemTheme);
+  }, { once: true });
+}
+
+initAppearancePolling();
+
 function showUpdateNotice(title, message, buttonLabel = "知道了") {
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
