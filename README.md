@@ -2,9 +2,9 @@
 
 # Session Insight
 
-### 把 HanaAgent 的 Token、缓存、费用和供应商余额放进一张面板的插件
+### 把 HanaAgent 的 Token、缓存、费用和供应商余额放进一张面板
 
-无需上传会话内容。插件在本机读取 HanaAgent 会话记录，按轮次还原 Token 使用、缓存命中和模型费用，并提供常驻状态侧边栏与完整分析页。
+无需上传会话内容。插件在本机读取 HanaAgent 会话记录，按轮次还原 Token 使用、缓存命中和模型费用，并提供常驻状态条与完整分析页。
 
 [![Latest Release](https://img.shields.io/github/v/release/youyongdemao/HanaAgent-session-insight?display_name=tag&style=flat-square&color=2563eb)](https://github.com/youyongdemao/HanaAgent-session-insight/releases/latest)
 [![License](https://img.shields.io/github/license/youyongdemao/HanaAgent-session-insight?style=flat-square)](./LICENSE)
@@ -14,31 +14,48 @@
 
 </div>
 
+## 界面一览
+
 ![Session Insight 完整面板](docs/screenshots/session-insight-overview.png)
 
-> 截图来自插件在 Windows 上的实际渲染。数值取自本机会话数据快照，仅用于展示界面与统计能力。
+完整分析页覆盖会话指标、余额、上下文占用、用量分析与全局用量总览。
 
-## 它能看什么
+## 深浅色主题
 
-- 当前会话的总 Token、本轮 Token、轮数与运行时长
-- 缓存命中率、输入构成和上下文窗口占用
-- 按每轮实际模型价格累计的会话费用与全局消费
-- DeepSeek、Moonshot 的可用余额，以及其他供应商不支持余额查询的原因
-- 混用模型会话的模型分布、主模型和逐轮费用
-- 可点击放大的 Token、命中率、费用与输入构成图表
-- 常驻 widget 状态条，快速查看当前模型和关键指标
+![Session Insight 浅色模式](docs/screenshots/session-insight-light.png)
 
-## 图表明细
+自动跟随 HanaAgent 的明暗主题，深色与浅色两套配色无缝切换。
 
-![Session Insight 图表明细](docs/screenshots/session-insight-charts.png)
+## 图表分析
 
-每个数据点对应一次模型调用。你可以用它定位上下文突然增长、缓存失效或单轮费用异常的时刻。
+![Session Insight 四宫格图表](docs/screenshots/session-insight-charts.png)
+
+每轮 Token、缓存命中率趋势、每轮费用、输入构成四类图表同屏对比，每个数据点对应一次模型调用。
+
+## 点开卡片查看详情
+
+点击图表卡片可放大查看单指标走势，会话模型分布也有独立详情视图。
+
+![缓存命中率放大](docs/screenshots/session-insight-detail-hitrate.png)
+
+![会话模型分布](docs/screenshots/session-insight-detail-model.png)
 
 ## 常驻状态条
 
 ![Session Insight widget](docs/screenshots/session-insight-widget.png)
 
 widget 适合挂在 HanaAgent 侧边栏。无需打开完整面板，也能查看当前模型、上下文占用、Token、费用和命中率。
+
+## 它能看什么
+
+- 会话级用量指标：总 Token、本轮 Token、轮数与运行时长
+- 上下文窗口占用：环形占比与进度条双重展示
+- 缓存命中率、输入构成（未命中 / 缓存命中 / 输出）
+- 按每轮实际模型价格累计的会话费用与全局消费
+- DeepSeek、Moonshot 的可用余额，以及其他供应商不支持余额查询的原因
+- 混用模型会话的模型分布、主模型归属与逐轮费用
+- 全局用量总览：Agent 消耗、每日费用趋势、请求延迟分布、模型费用对比
+- 可点击放大的图表卡片与模型分布详情
 
 ## 安装
 
