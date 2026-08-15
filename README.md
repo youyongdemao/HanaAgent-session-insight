@@ -17,8 +17,8 @@
 ## 界面一览
 
 <p align="center">
-  <img src="docs/screenshots/session-insight-overview.png" width="360" alt="深色模式">
   <img src="docs/screenshots/session-insight-light.png" width="360" alt="浅色模式">
+  <img src="docs/screenshots/session-insight-overview.png" width="360" alt="深色模式">
 </p>
 
 完整分析页覆盖会话指标、余额、上下文占用、用量分析与全局用量总览。深色与浅色主题自动跟随 HanaAgent 的明暗模式切换。
