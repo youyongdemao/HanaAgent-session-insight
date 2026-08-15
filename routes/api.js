@@ -216,13 +216,13 @@ const BALANCE_ADAPTERS = {
 
 // 无公开余额接口的供应商说明
 const NO_BALANCE_API = {
-  mimo: "余额接口未开放",
-  zhipu: "余额接口未开放",
-  agnes: "余额接口未开放",
-  openai: "官方无余额查询",
-  gemini: "按计费账户计费",
-  "openai-codex": "ChatGPT Plus / Pro 订阅账户",
-  "xai-oauth": "xAI Grok OAuth 账户",
+  mimo: "无公开接口，本地估算",
+  zhipu: "按量账户无余额接口",
+  agnes: "无公开接口，可导出 CSV",
+  openai: "需配置 OpenAI Admin Key",
+  gemini: "无余额 API，本地估算",
+  "openai-codex": "实验性配额未启用",
+  "xai-oauth": "Grok 订阅无公开接口",
 };
 
 function getSessionsDir(ctx) {
@@ -525,6 +525,200 @@ async function installRelease(ctx, release) {
   }
 }
 
+const externalStatusCache = new Map();
+
+function cachedExternalStatus(key, ttlMs) {
+  const cached = externalStatusCache.get(key);
+  return cached && Date.now() - cached.at < ttlMs ? cached.data : null;
+}
+
+function storeExternalStatus(key, data) {
+  externalStatusCache.set(key, { at: Date.now(), data });
+  return data;
+}
+
+function configValue(ctx, key) {
+  try {
+    const value = ctx.config?.get?.(key);
+    return typeof value === "string" ? value.trim() : value;
+  } catch {
+    return null;
+  }
+}
+
+async function requestJson(fetchFn, url, init = {}, timeoutMs = 10000) {
+  const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  const text = await response.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch {}
+  return { ok: response.ok, status: response.status, data };
+}
+
+async function queryZhipuQuota(ctx, fetchFn, catalog) {
+  const provider = catalog?.providers?.zhipu;
+  if (!provider?.api_key) return null;
+  const endpoints = [
+    "https://api.z.ai/api/monitor/usage/quota/limit",
+    "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
+  ];
+  for (const url of endpoints) {
+    try {
+      const result = await requestJson(fetchFn, url, {
+        headers: { Authorization: provider.api_key, Accept: "application/json" },
+      });
+      const payload = result.data?.data;
+      const limits = Array.isArray(payload?.limits) ? payload.limits : [];
+      if (!result.ok || result.data?.success === false || !limits.length) continue;
+      const windows = limits.map((item) => {
+        const used = Number(item?.percentage ?? item?.usedPercent ?? 0);
+        return {
+          type: String(item?.type || "quota"),
+          usedPercent: Math.max(0, Math.min(100, used)),
+          remainingPercent: Math.max(0, Math.min(100, 100 - used)),
+          resetAt: item?.nextResetTime || item?.resetAt || null,
+        };
+      });
+      const primary = windows.find((item) => item.type === "TOKENS_LIMIT") || windows[0];
+      return {
+        provider: "zhipu",
+        name: "智谱 Coding Plan",
+        status: "ok",
+        kind: "quota",
+        label: "套餐剩余",
+        summary: `${primary.remainingPercent.toFixed(0)}%`,
+        remainingPercent: primary.remainingPercent,
+        resetAt: primary.resetAt,
+        windows,
+        plan: payload?.level || null,
+      };
+    } catch {}
+  }
+  return null;
+}
+
+async function queryOpenAICosts(ctx, fetchFn) {
+  const key = configValue(ctx, "openaiAdminKey");
+  if (!key) return null;
+  const cached = cachedExternalStatus("openai-costs", 300000);
+  if (cached) return cached;
+  const start = Math.floor(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1) / 1000);
+  try {
+    const result = await requestJson(fetchFn, `https://api.openai.com/v1/organization/costs?start_time=${start}&bucket_width=1d&limit=31`, {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+    }, 15000);
+    if (!result.ok || !Array.isArray(result.data?.data)) return null;
+    let total = 0;
+    let currency = "USD";
+    for (const bucket of result.data.data) {
+      for (const item of bucket?.results || []) {
+        const amount = item?.amount;
+        if (amount?.value != null) total += Number(amount.value) || 0;
+        if (amount?.currency) currency = String(amount.currency).toUpperCase();
+      }
+    }
+    return storeExternalStatus("openai-costs", {
+      provider: "openai",
+      name: "OpenAI API",
+      status: "ok",
+      kind: "cost",
+      label: "本月官方成本",
+      summary: `${currency === "USD" ? "$" : ""}${total.toFixed(2)}`,
+      total,
+      currency,
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function queryXaiBalance(ctx, fetchFn) {
+  const key = configValue(ctx, "xaiManagementKey");
+  const teamId = configValue(ctx, "xaiTeamId");
+  if (!key || !teamId) return null;
+  const cacheKey = `xai-balance:${teamId}`;
+  const cached = cachedExternalStatus(cacheKey, 300000);
+  if (cached) return cached;
+  try {
+    const url = `https://management-api.x.ai/v1/billing/teams/${encodeURIComponent(teamId)}/prepaid/balance`;
+    const result = await requestJson(fetchFn, url, {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+    }, 15000);
+    if (!result.ok) return null;
+    const raw = result.data?.total?.val ?? result.data?.total?.value ?? result.data?.total;
+    const cents = Number(raw);
+    if (!Number.isFinite(cents)) return null;
+    const total = Math.abs(cents) / 100;
+    return storeExternalStatus(cacheKey, {
+      provider: "xai",
+      name: "xAI API",
+      status: "ok",
+      kind: "balance",
+      label: "预付余额",
+      summary: `$${total.toFixed(2)}`,
+      total,
+      currency: "USD",
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function queryCodexQuota(ctx, fetchFn) {
+  if (configValue(ctx, "enableCodexQuota") !== true) return null;
+  const auth = readAuthConfig(ctx)?.["openai-codex"];
+  if (!auth?.access) return null;
+  const cacheKey = `codex-quota:${auth.accountId || "default"}`;
+  const cached = cachedExternalStatus(cacheKey, 300000);
+  if (cached) return cached;
+  try {
+    const headers = {
+      Authorization: `Bearer ${auth.access}`,
+      Accept: "application/json",
+      "OpenAI-Beta": "codex-1",
+      originator: "Codex Desktop",
+    };
+    if (auth.accountId) headers["ChatGPT-Account-ID"] = auth.accountId;
+    const result = await requestJson(fetchFn, "https://chatgpt.com/backend-api/wham/usage", { headers }, 12000);
+    if (!result.ok || !result.data) return null;
+    const rate = result.data.rate_limit || result.data.rateLimit || result.data;
+    const normalizeWindow = (window, name) => {
+      if (!window || typeof window !== "object") return null;
+      const used = Number(window.used_percent ?? window.usedPercent);
+      if (!Number.isFinite(used)) return null;
+      return {
+        name,
+        usedPercent: Math.max(0, Math.min(100, used)),
+        remainingPercent: Math.max(0, Math.min(100, 100 - used)),
+        resetAt: window.reset_at ?? window.resets_at ?? window.resetsAt ?? null,
+        windowSeconds: window.limit_window_seconds ?? window.window_seconds ?? null,
+      };
+    };
+    const windows = [
+      normalizeWindow(rate.primary_window || rate.primaryWindow || rate.five_hour, "主窗口"),
+      normalizeWindow(rate.secondary_window || rate.secondaryWindow || rate.weekly, "周窗口"),
+    ].filter(Boolean);
+    if (!windows.length) return null;
+    const limiting = windows.reduce((min, item) => item.remainingPercent < min.remainingPercent ? item : min, windows[0]);
+    const credits = Number(result.data?.credits?.balance ?? result.data?.credit_balance);
+    return storeExternalStatus(cacheKey, {
+      provider: "openai-codex",
+      name: "ChatGPT Codex",
+      status: "ok",
+      kind: "quota",
+      label: "订阅配额",
+      summary: `${limiting.remainingPercent.toFixed(0)}%`,
+      remainingPercent: limiting.remainingPercent,
+      resetAt: limiting.resetAt,
+      windows,
+      credits: Number.isFinite(credits) ? credits : null,
+      plan: result.data?.plan_type || result.data?.planType || null,
+      experimental: true,
+    });
+  } catch {
+    return null;
+  }
+}
+
 export default function registerPluginApiRoutes(app, ctx) {
   // 纯插件主题源：读取 HanaAgent 持久化外观偏好，不依赖 renderer 补丁
   app.get("/api/appearance", (c) => {
@@ -689,7 +883,16 @@ app.get("/api/balance", async (c) => {
             }
             const parsed = adapter.parse(data);
             if (parsed) {
-              return { provider, name: adapter.name, status: "ok", ...parsed };
+              const symbol = parsed.currency === "USD" ? "$" : "¥";
+              return {
+                provider,
+                name: adapter.name,
+                status: "ok",
+                kind: "balance",
+                label: "可用余额",
+                summary: `${symbol}${Number(parsed.total).toFixed(2)}`,
+                ...parsed,
+              };
             }
             return { provider, name: adapter.name, status: "parse_failed", detail: text.slice(0, 100) };
           } catch (e) {
@@ -699,12 +902,26 @@ app.get("/api/balance", async (c) => {
         })()
       );
     }
-    const balances = await Promise.all(tasks);
-    // 未接入的供应商
+    tasks.push(queryZhipuQuota(ctx, fetchFn, catalog));
+    tasks.push(queryOpenAICosts(ctx, fetchFn));
+    tasks.push(queryXaiBalance(ctx, fetchFn));
+    tasks.push(queryCodexQuota(ctx, fetchFn));
+
+    const balances = (await Promise.all(tasks)).filter(Boolean);
+    const okProviders = new Set(balances.filter((item) => item.status === "ok").map((item) => item.provider));
     const unsupported = [];
     const activeIds = new Set(computeActiveProviders(ctx).providers.map((p) => p.id));
-    for (const [provider, note] of Object.entries(NO_BALANCE_API)) {
-      if (activeIds.has(provider)) unsupported.push({ provider, note });
+    if (configValue(ctx, "xaiManagementKey") && configValue(ctx, "xaiTeamId")) activeIds.add("xai");
+    for (const [provider, defaultNote] of Object.entries(NO_BALANCE_API)) {
+      if (!activeIds.has(provider) || okProviders.has(provider)) continue;
+      let note = defaultNote;
+      if (provider === "zhipu") note = "当前账户非 Coding Plan 或配额不可用";
+      if (provider === "openai" && configValue(ctx, "openaiAdminKey")) note = "Admin Costs 查询失败";
+      if (provider === "openai-codex" && configValue(ctx, "enableCodexQuota") === true) note = "实验性配额暂不可用";
+      unsupported.push({ provider, note });
+    }
+    if (activeIds.has("xai") && !okProviders.has("xai")) {
+      unsupported.push({ provider: "xai", note: "Management Key 或 Team ID 无效" });
     }
     balanceCache = { at: now, data: { balances, unsupported } };
     return c.json(balanceCache.data);
@@ -738,6 +955,8 @@ app.get("/api/balance", async (c) => {
       "aistudio.google.com",
       "chatgpt.com",
       "grok.com",
+      "console.x.ai",
+      "github.com",
     ];
     try {
       const u = new URL(url);
