@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- **多供应商余额总览**：DeepSeek / Moonshot / MiMo / 智谱 / Agnes / OpenAI / Gemini 等并行查询余额，60s 缓存（官方接口持续更新）
+- **多供应商账户状态**：DeepSeek / Moonshot 真实余额、智谱 Coding Plan 配额、OpenAI 官方成本、xAI API 预付余额和可选 Codex 订阅配额
 - **会话级用量指标**：总 Token、缓存命中率、会话费用、轮数、运行时长
 - **图表分析**：每轮 Token / 缓存命中率趋势 / 每轮费用 / 输入构成（未命中·缓存·输出），全部支持点击放大
 - **混用模型会话识别**：自动统计会话内模型分布、主模型归属，会话费用按每轮实际模型价格累计
@@ -26,7 +26,13 @@
 |-------|------|------|
 | `sessionsDir` | Hana 会话 JSONL 目录 | Hana 自带 `agents/<agent>/sessions` |
 | `deepseekApiKey` | DeepSeek API Key（余额查询，留空自动读 provider-catalog） | 空 |
+| `openaiAdminKey` | OpenAI Organization Admin Key，用于官方 Usage / Costs | 空 |
+| `xaiManagementKey` | xAI Management Key，用于团队账单接口 | 空 |
+| `xaiTeamId` | xAI Team ID，与 Management Key 配套 | 空 |
+| `enableCodexQuota` | 启用实验性 ChatGPT/Codex 订阅配额查询 | 关闭 |
 | `refreshSeconds` | widget 状态条自动刷新间隔 | 30 |
+
+账户数据分为四种口径：真实余额、官方累计成本、订阅配额和本地估算。管理凭据只在后端读取，不会发送到插件 iframe。Codex 配额使用未公开接口，启用后最多每五分钟查询一次。
 
 ## 目录结构
 
