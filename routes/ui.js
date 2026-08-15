@@ -7,12 +7,15 @@ function renderShell(c, ctx, surface) {
   const hanaCss = c.req.query("hana-css") || "";
   const theme = c.req.query("hana-theme") || "inherit";
   const token = c.req.query("token") || "";
+  const hot = c.req.query("hot") || "";
   const base = `/api/plugins/${encodeURIComponent(ctx.pluginId)}`;
   const title = "会话用量";
   const withToken = (url) => {
     let u = url;
     if (token) u += `${u.includes("?") ? "&" : "?"}${new URLSearchParams({ token })}`;
-    return u + `${u.includes("?") ? "&" : "?"}si_v=1.1.0`;
+    u += `${u.includes("?") ? "&" : "?"}si_v=1.1.1`;
+    if (hot) u += `&${new URLSearchParams({ hot })}`;
+    return u;
   };
   const panelCss = withToken(`${base}/assets/panel.css`);
   const panelJs = withToken(`${base}/assets/panel.js`);
