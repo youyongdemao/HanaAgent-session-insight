@@ -39,7 +39,10 @@
 
 ## 常驻状态条
 
-<p align="center"><img src="docs/screenshots/session-insight-widget.png" width="280" alt="Session Insight widget"></p>
+<p align="center">
+  <img src="docs/screenshots/session-insight-widget.png" width="280" alt="浅色模式">
+  <img src="docs/screenshots/session-insight-widget-dark.png" width="280" alt="深色模式">
+</p>
 
 widget 适合挂在 HanaAgent 侧边栏。无需打开完整面板，也能查看当前模型、上下文占用、Token、费用和命中率。
 
