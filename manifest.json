@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "session-insight",
   "name": "Session Insight",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "会话用量可视化：tokens、缓存命中率、费用、余额，widget 常驻状态条 + 图表页。",
   "minAppVersion": "0.159.0",
   "trust": "full-access",
