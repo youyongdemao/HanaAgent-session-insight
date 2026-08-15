@@ -2,9 +2,9 @@
 
 # Session Insight
 
-### 把 HanaAgent 的 Token、缓存、费用和供应商余额放进一张面板
+### 把 HanaAgent 的 Token、缓存、费用和供应商余额放进一张面板的插件
 
-无需上传会话内容。插件在本机读取 HanaAgent 会话记录，按轮次还原 Token 使用、缓存命中和模型费用，并提供常驻状态条与完整分析页。
+无需上传会话内容。插件在本机读取 HanaAgent 会话记录，按轮次还原 Token 使用、缓存命中和模型费用，并提供常驻状态侧边栏与完整分析页。
 
 [![Latest Release](https://img.shields.io/github/v/release/youyongdemao/HanaAgent-session-insight?display_name=tag&style=flat-square&color=2563eb)](https://github.com/youyongdemao/HanaAgent-session-insight/releases/latest)
 [![License](https://img.shields.io/github/license/youyongdemao/HanaAgent-session-insight?style=flat-square)](./LICENSE)
