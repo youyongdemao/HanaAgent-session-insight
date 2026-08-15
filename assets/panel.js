@@ -106,6 +106,76 @@ const hana = {
 const root = document.getElementById("root");
 const surface = root?.dataset.surface || "page";
 
+/* ── 宿主主题同步：iframe 不重载时也实时跟随 HanaAgent ── */
+function applyHostTheme(theme) {
+  const raw = typeof theme === "string" ? theme.trim() : "";
+  const next = raw && raw !== "inherit" && raw !== "auto" ? raw : "warm-paper";
+  if (document.documentElement.dataset.theme !== next) document.documentElement.dataset.theme = next;
+  if (document.body.dataset.hanaTheme !== next) document.body.dataset.hanaTheme = next;
+}
+
+function initHostThemeSync() {
+  const initial = new URLSearchParams(window.location.search).get("hana-theme")
+    || document.body.dataset.hanaTheme
+    || "warm-paper";
+  applyHostTheme(initial);
+
+  try {
+    const hostWindow = window.parent;
+    const hostDocument = hostWindow.document;
+    const hostRoot = hostDocument.documentElement;
+    const media = hostWindow.matchMedia?.("(prefers-color-scheme: dark)");
+
+    const readHostTheme = () => {
+      // 用户在设置里选择的主题优先；避免宿主切换过程中 data-theme 短暂保留旧值。
+      const saved = hostWindow.localStorage?.getItem("hana-theme")?.trim();
+      if (saved && saved !== "auto") return saved;
+      if (saved === "auto") return media?.matches ? "midnight" : "warm-paper";
+      const attr = hostRoot.getAttribute("data-theme")?.trim()
+        || hostDocument.body?.getAttribute("data-theme")?.trim();
+      if (attr) return attr;
+      return initial && initial !== "inherit" ? initial : "warm-paper";
+    };
+
+    const sync = () => applyHostTheme(readHostTheme());
+    sync();
+
+    const observer = new MutationObserver(sync);
+    observer.observe(hostRoot, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+    if (hostDocument.body) {
+      observer.observe(hostDocument.body, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+    }
+    hostWindow.addEventListener("storage", sync);
+    hostWindow.addEventListener("hana-settings", sync);
+    media?.addEventListener?.("change", sync);
+    const timer = hostWindow.setInterval(sync, 500);
+
+    window.addEventListener("beforeunload", () => {
+      observer.disconnect();
+      hostWindow.removeEventListener("storage", sync);
+      hostWindow.removeEventListener("hana-settings", sync);
+      media?.removeEventListener?.("change", sync);
+      hostWindow.clearInterval(timer);
+    }, { once: true });
+  } catch {
+    // 跨域或宿主限制时保留 URL 初始主题，不影响插件加载
+  }
+}
+
+initHostThemeSync();
+
+// 真实插件 iframe 可能与宿主跨域；以宿主 postMessage 为权威主题源。
+function onHostThemeMessage(evt) {
+  if (evt.source !== window.parent) return;
+  const origin = targetOrigin();
+  if (origin !== "*" && evt.origin !== origin) return;
+  const msg = evt.data || {};
+  if (msg.type !== "hana.host.theme" && msg.type !== "hana.host.context") return;
+  const theme = msg.payload?.theme;
+  if (typeof theme === "string" && theme.trim()) applyHostTheme(theme);
+}
+window.addEventListener("message", onHostThemeMessage);
+
 /* ── SVG 图表（零依赖手绘） ───────────────────────────── */
 
 function esc(s) {
@@ -446,6 +516,32 @@ async function fetchJson(path) {
   return res.json();
 }
 
+function showUpdateNotice(title, message, buttonLabel = "知道了") {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "si-update-overlay";
+    overlay.innerHTML = `
+      <div class="si-update-dialog" role="dialog" aria-modal="true" aria-labelledby="siUpdateTitle">
+        <div class="si-update-mark">↻</div>
+        <h3 id="siUpdateTitle">${esc(title)}</h3>
+        <p>${esc(message)}</p>
+        <button type="button" class="ghost si-update-confirm">${esc(buttonLabel)}</button>
+      </div>`;
+    const close = () => {
+      overlay.classList.add("closing");
+      window.setTimeout(() => overlay.remove(), 180);
+      resolve();
+    };
+    overlay.querySelector(".si-update-confirm")?.addEventListener("click", close, { once: true });
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) close();
+    });
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => overlay.classList.add("open"));
+    overlay.querySelector("button")?.focus();
+  });
+}
+
 const getStats = (file) => fetchJson("/api/stats" + (file ? `?file=${encodeURIComponent(file)}` : ""));
 const getBalance = () => fetchJson("/api/balance");
 const getSessions = () => fetchJson("/api/sessions");
@@ -667,6 +763,7 @@ async function renderPage() {
         <div class="sel-pop" id="selPop"></div>
       </div>
       <button class="ghost" id="refreshBtn" type="button"><span class="btn-ic" id="btnIc">↻</span><span class="btn-tx" id="btnTx">刷新</span></button>
+      <button class="ghost update-check-btn" id="updateCheckBtn" type="button" title="检查 Session Insight 更新"><span class="btn-ic" id="updateCheckIc">⇧</span><span class="btn-tx" id="updateCheckTx">检查更新</span></button>
       <span class="spacer"></span>
       <span class="badge ok" id="balBadge">总消费 –</span>
     </div>
@@ -694,12 +791,13 @@ async function renderPage() {
   const selPop = document.getElementById("selPop");
   const selText = document.getElementById("selText");
   const refreshBtn = document.getElementById("refreshBtn");
+  const updateCheckBtn = document.getElementById("updateCheckBtn");
   const foot = document.getElementById("foot");
   let acctOpen = true; // 其他账户菜单默认展开
   let bbOpen = false; // 主余额供应商切换下拉
   let lastBalance = null;
-  let viewProvider = null; // 手动切换的供应商视图
-  let selectedFile = null; // 当前选中的会话
+  let viewProvider = sessionStorage.getItem("si-hot-view-provider") || null; // 热更新后恢复供应商视图
+  let selectedFile = sessionStorage.getItem("si-hot-selected-file") || null; // 热更新后恢复会话
   let lastStats = null; // 最近一次统计（图表放大用）
   let lastLedger = null; // 全局用量总览数据（放大详情用）
 
@@ -1658,6 +1756,56 @@ async function renderPage() {
   );
   root.addEventListener("pointerdown", () => root.focus());
   root.focus();
+  updateCheckBtn.addEventListener("click", async () => {
+    updateCheckBtn.disabled = true;
+    updateCheckBtn.classList.add("loading");
+    const ic = document.getElementById("updateCheckIc");
+    const tx = document.getElementById("updateCheckTx");
+    if (ic) ic.textContent = "↻";
+    if (tx) tx.textContent = "检查中";
+
+    try {
+      const info = await fetchJson("/api/check-update");
+      if (!info.updateAvailable) {
+        await showUpdateNotice("已是最新版本", `当前版本 v${info.currentVersion || "未知"}`);
+        return;
+      }
+      if (!info.hasInstallAsset) throw new Error("新版 Release 中没有找到 ZIP 安装包");
+
+      await showUpdateNotice(
+        `检查到新版本 v${info.latestVersion}`,
+        `当前版本 v${info.currentVersion}，关闭提示后开始热更新。`,
+        "开始更新"
+      );
+
+      if (selectedFile) sessionStorage.setItem("si-hot-selected-file", selectedFile);
+      else sessionStorage.removeItem("si-hot-selected-file");
+      if (viewProvider) sessionStorage.setItem("si-hot-view-provider", viewProvider);
+      else sessionStorage.removeItem("si-hot-view-provider");
+      if (tx) tx.textContent = "更新中";
+
+      const response = await hana.api.fetch("/api/apply-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: info.latestVersion }),
+        signal: AbortSignal.timeout(120000),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) throw new Error(result.error || `HTTP ${response.status}`);
+
+      const next = new URL(window.location.href);
+      next.searchParams.set("hot", Date.now().toString(36));
+      window.location.replace(next.toString());
+    } catch (error) {
+      await showUpdateNotice("检查更新失败", String(error?.message || error), "关闭");
+    } finally {
+      updateCheckBtn.disabled = false;
+      updateCheckBtn.classList.remove("loading");
+      if (ic) ic.textContent = "⇧";
+      if (tx) tx.textContent = "检查更新";
+    }
+  });
+
   refreshBtn.addEventListener("click", async () => {
     setLoading(true);
     try {
