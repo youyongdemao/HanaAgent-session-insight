@@ -182,6 +182,31 @@ function esc(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function providerStatusSummary(item) {
+  if (!item) return "–";
+  if (item.summary) return String(item.summary);
+  if (item.total != null) {
+    const symbol = item.currency === "USD" ? "$" : "¥";
+    return `${symbol}${Number(item.total).toFixed(2)}`;
+  }
+  return "–";
+}
+
+function providerStatusDetail(item, model) {
+  if (!item) return `当前模型：${model || "未知"}`;
+  const parts = [];
+  if (Array.isArray(item.windows)) {
+    for (const window of item.windows) {
+      const name = window.name || (window.type === "TOKENS_LIMIT" ? "Token" : window.type === "TIME_LIMIT" ? "时段" : "额度");
+      if (window.remainingPercent != null) parts.push(`${name}剩余 ${Number(window.remainingPercent).toFixed(0)}%`);
+    }
+  }
+  if (item.credits != null) parts.push(`Credits ${Number(item.credits).toFixed(2)}`);
+  if (item.plan) parts.push(String(item.plan));
+  if (!parts.length) parts.push(`当前模型：${model || "未知"}`);
+  return parts.join(" · ");
+}
+
 function gridLines(w, h, pad, n = 3) {
   let out = "";
   for (let g = 0; g < n; g++) {
@@ -725,7 +750,8 @@ async function renderWidget() {
           const uns = unsupported.find((u) => u.provider === p.provider);
           const oauth = p.provider === "openai-codex" || p.provider === "xai-oauth";
           const costText = p.cost == null ? (oauth ? "订阅制" : "未定价") : `${fmtCny(p.cost)}${p.costComplete === false ? "+" : ""}`;
-          const balanceText = bal ? fmtCny(bal.total, 2) : (oauth ? "订阅账户" : (uns ? "不可查询" : "–"));
+          const balanceText = bal ? providerStatusSummary(bal) : (oauth ? "订阅账户" : (uns ? "不可查询" : "–"));
+          const balanceLabel = bal?.label || "账户";
           const share = Math.max(0, Math.min(100, ((Number(p.tokens) || 0) / usedProviderTokens) * 100));
           return `<div class="w-provider-row" title="${esc((p.models || []).map((m) => `${m.model}：${m.turns} 轮`).join("\n"))}">` +
             `<div class="w-provider-share"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="w-share-track" cx="50" cy="50" r="42"></circle><circle class="w-share-progress" cx="50" cy="50" r="42" pathLength="100" style="stroke-dasharray:${share.toFixed(2)} ${(100 - share).toFixed(2)}"></circle></svg><span>${share >= 10 ? share.toFixed(0) : share.toFixed(1)}%</span></div>` +
@@ -733,7 +759,7 @@ async function renderWidget() {
             `<div class="w-provider-values">` +
               `<div class="w-provider-stat"><span>tokens</span><b>${fmtTokens(p.tokens || 0)}</b></div>` +
               `<div class="w-provider-stat"><span>费用</span><b>${costText}</b></div>` +
-              `<div class="w-provider-stat balance"><span>余额</span><b>${balanceText}</b></div>` +
+              `<div class="w-provider-stat balance"><span>${esc(balanceLabel)}</span><b>${esc(balanceText)}</b></div>` +
             `</div>` +
             `</div>`;
         }).join("");
@@ -797,6 +823,7 @@ async function renderPage() {
       </div>
       <button class="ghost" id="refreshBtn" type="button"><span class="btn-ic" id="btnIc">↻</span><span class="btn-tx" id="btnTx">刷新</span></button>
       <button class="ghost update-check-btn" id="updateCheckBtn" type="button" title="检查 Session Insight 更新"><span class="btn-ic" id="updateCheckIc">⇧</span><span class="btn-tx" id="updateCheckTx">检查更新</span></button>
+      <button class="ghost github-btn" id="githubBtn" type="button" title="打开 GitHub 仓库主页"><svg class="btn-ic gh-ic" viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg><span class="btn-tx">GitHub</span></button>
       <span class="spacer"></span>
       <span class="badge ok" id="balBadge">总消费 –</span>
     </div>
@@ -825,6 +852,7 @@ async function renderPage() {
   const selText = document.getElementById("selText");
   const refreshBtn = document.getElementById("refreshBtn");
   const updateCheckBtn = document.getElementById("updateCheckBtn");
+  const githubBtn = document.getElementById("githubBtn");
   const foot = document.getElementById("foot");
   let acctOpen = true; // 其他账户菜单默认展开
   let bbOpen = false; // 主余额供应商切换下拉
@@ -854,7 +882,7 @@ async function renderPage() {
   }
   window.addEventListener("message", onHostContext);
 
-  const PROVIDER_CN = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini", "openai-codex": "ChatGPT Plus / Pro", "xai-oauth": "xAI Grok" };
+  const PROVIDER_CN = { deepseek: "DeepSeek", moonshot: "Moonshot", mimo: "MiMo", zhipu: "智谱", agnes: "Agnes", openai: "OpenAI", gemini: "Gemini", "openai-codex": "ChatGPT Plus / Pro", "xai-oauth": "xAI Grok", xai: "xAI API" };
   // 供应商列表：默认兜底，打开插件时从 HanaAgent 的 models.json 动态同步（含 API Key 与 OAuth）
   let providerOrder = ["deepseek", "moonshot", "mimo", "zhipu", "agnes", "openai", "gemini"];
   function cycleProvider() {
@@ -1104,38 +1132,43 @@ async function renderPage() {
       return;
     }
     const ok = (balance.balances || []).filter((b) => b.status === "ok");
+    const unsupported = balance.unsupported || [];
     const current = ok.find((b) => b.provider === provider);
+    const currentUnsupported = unsupported.find((item) => item.provider === provider);
     const currentName = current ? current.name : (PROVIDER_CN[provider] || provider);
     const site = PROVIDER_SITES[provider] || "";
     const linkHtml = site ? `<span class="bb-link" data-site="${site}" title="跳转官网">→</span>` : "";
-    const balHtml = current
-      ? `<div class="bb-value"><span class="cnt" data-to="${current.total}" data-kind="cny">0</span></div>`
-      : `<div class="bb-value bb-na">余额接口未开放</div>`;
+    const valueHtml = current
+      ? `<div class="bb-value">${esc(providerStatusSummary(current))}</div>`
+      : `<div class="bb-value bb-na">${esc(currentUnsupported?.note || "暂无官方账户数据")}</div>`;
     const shortNote = {
-      mimo: "未开放",
-      zhipu: "未开放",
-      agnes: "未开放",
-      openai: "无余额查询",
-      gemini: "按计费账户",
-      "openai-codex": "订阅账户",
-      "xai-oauth": "OAuth 账户",
+      mimo: "本地估算",
+      zhipu: "按量账户",
+      agnes: "CSV 核对",
+      openai: "需 Admin Key",
+      gemini: "本地估算",
+      "openai-codex": "实验性",
+      "xai-oauth": "订阅账户",
+      xai: "需 Management Key",
     };
-    const opts = providerOrder.map((p) => {
+    const statusProviders = ok.map((item) => item.provider);
+    const optionProviders = [...new Set([...providerOrder, ...statusProviders])];
+    const opts = optionProviders.map((p) => {
       const nm = PROVIDER_CN[p] || p;
       const b = ok.find((x) => x.provider === p);
-      const note = b ? `¥${fmtNum(b.total)}` : (shortNote[p] || "");
+      const note = b ? providerStatusSummary(b) : (shortNote[p] || "");
       const active = p === provider ? " active" : "";
-      return `<button type="button" class="bb-opt${active}" data-provider="${p}"><span>${nm}</span><span class="bb-opt-note">${note}</span></button>`;
+      return `<button type="button" class="bb-opt${active}" data-provider="${p}"><span>${esc(nm)}</span><span class="bb-opt-note">${esc(note)}</span></button>`;
     }).join("");
     el.innerHTML =
       `<div class="bb-label" id="bbToggle" title="点击切换供应商">` +
-      `<span>${currentName} 可用余额</span>` +
+      `<span>${esc(currentName)} ${esc(current?.label || "账户状态")}</span>` +
       `<span class="bb-switch">${bbOpen ? "▴" : "▾"}</span>` +
       linkHtml +
       `</div>` +
       `<div class="bb-pop${bbOpen ? " open" : ""}" id="bbPop">${opts}</div>` +
-      balHtml +
-      `<div class="bb-note">当前模型：${esc(model || "未知")}</div>`;
+      valueHtml +
+      `<div class="bb-note">${esc(providerStatusDetail(current, model))}</div>`;
   }
 
   function renderHeroMetrics(stats) {
@@ -1197,6 +1230,7 @@ async function renderPage() {
     gemini: "https://aistudio.google.com",
     "openai-codex": "https://chatgpt.com",
     "xai-oauth": "https://grok.com",
+    xai: "https://console.x.ai",
   };
 
   function renderAcctMenu(balance, provider) {
@@ -1208,13 +1242,14 @@ async function renderPage() {
     const ok = (balance.balances || []).filter((b) => b.status === "ok");
     const unsupported = balance.unsupported || [];
     const shortNote = {
-      mimo: "余额接口未开放",
-      zhipu: "余额接口未开放",
-      agnes: "余额接口未开放",
-      openai: "无余额查询",
-      gemini: "按计费账户",
-      "openai-codex": "ChatGPT 订阅账户",
-      "xai-oauth": "Grok OAuth 账户",
+      mimo: "本地估算",
+      zhipu: "按量账户无余额",
+      agnes: "CSV 导出核对",
+      openai: "需 Admin Key",
+      gemini: "本地估算",
+      "openai-codex": "实验性配额未启用",
+      "xai-oauth": "Grok 订阅账户",
+      xai: "需 Management Key",
     };
     let html = `<button type="button" class="acct-toggle" id="acctToggle"><span class="tg-label">其他账户</span><span class="tg-count">${ok.length + unsupported.length}</span><span class="tg-arrow">${acctOpen ? "▴" : "▾"}</span></button>`;
     html += `<div class="acct-list${acctOpen ? " open" : ""}" id="acctList">`;
@@ -1223,11 +1258,10 @@ async function renderPage() {
       return `<button type="button" class="acct-btn${active}${dim ? " dim" : ""}" data-provider="${b.provider}"><span class="ab-n">${b.name}</span><span class="ab-v">${note}</span></button>`;
     };
     for (const b of ok) {
-      const hasSession = sessions.some((s) => MODEL_PROVIDER[s.model] === b.provider);
-      html += renderBtn(b, false, `¥${fmtNum(b.total)}`);
+      html += renderBtn(b, false, esc(providerStatusSummary(b)));
     }
     for (const u of unsupported) {
-      html += renderBtn({ provider: u.provider, name: PROVIDER_CN[u.provider] || u.provider }, true, esc(shortNote[u.provider] || u.note));
+      html += renderBtn({ provider: u.provider, name: PROVIDER_CN[u.provider] || u.provider }, true, esc(u.note || shortNote[u.provider]));
     }
     html += `</div>`;
     el.innerHTML = html;
@@ -1789,6 +1823,10 @@ async function renderPage() {
   );
   root.addEventListener("pointerdown", () => root.focus());
   root.focus();
+  githubBtn?.addEventListener("click", () => {
+    openExternal("https://github.com/youyongdemao/HanaAgent-session-insight");
+  });
+
   updateCheckBtn.addEventListener("click", async () => {
     updateCheckBtn.disabled = true;
     updateCheckBtn.classList.add("loading");
