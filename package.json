@@ -1,6 +1,6 @@
 {
   "name": "session-insight",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "type": "module",
   "description": "会话用量可视化：tokens、缓存命中率、费用、余额"
