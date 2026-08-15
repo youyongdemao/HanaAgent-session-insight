@@ -37,7 +37,7 @@
 
 <p align="center"><img src="docs/screenshots/session-insight-detail-model.png" width="520" alt="会话模型分布"></p>
 
-## 常驻状态条
+## 常驻侧边状态栏
 
 <p align="center">
   <img src="docs/screenshots/session-insight-widget.png" width="280" alt="浅色模式">
