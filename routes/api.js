@@ -171,6 +171,26 @@ function getProviderCatalogPath(ctx) {
   return PROVIDER_CATALOG;
 }
 
+function readAppearancePreference(ctx) {
+  const catalogPath = getProviderCatalogPath(ctx);
+  const candidates = [
+    catalogPath ? join(dirname(catalogPath), "user", "preferences.json") : null,
+    ctx.pluginDir ? join(dirname(dirname(ctx.pluginDir)), "user", "preferences.json") : null,
+    "D:\\AI\\Hanako\\user\\preferences.json",
+  ].filter(Boolean);
+  for (const file of [...new Set(candidates)]) {
+    try {
+      if (!existsSync(file)) continue;
+      const data = JSON.parse(readFileSync(file, "utf8"));
+      const theme = data?.appearance?.theme;
+      if (typeof theme === "string" && theme.trim()) {
+        return { theme: theme.trim(), source: "preferences" };
+      }
+    } catch {}
+  }
+  return { theme: null, source: "unavailable" };
+}
+
 // 供应商余额适配器：url 拼接 + 响应解析
 const BALANCE_ADAPTERS = {
   deepseek: {
@@ -483,6 +503,11 @@ async function installRelease(ctx, release) {
 }
 
 export default function registerPluginApiRoutes(app, ctx) {
+  // 纯插件主题源：读取 HanaAgent 持久化外观偏好，不依赖 renderer 补丁
+  app.get("/api/appearance", (c) => {
+    return c.json({ ok: true, ...readAppearancePreference(ctx) });
+  });
+
   // GitHub Release 更新检查
   app.get("/api/check-update", async (c) => {
     try {
