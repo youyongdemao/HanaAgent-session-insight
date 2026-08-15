@@ -402,16 +402,36 @@ function currentPluginVersion(ctx) {
   }
 }
 
-async function latestRelease() {
+function readGitHubToken(ctx) {
+  const catalogPath = getProviderCatalogPath(ctx);
+  const base = catalogPath ? dirname(catalogPath) : "D:\\AI\\Hanako";
+  const mcpConfig = join(base, "plugin-data", "mcp", "config.json");
+  try {
+    if (!existsSync(mcpConfig)) return null;
+    const cfg = JSON.parse(readFileSync(mcpConfig, "utf8"));
+    const connector = (cfg.global?.mcp?.connectors || []).find((item) => (item.id || "").toLowerCase() === "github");
+    return connector?.env?.GITHUB_PERSONAL_ACCESS_TOKEN || null;
+  } catch {
+    return null;
+  }
+}
+
+async function latestRelease(ctx) {
+  const token = readGitHubToken(ctx);
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "Session-Insight-Updater",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(UPDATE_REPO_API, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "Session-Insight-Updater",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
+    headers,
     signal: AbortSignal.timeout(15000),
   });
-  if (!response.ok) throw new Error(`GitHub HTTP ${response.status}`);
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(`GitHub HTTP ${response.status} ${text.slice(0, 300)}`);
+  }
   const release = await response.json();
   const version = normalizeVersion(release.tag_name || release.name);
   const asset = Array.isArray(release.assets)
@@ -459,8 +479,11 @@ async function installRelease(ctx, release) {
   mkdirSync(extractDir, { recursive: true });
   mkdirSync(dirname(backupDir), { recursive: true });
   try {
+    const downloadHeaders = { "User-Agent": "Session-Insight-Updater" };
+    const token = readGitHubToken(ctx);
+    if (token) downloadHeaders.Authorization = `Bearer ${token}`;
     const response = await fetch(release.asset.browser_download_url, {
-      headers: { "User-Agent": "Session-Insight-Updater" },
+      headers: downloadHeaders,
       redirect: "follow",
       signal: AbortSignal.timeout(60000),
     });
@@ -512,7 +535,7 @@ export default function registerPluginApiRoutes(app, ctx) {
   app.get("/api/check-update", async (c) => {
     try {
       const currentVersion = currentPluginVersion(ctx);
-      const release = await latestRelease();
+      const release = await latestRelease(ctx);
       return c.json({
         ok: true,
         currentVersion,
@@ -530,7 +553,7 @@ export default function registerPluginApiRoutes(app, ctx) {
   app.post("/api/apply-update", async (c) => {
     try {
       const requested = await c.req.json().catch(() => ({}));
-      const release = await latestRelease();
+      const release = await latestRelease(ctx);
       const currentVersion = currentPluginVersion(ctx);
       if (requested.version && normalizeVersion(requested.version) !== normalizeVersion(release.version)) {
         return c.json({ ok: false, error: "Latest Release 已变化，请重新检查更新" }, 409);
