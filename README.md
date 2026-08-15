@@ -16,19 +16,19 @@
 
 ## 界面一览
 
-![Session Insight 完整面板](docs/screenshots/session-insight-overview.png)
+<p align="center"><img src="docs/screenshots/session-insight-overview.png" width="520" alt="Session Insight 完整面板"></p>
 
 完整分析页覆盖会话指标、余额、上下文占用、用量分析与全局用量总览。
 
 ## 深浅色主题
 
-![Session Insight 浅色模式](docs/screenshots/session-insight-light.png)
+<p align="center"><img src="docs/screenshots/session-insight-light.png" width="520" alt="Session Insight 浅色模式"></p>
 
 自动跟随 HanaAgent 的明暗主题，深色与浅色两套配色无缝切换。
 
 ## 图表分析
 
-![Session Insight 四宫格图表](docs/screenshots/session-insight-charts.png)
+<p align="center"><img src="docs/screenshots/session-insight-charts.png" width="680" alt="Session Insight 四宫格图表"></p>
 
 每轮 Token、缓存命中率趋势、每轮费用、输入构成四类图表同屏对比，每个数据点对应一次模型调用。
 
@@ -36,13 +36,13 @@
 
 点击图表卡片可放大查看单指标走势，会话模型分布也有独立详情视图。
 
-![缓存命中率放大](docs/screenshots/session-insight-detail-hitrate.png)
+<p align="center"><img src="docs/screenshots/session-insight-detail-hitrate.png" width="520" alt="缓存命中率放大"></p>
 
-![会话模型分布](docs/screenshots/session-insight-detail-model.png)
+<p align="center"><img src="docs/screenshots/session-insight-detail-model.png" width="520" alt="会话模型分布"></p>
 
 ## 常驻状态条
 
-![Session Insight widget](docs/screenshots/session-insight-widget.png)
+<p align="center"><img src="docs/screenshots/session-insight-widget.png" width="280" alt="Session Insight widget"></p>
 
 widget 适合挂在 HanaAgent 侧边栏。无需打开完整面板，也能查看当前模型、上下文占用、Token、费用和命中率。
 
