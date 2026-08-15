@@ -1,7 +1,8 @@
 // routes/api.js — 会话统计 / 会话列表 / 多供应商余额
-import { readFileSync, readdirSync, statSync, existsSync, appendFileSync } from "node:fs";
-import { exec } from "node:child_process";
-import { join } from "node:path";
+import { readFileSync, readdirSync, statSync, existsSync, appendFileSync, writeFileSync, mkdirSync, cpSync, rmSync, renameSync } from "node:fs";
+import { exec, execFile } from "node:child_process";
+import { join, dirname, basename } from "node:path";
+import { createHash } from "node:crypto";
 import { parseSession, PROVIDER_OF_MODEL, PRICING } from "../lib/usage-parser.js";
 
 const DEBUG_LOG = "D:\\AI\\Hanako\\OH-WorkSpace\\session-insight-debug.log";
@@ -357,7 +358,169 @@ function readAuthConfig(ctx) {
   return {};
 }
 
+const UPDATE_REPO_API = "https://api.github.com/repos/youyongdemao/HanaAgent-session-insight/releases/latest";
+
+function normalizeVersion(value) {
+  return String(value || "0.0.0").trim().replace(/^v/i, "").split("-")[0];
+}
+
+function compareVersions(a, b) {
+  const left = normalizeVersion(a).split(".").map((n) => Number.parseInt(n, 10) || 0);
+  const right = normalizeVersion(b).split(".").map((n) => Number.parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const diff = (left[i] || 0) - (right[i] || 0);
+    if (diff !== 0) return diff > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
+function currentPluginVersion(ctx) {
+  try {
+    return JSON.parse(readFileSync(join(ctx.pluginDir, "manifest.json"), "utf8")).version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+async function latestRelease() {
+  const response = await fetch(UPDATE_REPO_API, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "Session-Insight-Updater",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error(`GitHub HTTP ${response.status}`);
+  const release = await response.json();
+  const version = normalizeVersion(release.tag_name || release.name);
+  const asset = Array.isArray(release.assets)
+    ? release.assets.find((item) => /session-insight.*\.zip$/i.test(item?.name || ""))
+    : null;
+  return { version, tag: release.tag_name || `v${version}`, asset };
+}
+
+function findWinRAR() {
+  const candidates = [
+    "D:\\Tools\\System Tools\\Winrar\\WinRAR.exe",
+    process.env.ProgramFiles && join(process.env.ProgramFiles, "WinRAR", "WinRAR.exe"),
+    process.env["ProgramFiles(x86)"] && join(process.env["ProgramFiles(x86)"], "WinRAR", "WinRAR.exe"),
+  ].filter(Boolean);
+  return candidates.find((file) => existsSync(file)) || null;
+}
+
+function runWinRAR(executable, args) {
+  return new Promise((resolve, reject) => {
+    execFile(executable, args, { windowsHide: true }, (error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
+}
+
+async function installRelease(ctx, release) {
+  if (!release.asset?.browser_download_url) throw new Error("新版 Release 中没有找到 ZIP 安装包");
+  if ((release.asset.size || 0) > 30 * 1024 * 1024) throw new Error("安装包超过 30MB 安全上限");
+  const winrar = findWinRAR();
+  if (!winrar) throw new Error("未找到 WinRAR，无法解压更新包");
+
+  const pluginDir = ctx.pluginDir;
+  const parentDir = dirname(pluginDir);
+  const hanaHome = dirname(parentDir);
+  const dataDir = join(hanaHome, "plugin-data", "session-insight");
+  const stamp = Date.now().toString(36);
+  const workDir = join(dataDir, "updates", stamp);
+  const extractDir = join(workDir, "extract");
+  const zipPath = join(workDir, "update.zip");
+  const oldVersion = currentPluginVersion(ctx);
+  const backupDir = join(dataDir, "backups", `${basename(pluginDir)}-v${oldVersion}-${stamp}`);
+  let movedToBackup = false;
+
+  mkdirSync(extractDir, { recursive: true });
+  mkdirSync(dirname(backupDir), { recursive: true });
+  try {
+    const response = await fetch(release.asset.browser_download_url, {
+      headers: { "User-Agent": "Session-Insight-Updater" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!response.ok) throw new Error(`下载更新包失败：HTTP ${response.status}`);
+    const payload = Buffer.from(await response.arrayBuffer());
+    if (payload.length < 1000 || payload.length > 30 * 1024 * 1024) throw new Error("更新包大小异常");
+    const declaredDigest = String(release.asset.digest || "");
+    if (/^sha256:/i.test(declaredDigest)) {
+      const actualDigest = createHash("sha256").update(payload).digest("hex");
+      if (actualDigest.toLowerCase() !== declaredDigest.slice(7).toLowerCase()) throw new Error("更新包 SHA256 校验失败");
+    }
+    writeFileSync(zipPath, payload);
+
+    await runWinRAR(winrar, ["x", "-ibck", "-y", zipPath, `${extractDir}\\`]);
+    const manifestPath = join(extractDir, "manifest.json");
+    if (!existsSync(manifestPath)) throw new Error("更新包缺少 manifest.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    if (manifest.id !== "session-insight") throw new Error("更新包插件 ID 不匹配");
+    if (normalizeVersion(manifest.version) !== normalizeVersion(release.version)) {
+      throw new Error(`更新包版本不匹配：${manifest.version || "未知"}`);
+    }
+
+    renameSync(pluginDir, backupDir);
+    movedToBackup = true;
+    cpSync(extractDir, pluginDir, { recursive: true, force: true });
+    return { ok: true, version: manifest.version, previousVersion: oldVersion, backupDir };
+  } catch (error) {
+    if (movedToBackup) {
+      try {
+        rmSync(pluginDir, { recursive: true, force: true });
+        renameSync(backupDir, pluginDir);
+      } catch (rollbackError) {
+        throw new Error(`${error.message}；自动回滚失败：${rollbackError.message}`);
+      }
+    }
+    throw error;
+  } finally {
+    rmSync(workDir, { recursive: true, force: true });
+  }
+}
+
 export default function registerPluginApiRoutes(app, ctx) {
+  // GitHub Release 更新检查
+  app.get("/api/check-update", async (c) => {
+    try {
+      const currentVersion = currentPluginVersion(ctx);
+      const release = await latestRelease();
+      return c.json({
+        ok: true,
+        currentVersion,
+        latestVersion: release.version,
+        updateAvailable: compareVersions(release.version, currentVersion) > 0,
+        hasInstallAsset: Boolean(release.asset?.browser_download_url),
+      });
+    } catch (error) {
+      dbg("check-update ERROR: " + String(error?.message || error));
+      return c.json({ ok: false, error: String(error?.message || error) }, 502);
+    }
+  });
+
+  // 下载、校验、备份并覆盖安装最新版
+  app.post("/api/apply-update", async (c) => {
+    try {
+      const requested = await c.req.json().catch(() => ({}));
+      const release = await latestRelease();
+      const currentVersion = currentPluginVersion(ctx);
+      if (requested.version && normalizeVersion(requested.version) !== normalizeVersion(release.version)) {
+        return c.json({ ok: false, error: "Latest Release 已变化，请重新检查更新" }, 409);
+      }
+      if (compareVersions(release.version, currentVersion) <= 0) {
+        return c.json({ ok: true, alreadyLatest: true, version: currentVersion });
+      }
+      const result = await installRelease(ctx, release);
+      return c.json(result);
+    } catch (error) {
+      dbg("apply-update ERROR: " + String(error?.message || error));
+      return c.json({ ok: false, error: String(error?.message || error) }, 500);
+    }
+  });
+
   // 会话列表（含模型识别）
   app.get("/api/sessions", (c) => {
     const dir = getSessionsDir(ctx);
