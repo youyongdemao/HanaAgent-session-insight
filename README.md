@@ -17,8 +17,8 @@
 ## 界面一览
 
 <p align="center">
-  <img src="docs/screenshots/session-insight-light.png" width="360" alt="浅色模式">
-  <img src="docs/screenshots/session-insight-overview.png" width="360" alt="深色模式">
+  <img src="docs/screenshots/session-insight-light.png" height="600" alt="浅色模式">
+  <img src="docs/screenshots/session-insight-overview.png" height="600" alt="深色模式">
 </p>
 
 完整分析页覆盖会话指标、余额、上下文占用、用量分析与全局用量总览。深色与浅色主题自动跟随 HanaAgent 的明暗模式切换。
@@ -37,11 +37,11 @@
 
 <p align="center"><img src="docs/screenshots/session-insight-detail-model.png" width="520" alt="会话模型分布"></p>
 
-## 常驻侧边状态栏
+## 常驻状态条
 
 <p align="center">
-  <img src="docs/screenshots/session-insight-widget.png" width="280" alt="浅色模式">
-  <img src="docs/screenshots/session-insight-widget-dark.png" width="280" alt="深色模式">
+  <img src="docs/screenshots/session-insight-widget.png" height="560" alt="浅色模式">
+  <img src="docs/screenshots/session-insight-widget-dark.png" height="560" alt="深色模式">
 </p>
 
 widget 适合挂在 HanaAgent 侧边栏。无需打开完整面板，也能查看当前模型、上下文占用、Token、费用和命中率。
