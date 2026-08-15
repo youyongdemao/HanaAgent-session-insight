@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "session-insight",
   "name": "Session Insight",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "会话用量可视化：tokens、缓存命中率、费用、余额，widget 常驻状态条 + 图表页。",
   "minAppVersion": "0.159.0",
   "trust": "full-access",
@@ -23,10 +23,16 @@
       "api.github.com",
       "github.com",
       "objects.githubusercontent.com",
-      "release-assets.githubusercontent.com"
+      "release-assets.githubusercontent.com",
+      "open.bigmodel.cn",
+      "api.z.ai",
+      "management-api.x.ai",
+      "api.openai.com",
+      "chatgpt.com"
     ],
     "methods": [
-      "GET"
+      "GET",
+      "POST"
     ],
     "defaultTimeoutMs": 15000,
     "maxResponseBytes": 31457280
@@ -65,7 +71,43 @@
           "description": "用于余额查询。留空时自动从 Hana 的 provider-catalog.json 读取。",
           "default": "",
           "ui": {
+            "control": "password"
+          }
+        },
+        "openaiAdminKey": {
+          "type": "string",
+          "title": "OpenAI Admin Key（可选）",
+          "description": "用于查询组织级 Usage / Costs。普通 Project Key 无权调用。",
+          "default": "",
+          "ui": {
+            "control": "password"
+          }
+        },
+        "xaiManagementKey": {
+          "type": "string",
+          "title": "xAI Management Key（可选）",
+          "description": "用于查询 xAI API 团队预付余额，与推理 API Key 分离。",
+          "default": "",
+          "ui": {
+            "control": "password"
+          }
+        },
+        "xaiTeamId": {
+          "type": "string",
+          "title": "xAI Team ID（可选）",
+          "description": "与 xAI Management Key 配套使用。",
+          "default": "",
+          "ui": {
             "control": "text"
+          }
+        },
+        "enableCodexQuota": {
+          "type": "boolean",
+          "title": "Codex 订阅配额（实验性）",
+          "description": "读取 HanaAgent 已登录的 ChatGPT OAuth 配额；使用私有接口，默认关闭。",
+          "default": false,
+          "ui": {
+            "control": "switch"
           }
         },
         "refreshSeconds": {
