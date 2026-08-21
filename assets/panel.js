@@ -610,6 +610,20 @@ const getLedgerStats = () => fetchJson("/api/ledger-stats");
 
 async function renderWidget() {
   if (!root) return;
+  // 侧边栏卡片可滚动上限：与 panel.css 的 --si-widget-max 默认值一致
+  function widgetMaxHeight() {
+    const v = getComputedStyle(document.body).getPropertyValue("--si-widget-max").trim();
+    const n = parseFloat(v);
+    return Number.isFinite(n) && n > 0 ? n : 600;
+  }
+  // 滚动容器高度 = min(视口高度, 内容高度)：卡片拖高到超过内容时铺满内容（不滚动、无空白），低于内容时滚动
+  function updateWidgetScroll() {
+    const scroller = root.querySelector(".widget-panel");
+    if (!scroller) return;
+    const ih = window.innerHeight;
+    const contentH = Math.max(120, Math.ceil(scroller.scrollHeight) || 0);
+    scroller.style.height = Math.min(ih, contentH) + "px";
+  }
   root.innerHTML = `
     <div class="panel widget-panel">
       <section class="widget-card">
@@ -778,7 +792,7 @@ async function renderWidget() {
       compTrackEl.querySelector(".input").style.width = (input / total) * 100 + "%";
       compTrackEl.querySelector(".output").style.width = (output / total) * 100 + "%";
       metaEl.textContent = "";
-      requestAnimationFrame(() => hana.ui.resize({ height: Math.ceil(root.scrollHeight + 8) }));
+      requestAnimationFrame(updateWidgetScroll);
 
       dot.classList.remove("pulse");
       void dot.offsetWidth;
@@ -806,6 +820,9 @@ async function renderWidget() {
   window.addEventListener("message", onHostContext);
   await tick();
   setInterval(tick, 30000);
+  // 卡片高度可调：窗口尺寸变化时实时同步滚动容器高度
+  updateWidgetScroll();
+  window.addEventListener("resize", updateWidgetScroll);
 }
 
 /* ── page 可视化 ────────────────────────────────── */
@@ -1142,11 +1159,11 @@ async function renderPage() {
       ? `<div class="bb-value">${esc(providerStatusSummary(current))}</div>`
       : `<div class="bb-value bb-na">${esc(currentUnsupported?.note || "暂无官方账户数据")}</div>`;
     const shortNote = {
-      mimo: "本地估算",
-      zhipu: "按量账户",
-      agnes: "CSV 核对",
+      mimo: "无余额接口",
+      zhipu: "无余额接口",
+      agnes: "免费",
       openai: "需 Admin Key",
-      gemini: "本地估算",
+      gemini: "无余额接口",
       "openai-codex": "实验性",
       "xai-oauth": "订阅账户",
       xai: "需 Management Key",
@@ -1242,11 +1259,11 @@ async function renderPage() {
     const ok = (balance.balances || []).filter((b) => b.status === "ok");
     const unsupported = balance.unsupported || [];
     const shortNote = {
-      mimo: "本地估算",
-      zhipu: "按量账户无余额",
-      agnes: "CSV 导出核对",
+      mimo: "无余额接口",
+      zhipu: "无余额接口",
+      agnes: "免费",
       openai: "需 Admin Key",
-      gemini: "本地估算",
+      gemini: "无余额接口",
       "openai-codex": "实验性配额未启用",
       "xai-oauth": "Grok 订阅账户",
       xai: "需 Management Key",
@@ -2095,7 +2112,7 @@ function initGlow(container) {
 
 if (surface === "widget") {
   renderWidget();
-  hana.ui.resize({ height: 760 });
+  hana.ui.resize({ height: 600 });
 } else {
   renderPage();
   hana.ui.resize({ height: 900 });
