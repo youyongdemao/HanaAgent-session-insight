@@ -563,7 +563,7 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
 .balance-block {
   flex: none;
   min-width: 0;
-  padding: 12px 4px 4px;
+  padding: 12px 4px 28px;
 }
 
 .bb-label {
