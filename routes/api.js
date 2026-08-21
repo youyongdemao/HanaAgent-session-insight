@@ -471,11 +471,24 @@ function runWinRAR(executable, args) {
   });
 }
 
+// 解压 zip：优先 WinRAR，不可用时降级用 Windows 内置 tar / PowerShell Expand-Archive
+function extractZip(zipPath, extractDir) {
+  const winrar = findWinRAR();
+  if (winrar) return runWinRAR(winrar, ["x", "-ibck", "-y", zipPath, `${extractDir}\\`]);
+  return new Promise((resolve, reject) => {
+    execFile("tar", ["-xf", zipPath, "-C", extractDir], { windowsHide: true }, (error) => {
+      if (!error) return resolve();
+      execFile("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${extractDir}' -Force`], { windowsHide: true }, (error2) => {
+        if (!error2) return resolve();
+        reject(new Error(`解压失败（WinRAR/tar/PowerShell 均不可用）：${error2?.message || "未知"}`));
+      });
+    });
+  });
+}
+
 async function installRelease(ctx, release) {
   if (!release.asset?.browser_download_url) throw new Error("新版 Release 中没有找到 ZIP 安装包");
   if ((release.asset.size || 0) > 30 * 1024 * 1024) throw new Error("安装包超过 30MB 安全上限");
-  const winrar = findWinRAR();
-  if (!winrar) throw new Error("未找到 WinRAR，无法解压更新包");
 
   const pluginDir = ctx.pluginDir;
   const parentDir = dirname(pluginDir);
@@ -510,7 +523,7 @@ async function installRelease(ctx, release) {
     }
     writeFileSync(zipPath, payload);
 
-    await runWinRAR(winrar, ["x", "-ibck", "-y", zipPath, `${extractDir}\\`]);
+    await extractZip(zipPath, extractDir);
     const manifestPath = join(extractDir, "manifest.json");
     if (!existsSync(manifestPath)) throw new Error("更新包缺少 manifest.json");
     const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
