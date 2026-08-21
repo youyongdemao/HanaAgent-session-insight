@@ -14,7 +14,7 @@ function renderShell(c, ctx, surface) {
   const withToken = (url) => {
     let u = url;
     if (token) u += `${u.includes("?") ? "&" : "?"}${new URLSearchParams({ token })}`;
-    u += `${u.includes("?") ? "&" : "?"}si_v=1.1.5`;
+    u += `${u.includes("?") ? "&" : "?"}si_v=1.2.1`;
     if (hot) u += `&${new URLSearchParams({ hot })}`;
     return u;
   };
