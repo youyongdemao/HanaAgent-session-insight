@@ -96,8 +96,15 @@ body {
 }
 
 /* ── widget · 窄侧栏仪表卡 ─────────────────────── */
-body[data-surface="widget"] { overflow: hidden; }
-body[data-surface="widget"] .panel { padding: 20px 14px 12px; max-width: none; }
+body[data-surface="widget"] { overflow: hidden; height: 100vh; --si-widget-max: 600px; }
+body[data-surface="widget"] .panel {
+  padding: 20px 14px 12px;
+  max-width: none;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
 .widget-card {
   padding: 0;
@@ -222,7 +229,7 @@ body[data-surface="widget"] .panel { padding: 20px 14px 12px; max-width: none; }
   min-height: 64px;
   padding: 9px 10px;
   display: grid;
-  grid-template-columns: 44px minmax(88px, 1fr) minmax(158px, 1.55fr);
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.5fr);
   align-items: center;
   gap: 8px;
   border-radius: 10px;
@@ -246,10 +253,10 @@ body[data-surface="widget"] .panel { padding: 20px 14px 12px; max-width: none; }
 .w-provider-share span { position: relative; z-index: 1; font-size: 7.5px; font-weight: 560; color: var(--text-muted, #8e9196); font-variant-numeric: tabular-nums; }
 .w-provider-name { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .w-provider-name strong { min-width: 0; font-size: 12.5px; font-weight: 540; color: var(--text, #3b3d3f); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.w-provider-name span { font-size: 10px; color: var(--text-muted, #8e9196); }
+.w-provider-name span { font-size: 10px; color: var(--text-muted, #8e9196); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .w-provider-values { min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .w-provider-stat { min-width: 0; text-align: right; display: flex; flex-direction: column; gap: 4px; }
-.w-provider-stat span { font-size: 9px; color: var(--text-muted, #8e9196); }
+.w-provider-stat span { font-size: 9px; color: var(--text-muted, #8e9196); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .w-provider-stat b { min-width: 0; font-size: 11px; font-weight: 540; color: var(--text, #3b3d3f); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .w-provider-stat.balance b { color: var(--accent, #537d96); }
 
@@ -555,7 +562,7 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
 /* ── 余额大字区（无卡片背景、无光晕，最显眼） ── */
 .balance-block {
   flex: none;
-  min-width: 260px;
+  min-width: 0;
   padding: 12px 4px 4px;
 }
 
@@ -685,7 +692,7 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
 /* ── 其他账户菜单（右侧） ──────────────────────── */
 .acct-menu {
   flex: 1;
-  min-width: 300px;
+  min-width: 0;
 }
 
 .acct-toggle {
