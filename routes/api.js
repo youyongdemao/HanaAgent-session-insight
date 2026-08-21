@@ -3,28 +3,21 @@ import { readFileSync, readdirSync, statSync, existsSync, appendFileSync, writeF
 import { exec, execFile } from "node:child_process";
 import { join, dirname, basename } from "node:path";
 import { createHash } from "node:crypto";
-import { parseSession, PROVIDER_OF_MODEL, PRICING } from "../lib/usage-parser.js";
+import { parseSession, PROVIDER_OF_MODEL, PRICING, priceFor } from "../lib/usage-parser.js";
 
-const DEBUG_LOG = "D:\\AI\\Hanako\\OH-WorkSpace\\session-insight-debug.log";
 function dbg(msg) {
   try {
-    appendFileSync(DEBUG_LOG, `[${new Date().toISOString()}] ${msg}\n`);
+    appendFileSync(join(getDataRoot(null), "OH-WorkSpace", "session-insight-debug.log"), `[${new Date().toISOString()}] ${msg}\n`);
   } catch {}
 }
 
 // 用量总账（总消费数据源）
-const LEDGER = "D:\\AI\\Hanako\\usage-ledger.json";
 let ledgerCache = { at: 0, totalCost: 0, perProvider: {}, perModel: {} };
 
-function calcCostByModel(model, inputMiss, inputHit, output) {
-  const p = PRICING[model];
-  if (!p) return null;
-  return (inputMiss / 1e6) * p.inputMiss + (inputHit / 1e6) * p.inputHit + (output / 1e6) * p.output;
-}
-// 单条 ledger entry 的费用（输入按未命中/命中拆分，缓存窗口值不重复计费）
+// 单条 ledger entry 的费用（输入按未命中/命中拆分，缓存窗口值不重复计费；峰谷模型按 startedAt 选档）
 function calcEntryCost(e) {
   const model = e?.model?.modelId;
-  const p = PRICING[model];
+  const p = priceFor(model, e?.startedAt);
   if (!p) return null;
   const u = e.usage || {};
   const inputTotal = u.input?.totalTokens ?? u.input?.uncachedTokens ?? 0;
@@ -36,12 +29,13 @@ function calcEntryCost(e) {
 }
 
 
-function computeTotalCost() {
+function computeTotalCost(ctx) {
   const now = Date.now();
   if (now - ledgerCache.at < 30000) return ledgerCache;
   try {
-    if (!existsSync(LEDGER)) return { at: now, totalCost: null, perProvider: {}, perModel: {} };
-    const data = JSON.parse(readFileSync(LEDGER, "utf8"));
+    const ledger = getLedgerPath(ctx);
+    if (!existsSync(ledger)) return { at: now, totalCost: null, perProvider: {}, perModel: {} };
+    const data = JSON.parse(readFileSync(ledger, "utf8"));
     let totalCost = 0;
     const perProvider = {};
     const perModel = {};
@@ -72,12 +66,13 @@ let ledgerStatsCache = { at: 0, provider: null };
 
 // 全局用量总览：按 agent/来源/日期/模型聚合 + 延迟分布 + 错误数（30s 缓存）
 // provider 可选：传入则只统计该供应商的数据
-function computeLedgerStats(provider) {
+function computeLedgerStats(ctx, provider) {
   const now = Date.now();
   if (now - ledgerStatsCache.at < 30000 && ledgerStatsCache.provider === provider) return ledgerStatsCache;
   try {
-    if (!existsSync(LEDGER)) return { at: now, empty: true, provider };
-    const data = JSON.parse(readFileSync(LEDGER, "utf8"));
+    const ledger = getLedgerPath(ctx);
+    if (!existsSync(ledger)) return { at: now, empty: true, provider };
+    const data = JSON.parse(readFileSync(ledger, "utf8"));
     const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 };
     const latAll = [];
     let callCount = 0, errCount = 0;
@@ -150,10 +145,28 @@ function computeLedgerStats(provider) {
   }
 }
 
-const DEFAULT_SESSIONS_DIR = "D:\\AI\\Hanako\\agents\\hanako\\sessions";
 const PROVIDER_CATALOG = "D:\\AI\\Hanako\\provider-catalog.json";
 const MODELS_FILE = "D:\\AI\\Hanako\\models.json";
 const AUTH_FILE = "D:\\AI\\Hanako\\auth.json";
+
+// 动态定位数据根：优先取 config.dataDir，其次由 sessionsDir 推导（sessions -> .. -> agents -> .. -> 根），兜底写死路径
+function getDataRoot(ctx) {
+  try {
+    const p = ctx.config?.get?.("dataDir");
+    if (p && existsSync(p)) return p;
+  } catch {}
+  try {
+    const sd = ctx.config?.get?.("sessionsDir");
+    if (sd) {
+      const root = join(sd, "..", "..", "..");
+      if (existsSync(join(root, "usage-ledger.json")) || existsSync(join(root, "provider-catalog.json"))) return root;
+    }
+  } catch {}
+  return "D:\\AI\\Hanako";
+}
+function getLedgerPath(ctx) {
+  return join(getDataRoot(ctx), "usage-ledger.json");
+}
 
 // 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），兜底写死路径
 function getProviderCatalogPath(ctx) {
@@ -216,11 +229,11 @@ const BALANCE_ADAPTERS = {
 
 // 无公开余额接口的供应商说明
 const NO_BALANCE_API = {
-  mimo: "无公开接口，本地估算",
-  zhipu: "按量账户无余额接口",
-  agnes: "无公开接口，可导出 CSV",
+  mimo: "暂无余额接口",
+  zhipu: "暂无余额接口",
+  agnes: "全模态免费",
   openai: "需配置 OpenAI Admin Key",
-  gemini: "无余额 API，本地估算",
+  gemini: "暂无余额接口",
   "openai-codex": "实验性配额未启用",
   "xai-oauth": "Grok 订阅无公开接口",
 };
@@ -230,7 +243,7 @@ function getSessionsDir(ctx) {
     const dir = ctx.config?.get?.("sessionsDir");
     if (dir && existsSync(dir)) return dir;
   } catch {}
-  return DEFAULT_SESSIONS_DIR;
+  return join(getDataRoot(ctx), "agents", "hanako", "sessions");
 }
 
 function listSessionFiles(dir) {
@@ -720,6 +733,22 @@ async function queryCodexQuota(ctx, fetchFn) {
 }
 
 export default function registerPluginApiRoutes(app, ctx) {
+  // 会话上下文探测：验证新版 surfaceSession 链路能否拿到当前会话 sessionId
+  app.get("/api/probe-session", (c) => {
+    const pr = c.env?.pluginRouteRequest || null;
+    const principal = pr?.principal || null;
+    const result = {
+      hasRouteRequest: !!pr,
+      principalKind: principal?.kind || null,
+      credentialId: principal?.credentialId || null,
+      agentId: (typeof c.get === "function" && c.get("agentId")) || null,
+      ctxSessionId: ctx.sessionId || null,
+      ctxSessionPath: ctx.sessionPath || null,
+    };
+    dbg("probe-session: " + JSON.stringify(result));
+    return c.json(result);
+  });
+
   // 纯插件主题源：读取 HanaAgent 持久化外观偏好，不依赖 renderer 补丁
   app.get("/api/appearance", (c) => {
     return c.json({ ok: true, ...readAppearancePreference(ctx) });
@@ -930,13 +959,13 @@ app.get("/api/balance", async (c) => {
   // 全局用量总览（agent/来源/日期/模型/延迟聚合，30s 缓存，可传 ?provider= 过滤）
   app.get("/api/ledger-stats", (c) => {
     const provider = c.req.query("provider") || null;
-    const r = computeLedgerStats(provider);
+    const r = computeLedgerStats(ctx, provider);
     return c.json(r);
   });
 
   // 总消费金额（按用量总账计算，30s 缓存）
   app.get("/api/total-cost", (c) => {
-    const r = computeTotalCost();
+    const r = computeTotalCost(ctx);
     return c.json(r);
   });
 
