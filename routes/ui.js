@@ -1,6 +1,7 @@
 export default function registerPluginUiRoutes(app, ctx) {
   app.get("/page", (c) => c.html(renderShell(c, ctx, "page")));
   app.get("/widget", (c) => c.html(renderShell(c, ctx, "widget")));
+  app.get("/card", (c) => c.html(renderShell(c, ctx, "card")));
 }
 
 function renderShell(c, ctx, surface) {
@@ -13,7 +14,7 @@ function renderShell(c, ctx, surface) {
   const withToken = (url) => {
     let u = url;
     if (token) u += `${u.includes("?") ? "&" : "?"}${new URLSearchParams({ token })}`;
-    u += `${u.includes("?") ? "&" : "?"}si_v=1.1.3`;
+    u += `${u.includes("?") ? "&" : "?"}si_v=1.1.5`;
     if (hot) u += `&${new URLSearchParams({ hot })}`;
     return u;
   };
