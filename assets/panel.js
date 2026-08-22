@@ -90,9 +90,10 @@ function pluginApiUrl(path) {
 
 function pluginApiFetch(path, init = {}) {
   const surfaceSession = new URLSearchParams(window.location.search).get("pluginSurfaceSession");
-  if (!surfaceSession) throw new Error("hana.api.fetch requires pluginSurfaceSession in the iframe URL.");
   const headers = new Headers(init.headers || {});
-  headers.set("X-Hana-Plugin-Surface-Session", surfaceSession);
+  // 新版宿主 iframe 带 pluginSurfaceSession：附加 surface header 供 server 校验关联；
+  // 老版宿主 iframe 无此参数：降级为普通 fetch（老版 server 走自身鉴权），保证插件在老版也能拿到数据
+  if (surfaceSession) headers.set("X-Hana-Plugin-Surface-Session", surfaceSession);
   return fetch(pluginApiUrl(path), { ...init, headers });
 }
 
