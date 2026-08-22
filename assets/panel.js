@@ -146,11 +146,38 @@ const root = document.getElementById("root");
 const surface = root?.dataset.surface || "page";
 
 /* ── 宿主主题同步：iframe 不重载时也实时跟随 HanaAgent ── */
-function applyHostTheme(theme) {
+function parseThemeRgb(value) {
+  const raw = String(value || "").trim();
+  let match = raw.match(/^#([0-9a-f]{6})$/i);
+  if (match) return [0, 2, 4].map((i) => Number.parseInt(match[1].slice(i, i + 2), 16));
+  match = raw.match(/^#([0-9a-f]{3})$/i);
+  if (match) return [...match[1]].map((x) => Number.parseInt(x + x, 16));
+  match = raw.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+function syncComputedColorMode() {
+  try {
+    const styles = getComputedStyle(document.body);
+    const rgb = parseThemeRgb(styles.getPropertyValue("--bg")) || parseThemeRgb(styles.backgroundColor);
+    if (!rgb) return;
+    const luminance = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    const mode = luminance < 145 ? "dark" : "light";
+    document.documentElement.dataset.colorMode = mode;
+    document.body.dataset.colorMode = mode;
+  } catch {}
+}
+
+function resolveThemeIntent(theme) {
   const raw = typeof theme === "string" ? theme.trim() : "";
-  // auto / inherit 是配置意图，不是可渲染主题。让宿主传入已解析的实际主题，
-  // 避免 iframe 自己的 prefers-color-scheme 覆盖 HanaAgent 当前外观。
-  if (!raw || raw === "inherit" || raw === "auto") return false;
+  if (raw === "auto") return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "midnight" : "warm-paper";
+  if (!raw || raw === "inherit") return "";
+  return raw;
+}
+
+function applyHostTheme(theme) {
+  const raw = resolveThemeIntent(theme);
+  if (!raw) return false;
   if (document.documentElement.dataset.theme !== raw) document.documentElement.dataset.theme = raw;
   if (document.body.dataset.hanaTheme !== raw) document.body.dataset.hanaTheme = raw;
   // hana-css 是按 theme 查询参数生成的固定变量表，单改 data-theme 不会换色。
@@ -162,10 +189,12 @@ function applyHostTheme(theme) {
       const url = new URL(themeCss.href, window.location.href);
       if (url.searchParams.get("theme") !== raw) {
         url.searchParams.set("theme", raw);
+        themeCss.addEventListener("load", syncComputedColorMode, { once: true });
         themeCss.href = url.toString();
       }
     } catch {}
   }
+  requestAnimationFrame(syncComputedColorMode);
   return true;
 }
 
@@ -597,16 +626,17 @@ async function fetchJson(path) {
   return res.json();
 }
 
-/* 纯插件主题同步：显式主题可从后端偏好兜底；auto 必须服从宿主已解析结果。 */
+/* 纯插件主题同步：与 HanaAgent 官方规则一致，auto 按系统色调解析为具体主题。 */
 function initAppearancePolling() {
   let busy = false;
+  const media = window.matchMedia?.("(prefers-color-scheme: dark)");
   const sync = async () => {
     if (busy) return;
     busy = true;
     try {
       const appearance = await fetchJson("/api/appearance");
       const configured = String(appearance?.theme || "").trim();
-      if (!configured || configured === "auto" || configured === "inherit") return;
+      if (!configured || configured === "inherit") return;
       applyHostTheme(configured);
     } catch {
       // 旧版宿主或文件不可读时，继续使用 URL / postMessage / parent 兜底。
@@ -616,7 +646,11 @@ function initAppearancePolling() {
   };
   sync();
   const timer = window.setInterval(sync, 1000);
-  window.addEventListener("beforeunload", () => window.clearInterval(timer), { once: true });
+  media?.addEventListener?.("change", sync);
+  window.addEventListener("beforeunload", () => {
+    window.clearInterval(timer);
+    media?.removeEventListener?.("change", sync);
+  }, { once: true });
 }
 
 initAppearancePolling();
