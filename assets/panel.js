@@ -148,16 +148,32 @@ const surface = root?.dataset.surface || "page";
 /* ── 宿主主题同步：iframe 不重载时也实时跟随 HanaAgent ── */
 function applyHostTheme(theme) {
   const raw = typeof theme === "string" ? theme.trim() : "";
-  const next = raw && raw !== "inherit" && raw !== "auto" ? raw : "warm-paper";
-  if (document.documentElement.dataset.theme !== next) document.documentElement.dataset.theme = next;
-  if (document.body.dataset.hanaTheme !== next) document.body.dataset.hanaTheme = next;
+  // auto / inherit 是配置意图，不是可渲染主题。让宿主传入已解析的实际主题，
+  // 避免 iframe 自己的 prefers-color-scheme 覆盖 HanaAgent 当前外观。
+  if (!raw || raw === "inherit" || raw === "auto") return false;
+  if (document.documentElement.dataset.theme !== raw) document.documentElement.dataset.theme = raw;
+  if (document.body.dataset.hanaTheme !== raw) document.body.dataset.hanaTheme = raw;
+  // hana-css 是按 theme 查询参数生成的固定变量表，单改 data-theme 不会换色。
+  // 保留宿主鉴权参数，只替换主题名，让 page / widget 使用同一份官方主题 CSS。
+  const themeCss = document.getElementById("hana-theme-css")
+    || document.querySelector('link[href*="/api/plugins/theme.css"]');
+  if (themeCss) {
+    try {
+      const url = new URL(themeCss.href, window.location.href);
+      if (url.searchParams.get("theme") !== raw) {
+        url.searchParams.set("theme", raw);
+        themeCss.href = url.toString();
+      }
+    } catch {}
+  }
+  return true;
 }
 
 function initHostThemeSync() {
   const initial = new URLSearchParams(window.location.search).get("hana-theme")
     || document.body.dataset.hanaTheme
     || "warm-paper";
-  applyHostTheme(initial);
+  if (!applyHostTheme(initial)) applyHostTheme("warm-paper");
 
   try {
     const hostWindow = window.parent;
@@ -166,14 +182,15 @@ function initHostThemeSync() {
     const media = hostWindow.matchMedia?.("(prefers-color-scheme: dark)");
 
     const readHostTheme = () => {
-      // 用户在设置里选择的主题优先；避免宿主切换过程中 data-theme 短暂保留旧值。
-      const saved = hostWindow.localStorage?.getItem("hana-theme")?.trim();
-      if (saved && saved !== "auto") return saved;
-      if (saved === "auto") return media?.matches ? "midnight" : "warm-paper";
+      // 宿主 DOM 上的是已经解析好的实际主题，优先级高于持久化配置中的 auto。
       const attr = hostRoot.getAttribute("data-theme")?.trim()
         || hostDocument.body?.getAttribute("data-theme")?.trim();
-      if (attr) return attr;
-      return initial && initial !== "inherit" ? initial : "warm-paper";
+      if (attr && attr !== "auto" && attr !== "inherit") return attr;
+      const saved = hostWindow.localStorage?.getItem("hana-theme")?.trim();
+      if (saved && saved !== "auto" && saved !== "inherit") return saved;
+      if (initial && initial !== "auto" && initial !== "inherit") return initial;
+      // 仅在宿主完全没有提供已解析主题时，才以系统色调作最后兜底。
+      return media?.matches ? "midnight" : "warm-paper";
     };
 
     const sync = () => applyHostTheme(readHostTheme());
@@ -208,8 +225,10 @@ function onHostThemeMessage(evt) {
   if (evt.source !== window.parent) return;
   const msg = evt.data || {};
   if (msg.type !== "hana.host.theme" && msg.type !== "hana.host.context") return;
-  const theme = msg.payload?.theme;
-  if (typeof theme === "string" && theme.trim()) applyHostTheme(theme);
+  const payload = msg.payload || {};
+  // 兼容宿主不同版本的实际主题字段；配置值 auto 不覆盖当前已解析主题。
+  const theme = payload.resolvedTheme || payload.effectiveTheme || payload.theme;
+  applyHostTheme(theme);
 }
 window.addEventListener("message", onHostThemeMessage);
 
@@ -578,21 +597,17 @@ async function fetchJson(path) {
   return res.json();
 }
 
-/* 纯插件主题同步：通过插件后端读取 user/preferences.json，不依赖宿主 renderer。 */
+/* 纯插件主题同步：显式主题可从后端偏好兜底；auto 必须服从宿主已解析结果。 */
 function initAppearancePolling() {
   let busy = false;
-  const media = window.matchMedia?.("(prefers-color-scheme: dark)");
   const sync = async () => {
     if (busy) return;
     busy = true;
     try {
       const appearance = await fetchJson("/api/appearance");
       const configured = String(appearance?.theme || "").trim();
-      if (!configured) return;
-      const resolved = configured === "auto"
-        ? (media?.matches ? "midnight" : "warm-paper")
-        : configured;
-      applyHostTheme(resolved);
+      if (!configured || configured === "auto" || configured === "inherit") return;
+      applyHostTheme(configured);
     } catch {
       // 旧版宿主或文件不可读时，继续使用 URL / postMessage / parent 兜底。
     } finally {
@@ -600,13 +615,8 @@ function initAppearancePolling() {
     }
   };
   sync();
-  const timer = window.setInterval(sync, 500);
-  const onSystemTheme = () => sync();
-  media?.addEventListener?.("change", onSystemTheme);
-  window.addEventListener("beforeunload", () => {
-    window.clearInterval(timer);
-    media?.removeEventListener?.("change", onSystemTheme);
-  }, { once: true });
+  const timer = window.setInterval(sync, 1000);
+  window.addEventListener("beforeunload", () => window.clearInterval(timer), { once: true });
 }
 
 initAppearancePolling();

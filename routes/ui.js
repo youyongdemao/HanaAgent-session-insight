@@ -14,7 +14,7 @@ function renderShell(c, ctx, surface) {
   const withToken = (url) => {
     let u = url;
     if (token) u += `${u.includes("?") ? "&" : "?"}${new URLSearchParams({ token })}`;
-    u += `${u.includes("?") ? "&" : "?"}si_v=1.2.9`;
+    u += `${u.includes("?") ? "&" : "?"}si_v=1.2.10-theme-sync`;
     if (hot) u += `&${new URLSearchParams({ hot })}`;
     return u;
   };
@@ -27,7 +27,7 @@ function renderShell(c, ctx, surface) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
-  ${hanaCss ? `<link rel="stylesheet" href="${escapeAttr(hanaCss)}">` : ""}
+  ${hanaCss ? `<link id="hana-theme-css" rel="stylesheet" href="${escapeAttr(hanaCss)}">` : ""}
   <link rel="stylesheet" href="${escapeAttr(panelCss)}">
 </head>
 <body data-hana-theme="${escapeAttr(theme)}" data-surface="${surface}">
