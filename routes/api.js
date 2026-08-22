@@ -149,6 +149,19 @@ function computeLedgerStats(ctx, provider) {
 
 // 自动定位 Hana 数据根：插件安装目录与插件私有 dataDir 都位于 Hana 数据根之下，
 // 配置项和 sessionsDir 只作为补充候选。找不到时明确报错，不再回退固定机器路径。
+// 常见 HanaAgent 数据根参考目录：从环境变量与常见安装位置推导，
+// 覆盖发行版与内测版的不同数据根布局。
+function commonDataRootCandidates() {
+  const list = [];
+  for (const p of [process.env.APPDATA, process.env.LOCALAPPDATA, process.env.USERPROFILE, process.env.HOMEDRIVE]) {
+    if (!p) continue;
+    for (const sub of ["", "Hanako", "hana", ".hanako", ".hana", "HanaAgent", "hana-agent"]) {
+      try { list.push(join(p, sub)); } catch {}
+    }
+  }
+  return list;
+}
+
 function getDataRoot(ctx) {
   const candidates = [];
   try {
@@ -167,6 +180,8 @@ function getDataRoot(ctx) {
     const sd = ctx?.config?.get?.("sessionsDir");
     if (sd) candidates.push(join(sd, "..", "..", ".."));
   } catch {}
+  // 参考目录：常见 Hana 数据根位置
+  if (!ctx?.config?.get?.("dataDir")) candidates.push(...commonDataRootCandidates());
 
   const unique = [...new Set(candidates.filter(Boolean).map((p) => join(p)))];
   const markers = ["provider-catalog.json", "models.json", "auth.json", "usage-ledger.json", "agents"];
@@ -175,9 +190,14 @@ function getDataRoot(ctx) {
       if (existsSync(root) && markers.some((name) => existsSync(join(root, name)))) return root;
     } catch {}
   }
-  // 插件安装目录本身是最强锚点；即使首次启动尚未创建 marker，也接受其推导根。
   for (const root of unique) {
     try { if (existsSync(root)) return root; } catch {}
+  }
+  // 最后：扫参考目录，含 agents 或 models/provider 的才算 Hana 数据根
+  for (const root of commonDataRootCandidates()) {
+    try {
+      if (existsSync(join(root, "agents")) || existsSync(join(root, "provider-catalog.json"))) return root;
+    } catch {}
   }
   throw new Error("Unable to resolve Hana data root from pluginDir, dataDir, or sessionsDir");
 }
@@ -255,24 +275,58 @@ const NO_BALANCE_API = {
   "xai-oauth": "Grok 订阅无公开接口",
 };
 
-function getSessionsDir(ctx) {
-  const candidates = [];
+// 从数据根的 agents/ 下枚举所有子代理的 sessions 目录（不硬编码具体 agent 名）
+function listAgentSessionDirs(root) {
+  const dirs = [];
+  try {
+    const agentsDir = join(root, "agents");
+    if (existsSync(agentsDir)) {
+      for (const sub of readdirSync(agentsDir)) {
+        const sd = join(agentsDir, sub, "sessions");
+        if (existsSync(sd)) dirs.push(sd);
+      }
+    }
+  } catch {}
+  return dirs;
+}
+
+// 参考目录：HanaAgent 实际可能使用的会话目录（含用户配置与常见数据根推导）
+function buildSessionCandidates(ctx) {
+  const cands = [];
   try {
     const dir = ctx.config?.get?.("sessionsDir");
-    if (dir && dir.trim()) candidates.push(dir);
+    if (dir && dir.trim()) cands.push(dir);
   } catch {}
+  let root = null;
+  try { root = getDataRoot(ctx); } catch {}
+  if (root) {
+    // 数据根下所有 agent 的 sessions
+    for (const sd of listAgentSessionDirs(root)) cands.push(sd);
+    // 常见兜底：hanako 专属 + broker（部分版本用 broker 存放会话）
+    cands.push(join(root, "agents", "hanako", "sessions"));
+  }
+  // 从插件目录向上推导的 agents
   try {
     const pd = ctx?.pluginDir;
     if (pd) {
-      candidates.push(join(dirname(dirname(pd)), "agents", "hanako", "sessions"));
-      // HanaAgent 多 agent：会话目录可能在 agents/<anyAgent>/sessions，取第一个存在的
+      const up = dirname(dirname(pd));
+      for (const sd of listAgentSessionDirs(up)) cands.push(sd);
+      cands.push(join(up, "agents", "hanako", "sessions"));
     }
   } catch {}
-  candidates.push(join(getDataRoot(ctx), "agents", "hanako", "sessions"));
-  for (const c of candidates) {
-    try { if (c && existsSync(c)) return c; } catch {}
+  // 去重
+  return [...new Set(cands.filter((c) => typeof c === "string" && c.trim()))];
+}
+
+function getSessionsDir(ctx) {
+  const cands = buildSessionCandidates(ctx);
+  for (const c of cands) {
+    try { if (existsSync(c)) return c; } catch {}
   }
-  return candidates[0] || join(getDataRoot(ctx), "agents", "hanako", "sessions");
+  if (cands.length) return cands[0];
+  try { return join(getDataRoot(ctx), "agents", "hanako", "sessions"); } catch {
+    return null;
+  }
 }
 
 function listSessionFiles(dir) {
