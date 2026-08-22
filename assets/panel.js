@@ -97,6 +97,44 @@ function pluginApiFetch(path, init = {}) {
   return fetch(pluginApiUrl(path), { ...init, headers });
 }
 
+// 精确焦点会话探测：调用宿主 /api/sessions/messages，不传 path 时宿主按
+// engine.currentSessionPath（左侧栏 UI 焦点）读取。响应中的 entryId 再交给
+// 插件后端映射回具体 JSONL 文件。宿主接口不可用时静默返回 null，继续走原兜底。
+function hostApiUrl(path) {
+  const url = new URL(path, window.location.origin);
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  if (token) url.searchParams.set("token", token);
+  return url.toString();
+}
+
+let focusedEntryCache = { entryId: null, file: null, failedUntil: 0 };
+async function getFocusedSessionFile() {
+  if (Date.now() < focusedEntryCache.failedUntil) return focusedEntryCache.file;
+  try {
+    const hostRes = await fetch(hostApiUrl("/api/sessions/messages?limit=5"), {
+      credentials: "include",
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!hostRes.ok) throw new Error(`host focus HTTP ${hostRes.status}`);
+    const hostData = await hostRes.json();
+    const messages = Array.isArray(hostData?.messages) ? hostData.messages : [];
+    const focusedMessage = [...messages].reverse().find((m) => typeof m?.entryId === "string" && m.entryId.trim());
+    const entryId = focusedMessage?.entryId?.trim() || null;
+    if (!entryId) return null; // 空会话没有可匹配消息，保留当前显示
+    if (entryId === focusedEntryCache.entryId && focusedEntryCache.file) return focusedEntryCache.file;
+
+    const mapped = await fetchJson("/api/resolve-entry?entryId=" + encodeURIComponent(entryId));
+    const file = typeof mapped?.file === "string" && mapped.file.endsWith(".jsonl") ? mapped.file : null;
+    focusedEntryCache = { entryId, file, failedUntil: 0 };
+    return file;
+  } catch (error) {
+    console.debug("[Session Insight] focus probe unavailable:", error?.message || error);
+    focusedEntryCache.failedUntil = Date.now() + 10000;
+    return focusedEntryCache.file;
+  }
+}
+
 const hana = {
   ready: () => event("hana.ready"),
   ui: { resize: (size) => event("ui.resize", size) },
@@ -168,8 +206,6 @@ initHostThemeSync();
 // 真实插件 iframe 可能与宿主跨域；以宿主 postMessage 为权威主题源。
 function onHostThemeMessage(evt) {
   if (evt.source !== window.parent) return;
-  const origin = targetOrigin();
-  if (origin !== "*" && evt.origin !== origin) return;
   const msg = evt.data || {};
   if (msg.type !== "hana.host.theme" && msg.type !== "hana.host.context") return;
   const theme = msg.payload?.theme;
@@ -808,19 +844,40 @@ async function renderWidget() {
 
   function onHostContext(evt) {
     if (evt.source !== window.parent) return;
-    const origin = targetOrigin();
-    if (origin !== "*" && evt.origin !== origin) return;
     const msg = evt.data || {};
     if (msg.type !== "hana.host.context") return;
-    const nextFile = sessionFileFromPath(msg.payload?.sessionPath);
+    const p = msg.payload || {};
+    const nextFile = sessionFileFromPath(p.sessionPath ?? p.path ?? p.file ?? p.sessionId);
     if (!nextFile || nextFile === activeSessionFile) return;
     activeSessionFile = nextFile;
     tick();
   }
 
+  let focusSyncBusy = false;
+  async function syncFocusedSession() {
+    if (focusSyncBusy || document.hidden) return;
+    focusSyncBusy = true;
+    try {
+      const file = await getFocusedSessionFile();
+      if (!file || file === activeSessionFile) return;
+      activeSessionFile = file;
+      await tick();
+    } finally {
+      focusSyncBusy = false;
+    }
+  }
+
   window.addEventListener("message", onHostContext);
+  const initialFocusedFile = await getFocusedSessionFile();
+  if (initialFocusedFile) activeSessionFile = initialFocusedFile;
   await tick();
-  setInterval(tick, 30000);
+  const focusTimer = setInterval(syncFocusedSession, 500);
+  const refreshTimer = setInterval(tick, 30000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) syncFocusedSession(); });
+  window.addEventListener("beforeunload", () => {
+    clearInterval(focusTimer);
+    clearInterval(refreshTimer);
+  }, { once: true });
   // 卡片高度可调：窗口尺寸变化时实时同步滚动容器高度
   updateWidgetScroll();
   window.addEventListener("resize", updateWidgetScroll);
@@ -876,6 +933,7 @@ async function renderPage() {
   let bbOpen = false; // 主余额供应商切换下拉
   let lastBalance = null;
   let viewProvider = sessionStorage.getItem("si-hot-view-provider") || null; // 热更新后恢复供应商视图
+  let userPinnedFile = sessionStorage.getItem("si-focus-pinned-file-v127") || null; // 用户手动锁定的会话；未锁定则跟随宿主焦点
   let selectedFile = sessionStorage.getItem("si-hot-selected-file") || null; // 热更新后恢复会话
   let lastStats = null; // 最近一次统计（图表放大用）
   let lastLedger = null; // 全局用量总览数据（放大详情用）
@@ -888,13 +946,14 @@ async function renderPage() {
   }
   function onHostContext(evt) {
     if (evt.source !== window.parent) return;
-    const origin = targetOrigin();
-    if (origin !== "*" && evt.origin !== origin) return;
     const msg = evt.data || {};
     if (msg.type !== "hana.host.context") return;
-    const file = sessionFileFromPath(msg.payload?.sessionPath);
+    const p = msg.payload || {};
+    const file = sessionFileFromPath(p.sessionPath ?? p.path ?? p.file ?? p.sessionId);
     if (!file || file === selectedFile) return;
     selectedFile = file;
+    userPinnedFile = file; // host.context 推送是精确会话 → 视为锁定
+    try { sessionStorage.setItem("si-focus-pinned-file-v127", file); } catch {}
     setSelected(file);
     loadData(file);
   }
@@ -1683,8 +1742,7 @@ async function renderPage() {
     return t ? `${t} · ${dd} ${hh}` : `${dd} ${hh} · ${s.model || "未知模型"}`;
   }
 
-  function setSelected(file) {
-    selectedFile = file;
+  function updateSelectedUi(file) {
     const pop = document.getElementById("selPop");
     if (pop) {
       for (const opt of pop.querySelectorAll(".sel-opt")) {
@@ -1695,6 +1753,13 @@ async function renderPage() {
       const cur = sessions.find((s) => s.name === file);
       selText.textContent = cur ? sessLabel(cur) : "选择会话";
     }
+  }
+
+  function setSelected(file) {
+    selectedFile = file;
+    userPinnedFile = file; // 用户手动选择 → 锁定该会话，不再跟随宿主焦点
+    try { sessionStorage.setItem("si-focus-pinned-file-v127", file); } catch {}
+    updateSelectedUi(file);
   }
 
   function renderSelOptions() {
@@ -1733,6 +1798,22 @@ async function renderPage() {
       renderSelOptions();
     } catch (e) {
       if (selPop) selPop.innerHTML = "";
+    }
+  }
+
+  let pageFocusSyncBusy = false;
+  async function syncFocusedPage() {
+    if (userPinnedFile || pageFocusSyncBusy || document.hidden) return;
+    pageFocusSyncBusy = true;
+    try {
+      const file = await getFocusedSessionFile();
+      if (!file || file === selectedFile) return;
+      if (!sessions.some((s) => s.name === file)) await loadSessions();
+      selectedFile = file;
+      updateSelectedUi(file);
+      await loadData(file, { preserveView: true });
+    } finally {
+      pageFocusSyncBusy = false;
     }
   }
 
@@ -1898,14 +1979,23 @@ async function renderPage() {
   refreshBtn.addEventListener("click", async () => {
     setLoading(true);
     try {
-      if (selectedFile) {
-        // 有选中会话 → 重新加载数据（保持当前供应商视图，不切回默认）
-        await loadData(selectedFile, { preserveView: true });
-      } else if (viewProvider) {
-        // 无会话，有供应商视图 → 只刷新余额
-        const balance = await getBalance().catch(() => null);
-        lastBalance = balance;
-        renderBalanceBlock(balance, viewProvider, "（无会话）");
+      if (userPinnedFile) {
+        // 用户手动锁定会话 → 固定显示该会话
+        await loadData(userPinnedFile, { preserveView: true });
+      } else {
+        // 未锁定 → 优先精确跟随宿主 UI 焦点；宿主接口不可用时退回最近活跃
+        await loadSessions();
+        const focused = await getFocusedSessionFile();
+        const latest = focused || sessions[0]?.name || null;
+        selectedFile = latest;
+        updateSelectedUi(latest);
+        if (latest) {
+          await loadData(latest, { preserveView: true });
+        } else {
+          const balance = await getBalance().catch(() => null);
+          lastBalance = balance;
+          renderBalanceBlock(balance, viewProvider, "（无会话）");
+        }
       }
     } finally {
       setLoading(false);
@@ -1913,9 +2003,17 @@ async function renderPage() {
   });
 
   await loadSessions();
-  if (sessions.length > 0 && !selectedFile) selectedFile = sessions[0].name;
+  if (!userPinnedFile) {
+    // 未锁定 → 优先精确跟随宿主 UI 焦点；接口不可用时退回最近活跃
+    const focused = await getFocusedSessionFile();
+    selectedFile = focused || sessions[0]?.name || null;
+    updateSelectedUi(selectedFile);
+  }
   await loadData(selectedFile);
   syncProviders(); // 打开时同步 HanaAgent 供应商配置（新增/删减自动适配）
+  const pageFocusTimer = setInterval(syncFocusedPage, 500);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) syncFocusedPage(); });
+  window.addEventListener("beforeunload", () => clearInterval(pageFocusTimer), { once: true });
 
   // 事件委托：下拉选择 + 折叠菜单 + 官网跳转 + 供应商切换
   root.addEventListener("click", (e) => {
