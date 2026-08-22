@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "session-insight",
   "name": "Session Insight",
-  "version": "1.2.3",
+  "version": "1.2.7",
   "description": "会话用量可视化：tokens、缓存命中率、费用、余额，widget 常驻状态条 + 图表页。",
   "minAppVersion": "0.159.0",
   "trust": "full-access",
@@ -14,7 +14,8 @@
   },
   "capabilities": [
     "resource.read",
-    "network.fetch"
+    "network.fetch",
+    "session"
   ],
   "network": {
     "allowedHosts": [
@@ -72,8 +73,8 @@
         "sessionsDir": {
           "type": "string",
           "title": "会话目录",
-          "description": "Hana 会话 JSONL 所在目录。默认读取 Hana 自带的 agents/<agent>/sessions。",
-          "default": "D:\\AI\\Hanako\\agents\\hanako\\sessions",
+          "description": "Hana 会话 JSONL 所在目录。留空时从插件安装目录自动定位 Hana 数据根并寻找 agents/<agent>/sessions。",
+          "default": "",
           "ui": {
             "control": "text"
           }
