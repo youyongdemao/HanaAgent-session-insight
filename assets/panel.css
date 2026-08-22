@@ -98,7 +98,7 @@ body {
 /* ── widget · 窄侧栏仪表卡 ─────────────────────── */
 body[data-surface="widget"] { overflow: hidden; height: 100vh; --si-widget-max: 600px; }
 body[data-surface="widget"] .panel {
-  padding: 20px 14px 12px;
+  padding: 20px 14px 52px;
   max-width: none;
   height: 100%;
   box-sizing: border-box;
@@ -379,7 +379,7 @@ body[data-surface="widget"]:is([data-hana-theme="midnight"], [data-hana-theme="m
 }
 
 @media (max-width: 340px) {
-  body[data-surface="widget"] .panel { padding: 16px 10px 10px; }
+  body[data-surface="widget"] .panel { padding: 16px 10px 50px; }
   .widget-card { gap: 12px; }
   .w-ring { width: 88px; height: 88px; }
   .w-overview { gap: 12px; padding: 10px; }
