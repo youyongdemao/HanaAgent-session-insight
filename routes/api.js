@@ -1,6 +1,7 @@
 // routes/api.js — 会话统计 / 会话列表 / 多供应商余额
 import { readFileSync, readdirSync, statSync, existsSync, appendFileSync, writeFileSync, mkdirSync, cpSync, rmSync, renameSync, openSync, readSync, closeSync } from "node:fs";
 import { exec, execFile } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
 import { join, dirname, basename } from "node:path";
 import { createHash } from "node:crypto";
 import { parseSession, PROVIDER_OF_MODEL, PRICING, priceFor } from "../lib/usage-parser.js";
@@ -297,21 +298,26 @@ function buildSessionCandidates(ctx) {
     const dir = ctx.config?.get?.("sessionsDir");
     if (dir && dir.trim()) cands.push(dir);
   } catch {}
+  // 新宿主若暴露当前 JSONL，直接采用其目录；旧宿主此字段为空，继续走兼容路径。
+  try {
+    const sessionPath = String(ctx?.sessionPath || "").trim();
+    if (sessionPath.endsWith(".jsonl")) cands.push(dirname(sessionPath));
+  } catch {}
   let root = null;
   try { root = getDataRoot(ctx); } catch {}
   if (root) {
-    // 数据根下所有 agent 的 sessions
-    for (const sd of listAgentSessionDirs(root)) cands.push(sd);
-    // 常见兜底：hanako 专属 + broker（部分版本用 broker 存放会话）
+    // 默认优先 Hanako，不能把 readdir 的字母顺序（通常是 butter）当作当前 agent。
     cands.push(join(root, "agents", "hanako", "sessions"));
+    // 再保留其他 agent 的目录，兼容手工配置缺失的旧数据布局。
+    for (const sd of listAgentSessionDirs(root)) cands.push(sd);
   }
   // 从插件目录向上推导的 agents
   try {
     const pd = ctx?.pluginDir;
     if (pd) {
       const up = dirname(dirname(pd));
-      for (const sd of listAgentSessionDirs(up)) cands.push(sd);
       cands.push(join(up, "agents", "hanako", "sessions"));
+      for (const sd of listAgentSessionDirs(up)) cands.push(sd);
     }
   } catch {}
   // 去重
@@ -343,6 +349,40 @@ function listSessionFiles(dir) {
 
 // 会话标题：优先使用 HanaAgent 的正式标题（session-titles.json），首条用户消息仅作兜底
 let sessionTitlesCache = { path: "", mtime: 0, data: {} };
+// 新版 HanaAgent 将 GUI sessionId 与 JSONL 路径的正式对应关系存入根目录 SQLite。
+// 不能只依赖 .files.json：没有附件的新会话不会生成该侧车文件，因而会丢失左栏标题。
+let sessionManifestCache = { path: "", mtime: 0, idsByPath: new Map() };
+function normalizeSessionPath(value) {
+  return String(value || "").replace(/\//g, "\\").toLowerCase();
+}
+function readSessionManifestIds(ctx) {
+  try {
+    const path = join(getDataRoot(ctx), "session-manifest.db");
+    if (!existsSync(path)) return new Map();
+    const mtime = statSync(path).mtimeMs;
+    if (sessionManifestCache.path === path && sessionManifestCache.mtime === mtime) {
+      return sessionManifestCache.idsByPath;
+    }
+    const db = new DatabaseSync(path, { readOnly: true });
+    let rows = [];
+    try {
+      rows = db.prepare("SELECT session_id, current_locator_path FROM session_manifests WHERE current_locator_type = 'jsonl' AND deleted_at IS NULL").all();
+    } finally {
+      db.close();
+    }
+    const idsByPath = new Map();
+    for (const row of rows) {
+      if (row?.session_id && row?.current_locator_path) {
+        idsByPath.set(normalizeSessionPath(row.current_locator_path), String(row.session_id));
+      }
+    }
+    sessionManifestCache = { path, mtime, idsByPath };
+    return idsByPath;
+  } catch (e) {
+    dbg("session-manifest title lookup ERROR: " + String(e?.message || e));
+    return new Map();
+  }
+}
 function readSessionTitles(dir) {
   try {
     const full = join(dir, "session-titles.json");
@@ -357,7 +397,7 @@ function readSessionTitles(dir) {
   }
 }
 
-function detectSessionTitle(dir, name) {
+function detectSessionTitle(ctx, dir, name) {
   try {
     const titles = readSessionTitles(dir);
     let sessionId = "";
@@ -375,6 +415,9 @@ function detectSessionTitle(dir, name) {
       const idMatch = fd.match(/"sessionId"\s*:\s*"(sess_[^"]+)"/);
       if (idMatch) sessionId = idMatch[1];
     }
+    // 无附件的新会话没有 .files.json，也不会把 GUI sessionId 写进 JSONL。
+    // 从宿主 session-manifest.db 的正式 JSONL 路径映射补全，保证与左侧标题同源。
+    if (!sessionId) sessionId = readSessionManifestIds(ctx).get(normalizeSessionPath(join(dir, name))) || "";
     // 与 HanaAgent 左侧会话列表同源：session-titles.json 的 key 随版本演进，
     // 新条目是 sessionId，旧条目可能是完整路径或文件名，三种都兼容
     if (sessionId && titles[sessionId]) return String(titles[sessionId]).trim();
@@ -975,7 +1018,7 @@ export default function registerPluginApiRoutes(app, ctx) {
       size: f.size,
       mtime: f.mtime,
       model: detectSessionModel(dir, f.name),
-      title: detectSessionTitle(dir, f.name),
+      title: detectSessionTitle(ctx, dir, f.name),
     }));
     return c.json({ dir, sessions: files });
   });
@@ -1017,7 +1060,7 @@ export default function registerPluginApiRoutes(app, ctx) {
     if (!result) {
       return c.json({ error: "no usage data in session", file: name });
     }
-    result.title = detectSessionTitle(dir, name); // HanaAgent 正式会话标题优先，首句兜底
+    result.title = detectSessionTitle(ctx, dir, name); // HanaAgent 正式会话标题优先，首句兜底
     return c.json(result);
   });
 
