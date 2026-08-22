@@ -1,13 +1,15 @@
 // routes/api.js — 会话统计 / 会话列表 / 多供应商余额
-import { readFileSync, readdirSync, statSync, existsSync, appendFileSync, writeFileSync, mkdirSync, cpSync, rmSync, renameSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync, appendFileSync, writeFileSync, mkdirSync, cpSync, rmSync, renameSync, openSync, readSync, closeSync } from "node:fs";
 import { exec, execFile } from "node:child_process";
 import { join, dirname, basename } from "node:path";
 import { createHash } from "node:crypto";
 import { parseSession, PROVIDER_OF_MODEL, PRICING, priceFor } from "../lib/usage-parser.js";
 
+let debugLogPath = null;
 function dbg(msg) {
   try {
-    appendFileSync(join(getDataRoot(null), "OH-WorkSpace", "session-insight-debug.log"), `[${new Date().toISOString()}] ${msg}\n`);
+    if (!debugLogPath) return;
+    appendFileSync(debugLogPath, `[${new Date().toISOString()}] ${msg}\n`);
   } catch {}
 }
 
@@ -145,30 +147,45 @@ function computeLedgerStats(ctx, provider) {
   }
 }
 
-const PROVIDER_CATALOG = "D:\\AI\\Hanako\\provider-catalog.json";
-const MODELS_FILE = "D:\\AI\\Hanako\\models.json";
-const AUTH_FILE = "D:\\AI\\Hanako\\auth.json";
-
-// 动态定位数据根：优先取 config.dataDir，其次由 sessionsDir 推导（sessions -> .. -> agents -> .. -> 根），兜底写死路径
+// 自动定位 Hana 数据根：插件安装目录与插件私有 dataDir 都位于 Hana 数据根之下，
+// 配置项和 sessionsDir 只作为补充候选。找不到时明确报错，不再回退固定机器路径。
 function getDataRoot(ctx) {
+  const candidates = [];
   try {
-    const p = ctx.config?.get?.("dataDir");
-    if (p && existsSync(p)) return p;
+    const pd = ctx?.pluginDir;
+    if (pd) candidates.push(dirname(dirname(pd)));
   } catch {}
   try {
-    const sd = ctx.config?.get?.("sessionsDir");
-    if (sd) {
-      const root = join(sd, "..", "..", "..");
-      if (existsSync(join(root, "usage-ledger.json")) || existsSync(join(root, "provider-catalog.json"))) return root;
-    }
+    const dataDir = ctx?.dataDir;
+    if (dataDir) candidates.push(dirname(dirname(dataDir)));
   } catch {}
-  return "D:\\AI\\Hanako";
+  try {
+    const configured = ctx?.config?.get?.("dataDir");
+    if (configured) candidates.push(configured);
+  } catch {}
+  try {
+    const sd = ctx?.config?.get?.("sessionsDir");
+    if (sd) candidates.push(join(sd, "..", "..", ".."));
+  } catch {}
+
+  const unique = [...new Set(candidates.filter(Boolean).map((p) => join(p)))];
+  const markers = ["provider-catalog.json", "models.json", "auth.json", "usage-ledger.json", "agents"];
+  for (const root of unique) {
+    try {
+      if (existsSync(root) && markers.some((name) => existsSync(join(root, name)))) return root;
+    } catch {}
+  }
+  // 插件安装目录本身是最强锚点；即使首次启动尚未创建 marker，也接受其推导根。
+  for (const root of unique) {
+    try { if (existsSync(root)) return root; } catch {}
+  }
+  throw new Error("Unable to resolve Hana data root from pluginDir, dataDir, or sessionsDir");
 }
 function getLedgerPath(ctx) {
   return join(getDataRoot(ctx), "usage-ledger.json");
 }
 
-// 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），兜底写死路径
+// 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），最后用动态数据根推导
 function getProviderCatalogPath(ctx) {
   try {
     const p = ctx.config?.get?.("providerCatalogPath") || ctx.config?.get?.("dataDir");
@@ -181,7 +198,7 @@ function getProviderCatalogPath(ctx) {
       if (existsSync(cand)) return cand;
     }
   } catch {}
-  return PROVIDER_CATALOG;
+  return join(getDataRoot(ctx), "provider-catalog.json");
 }
 
 function readAppearancePreference(ctx) {
@@ -189,7 +206,7 @@ function readAppearancePreference(ctx) {
   const candidates = [
     catalogPath ? join(dirname(catalogPath), "user", "preferences.json") : null,
     ctx.pluginDir ? join(dirname(dirname(ctx.pluginDir)), "user", "preferences.json") : null,
-    "D:\\AI\\Hanako\\user\\preferences.json",
+    join(getDataRoot(ctx), "user", "preferences.json"),
   ].filter(Boolean);
   for (const file of [...new Set(candidates)]) {
     try {
@@ -239,11 +256,23 @@ const NO_BALANCE_API = {
 };
 
 function getSessionsDir(ctx) {
+  const candidates = [];
   try {
     const dir = ctx.config?.get?.("sessionsDir");
-    if (dir && existsSync(dir)) return dir;
+    if (dir && dir.trim()) candidates.push(dir);
   } catch {}
-  return join(getDataRoot(ctx), "agents", "hanako", "sessions");
+  try {
+    const pd = ctx?.pluginDir;
+    if (pd) {
+      candidates.push(join(dirname(dirname(pd)), "agents", "hanako", "sessions"));
+      // HanaAgent 多 agent：会话目录可能在 agents/<anyAgent>/sessions，取第一个存在的
+    }
+  } catch {}
+  candidates.push(join(getDataRoot(ctx), "agents", "hanako", "sessions"));
+  for (const c of candidates) {
+    try { if (c && existsSync(c)) return c; } catch {}
+  }
+  return candidates[0] || join(getDataRoot(ctx), "agents", "hanako", "sessions");
 }
 
 function listSessionFiles(dir) {
@@ -360,6 +389,77 @@ function readSession(dir, name, limitTurns) {
   return { file: name, ...parsed };
 }
 
+// 探测“用户当前正在对话”的会话：所有会话里，最后一条 role:user 消息时间戳最新的那个。
+// 后台子代理 / 自动刷新会写 assistant/toolResult，但不会写 user 消息，因此能排掉后台干扰。
+const ACTIVE_TAIL_BYTES = 262144; // 读每个文件末尾 256KB 找最后一条 user 消息（够容纳长回复）
+const USER_TS_RE = /"role"\s*:\s*"user"[\s\S]{0,2000}?"timestamp"\s*:\s*(\d{13})/g;
+function detectActiveSession(dir) {
+  const files = listSessionFiles(dir).slice(0, 120);
+  let best = null;
+  let bestTs = -1;
+  for (const f of files) {
+    try {
+      const full = join(dir, f.name);
+      const st = statSync(full);
+      // 文件要有、要有内容
+      if (!st.isFile() || st.size < 10) continue;
+      const fd = readFileSync(full);
+      const tailLen = Math.min(fd.length, ACTIVE_TAIL_BYTES);
+      const tail = fd.slice(fd.length - tailLen).toString("utf8");
+      let lastUserTs = -1;
+      let m;
+      USER_TS_RE.lastIndex = 0;
+      while ((m = USER_TS_RE.exec(tail))) lastUserTs = Number(m[1]);
+      // 以「最后一条 user 消息时间」为主；没有则退化为文件 mtime（弱信号，排最后）
+      const score = lastUserTs > 0 ? lastUserTs : (f.mtime * 0.001);
+      if (score > bestTs) {
+        bestTs = score;
+        best = { file: f.name, userTs: lastUserTs, mtime: f.mtime };
+      }
+    } catch {}
+  }
+  return best;
+}
+
+// 将宿主焦点消息的 entryId 精确映射回本地 JSONL。
+// /api/sessions/messages 返回的 entryId 来自 JSONL 原始 message.id，且最后一条消息
+// 必然靠近文件尾部；只读尾部 2MB，避免轮询时反复读取完整大文件。
+const ENTRY_TAIL_BYTES = 2 * 1024 * 1024;
+const entryFileCache = new Map();
+function resolveSessionFileByEntryId(dir, entryId) {
+  if (entryFileCache.has(entryId)) {
+    const cached = entryFileCache.get(entryId);
+    if (cached && existsSync(join(dir, cached))) return cached;
+    entryFileCache.delete(entryId);
+  }
+  const needleCompact = `\"id\":\"${entryId}\"`;
+  const needleSpaced = `\"id\": \"${entryId}\"`;
+  for (const f of listSessionFiles(dir).slice(0, 160)) {
+    const full = join(dir, f.name);
+    let fd = null;
+    try {
+      const st = statSync(full);
+      const len = Math.min(st.size, ENTRY_TAIL_BYTES);
+      if (len <= 0) continue;
+      fd = openSync(full, "r");
+      const buf = Buffer.allocUnsafe(len);
+      readSync(fd, buf, 0, len, Math.max(0, st.size - len));
+      const tail = buf.toString("utf8");
+      if (tail.includes(needleCompact) || tail.includes(needleSpaced)) {
+        entryFileCache.set(entryId, f.name);
+        // 限制缓存大小，防止长期运行无限增长
+        if (entryFileCache.size > 512) entryFileCache.delete(entryFileCache.keys().next().value);
+        return f.name;
+      }
+    } catch {
+      // 单个会话损坏/锁定不影响其余候选
+    } finally {
+      if (fd != null) try { closeSync(fd); } catch {}
+    }
+  }
+  return null;
+}
+
 // 读 provider-catalog 拿 key（脱敏使用）
 function readProviderCatalog(ctx) {
   try {
@@ -374,8 +474,8 @@ function readProviderCatalog(ctx) {
 function readModelsConfig(ctx) {
   try {
     const catalogPath = getProviderCatalogPath(ctx);
-    const inferred = catalogPath ? join(catalogPath, "..", "models.json") : MODELS_FILE;
-    const p = existsSync(inferred) ? inferred : MODELS_FILE;
+    const inferred = catalogPath ? join(catalogPath, "..", "models.json") : join(getDataRoot(ctx), "models.json");
+    const p = existsSync(inferred) ? inferred : join(getDataRoot(ctx), "models.json");
     if (existsSync(p)) return JSON.parse(readFileSync(p, "utf8"));
   } catch {}
   return null;
@@ -384,8 +484,8 @@ function readModelsConfig(ctx) {
 function readAuthConfig(ctx) {
   try {
     const catalogPath = getProviderCatalogPath(ctx);
-    const inferred = catalogPath ? join(catalogPath, "..", "auth.json") : AUTH_FILE;
-    const p = existsSync(inferred) ? inferred : AUTH_FILE;
+    const inferred = catalogPath ? join(catalogPath, "..", "auth.json") : join(getDataRoot(ctx), "auth.json");
+    const p = existsSync(inferred) ? inferred : join(getDataRoot(ctx), "auth.json");
     if (existsSync(p)) return JSON.parse(readFileSync(p, "utf8"));
   } catch {}
   return {};
@@ -417,7 +517,7 @@ function currentPluginVersion(ctx) {
 
 function readGitHubToken(ctx) {
   const catalogPath = getProviderCatalogPath(ctx);
-  const base = catalogPath ? dirname(catalogPath) : "D:\\AI\\Hanako";
+  const base = catalogPath ? dirname(catalogPath) : getDataRoot(ctx);
   const mcpConfig = join(base, "plugin-data", "mcp", "config.json");
   try {
     if (!existsSync(mcpConfig)) return null;
@@ -746,6 +846,14 @@ async function queryCodexQuota(ctx, fetchFn) {
 }
 
 export default function registerPluginApiRoutes(app, ctx) {
+  try {
+    const logDir = ctx?.dataDir || join(getDataRoot(ctx), "plugin-data", "session-insight");
+    mkdirSync(logDir, { recursive: true });
+    debugLogPath = join(logDir, "session-insight-debug.log");
+  } catch {
+    debugLogPath = null;
+  }
+
   // 会话上下文探测：验证新版 surfaceSession 链路能否拿到当前会话 sessionId
   app.get("/api/probe-session", (c) => {
     const pr = c.env?.pluginRouteRequest || null;
@@ -816,6 +924,26 @@ export default function registerPluginApiRoutes(app, ctx) {
       title: detectSessionTitle(dir, f.name),
     }));
     return c.json({ dir, sessions: files });
+  });
+
+  // 探测“用户当前正在对话”的会话：最后一条 user 消息时间戳最新的那个（能排掉后台子代理/自动刷新干扰）
+  app.get("/api/active", (c) => {
+    const dir = getSessionsDir(ctx);
+    const hit = detectActiveSession(dir);
+    dbg("active-session: " + JSON.stringify(hit || null));
+    return c.json({ dir, ...(hit || { file: null }) });
+  });
+
+  // 宿主焦点消息 entryId → 本地会话 JSONL 文件名
+  app.get("/api/resolve-entry", (c) => {
+    const entryId = String(c.req.query("entryId") || "").trim();
+    if (!/^[A-Za-z0-9_-]{4,128}$/.test(entryId)) {
+      return c.json({ error: "invalid entryId" }, 400);
+    }
+    const dir = getSessionsDir(ctx);
+    const file = resolveSessionFileByEntryId(dir, entryId);
+    dbg(`focus-entry: ${entryId} -> ${file || "not_found"}`);
+    return c.json({ file });
   });
 
   // 指定会话统计（默认最新）；?file=xxx.jsonl&limit=200
