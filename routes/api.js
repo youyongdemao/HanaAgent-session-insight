@@ -1,0 +1,1327 @@
+// routes/api.js — 会话统计 / 会话列表 / 多供应商余额
+import { readFileSync, readdirSync, statSync, existsSync, appendFileSync, writeFileSync, mkdirSync, cpSync, rmSync, renameSync, openSync, readSync, closeSync } from "node:fs";
+import { exec, execFile } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
+import { join, dirname, basename } from "node:path";
+import { createHash } from "node:crypto";
+import { parseSession, PROVIDER_OF_MODEL, PRICING, priceFor, SOURCE_NOTE, PRICING_SNAPSHOT_AT } from "../lib/usage-parser.js";
+
+let debugLogPath = null;
+function dbg(msg) {
+  try {
+    if (!debugLogPath) return;
+    appendFileSync(debugLogPath, `[${new Date().toISOString()}] ${msg}\n`);
+  } catch {}
+}
+
+// 用量总账（总消费数据源）
+let ledgerCache = { at: 0, totalCost: 0, perProvider: {}, perModel: {} };
+
+// 单条 ledger entry 的费用（输入按未命中/命中拆分，缓存窗口值不重复计费；峰谷模型按 startedAt 选档）
+function calcEntryCost(e) {
+  const model = e?.model?.modelId;
+  const p = priceFor(model, e?.startedAt);
+  if (!p) return null;
+  const u = e.usage || {};
+  const inputTotal = u.input?.totalTokens ?? u.input?.uncachedTokens ?? 0;
+  const uncached = u.input?.uncachedTokens ?? u.cache?.missTokens ?? inputTotal;
+  const inputMiss = Math.min(inputTotal, uncached ?? inputTotal);
+  const inputHit = Math.max(0, inputTotal - inputMiss);
+  const output = u.output?.totalTokens ?? 0;
+  return (inputMiss / 1e6) * p.inputMiss + (inputHit / 1e6) * p.inputHit + (output / 1e6) * p.output;
+}
+
+
+function computeTotalCost(ctx) {
+  const now = Date.now();
+  if (now - ledgerCache.at < 30000) return ledgerCache;
+  try {
+    const ledger = getLedgerPath(ctx);
+    if (!existsSync(ledger)) return { at: now, totalCost: null, perProvider: {}, perModel: {} };
+    const data = JSON.parse(readFileSync(ledger, "utf8"));
+    let totalCost = 0;
+    const perProvider = {};
+    const perModel = {};
+    for (const e of data.entries || []) {
+      const model = e.model?.modelId;
+      const provider = e.model?.provider;
+      const cost = calcEntryCost(e);
+      if (cost == null) continue;
+      totalCost += cost;
+      if (provider) perProvider[provider] = (perProvider[provider] || 0) + cost;
+      if (model) perModel[model] = (perModel[model] || 0) + cost;
+    }
+    ledgerCache = {
+      at: now,
+      totalCost: Math.round(totalCost * 100) / 100,
+      perProvider: Object.fromEntries(Object.entries(perProvider).map(([k, v]) => [k, Math.round(v * 100) / 100])),
+      perModel: Object.fromEntries(Object.entries(perModel).map(([k, v]) => [k, Math.round(v * 100) / 100])),
+    };
+  } catch (e) {
+    dbg("total-cost ERROR: " + String(e?.message || e));
+  }
+  return ledgerCache;
+}
+
+
+
+let ledgerStatsCache = { at: 0, provider: null };
+
+// 全局用量总览：按 agent/来源/日期/模型聚合 + 延迟分布 + 错误数（30s 缓存）
+// provider 可选：传入则只统计该供应商的数据
+function computeLedgerStats(ctx, provider) {
+  const now = Date.now();
+  if (now - ledgerStatsCache.at < 30000 && ledgerStatsCache.provider === provider) return ledgerStatsCache;
+  try {
+    const ledger = getLedgerPath(ctx);
+    if (!existsSync(ledger)) return { at: now, empty: true, provider };
+    const data = JSON.parse(readFileSync(ledger, "utf8"));
+    const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 };
+    const latAll = [];
+    const timeCosts = [];
+    let callCount = 0, errCount = 0;
+    for (const e of data.entries || []) {
+      if (provider && e.model?.provider !== provider) continue; // 按供应商过滤
+      const cost = calcEntryCost(e);
+      const cc = cost || 0;
+      const tsCost = Date.parse(e.startedAt || "");
+      if (Number.isFinite(tsCost)) timeCosts.push({ ts: tsCost, cost: cc });
+      callCount++;
+      // agent 归属
+      const agent = e.attribution?.agentId || "未知";
+      const agentKey = (e.attribution?.kind || "other") + ":" + agent;
+      byAgent[agentKey] = byAgent[agentKey] || { calls: 0, cost: 0, tokens: 0 };
+      byAgent[agentKey].calls++;
+      byAgent[agentKey].cost += cc;
+      byAgent[agentKey].tokens += e.usage?.totalTokens || 0;
+      // 来源
+      const sub = e.source?.subsystem || "other";
+      bySubsystem[sub] = bySubsystem[sub] || { calls: 0, cost: 0 };
+      bySubsystem[sub].calls++;
+      bySubsystem[sub].cost += cc;
+      // 日期
+      const d = String(e.startedAt || "").slice(0, 10);
+      if (d) {
+        byDay[d] = byDay[d] || { calls: 0, tokens: 0, cost: 0 };
+        byDay[d].calls++;
+        byDay[d].tokens += e.usage?.totalTokens || 0;
+        byDay[d].cost += cc;
+      }
+      // 模型
+      const m = e.model?.modelId || "unknown";
+      byModel[m] = byModel[m] || { calls: 0, cost: 0 };
+      byModel[m].calls++;
+      byModel[m].cost += cc;
+      // 延迟
+      const dur = e.durationMs;
+      if (dur != null && dur > 0) {
+        latAll.push(dur);
+        if (dur < 1000) latBuckets.lt1++;
+        else if (dur < 3000) latBuckets["1_3"]++;
+        else if (dur < 10000) latBuckets["3_10"]++;
+        else latBuckets.gt10++;
+      }
+      if (e.status && e.status !== "ok") errCount++;
+    }
+    latAll.sort((a, b) => a - b);
+    const pct = (q) => (latAll.length ? latAll[Math.min(latAll.length - 1, Math.floor(q * latAll.length))] : 0);
+    const round2 = (v) => Math.round(v * 100) / 100;
+    const recentBuckets = (spanMs, count) => { const start = now - spanMs, out = Array(count).fill(0); for (const x of timeCosts) { if (x.ts < start || x.ts > now) continue; const idx = Math.max(0, Math.min(count - 1, Math.floor(((x.ts - start) / spanMs) * count))); out[idx] += x.cost; } return out.map(v => Math.round(v * 1e6) / 1e6); };
+    const timeBuckets = { hour: recentBuckets(24 * 3600e3, 100), day: recentBuckets(100 * 86400e3, 100), week: recentBuckets(100 * 7 * 86400e3, 100) };
+    ledgerStatsCache = {
+      at: now,
+      timeBuckets,
+      provider,
+      calls: callCount,
+      errors: errCount,
+      agents: Object.fromEntries(Object.entries(byAgent).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
+      subsystems: Object.fromEntries(Object.entries(bySubsystem).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
+      days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost) }])),
+      models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
+      latency: {
+        n: latAll.length,
+        avg: latAll.length ? Math.round(latAll.reduce((a, b) => a + b, 0) / latAll.length) : 0,
+        p50: pct(0.5),
+        p95: pct(0.95),
+        max: latAll.length ? latAll[latAll.length - 1] : 0,
+        buckets: latBuckets,
+      },
+    };
+    return ledgerStatsCache;
+  } catch (e) {
+    dbg("ledger-stats ERROR: " + String(e?.message || e));
+    return { at: now, empty: true, provider, error: String(e?.message || e) };
+  }
+}
+
+// 自动定位 Hana 数据根：插件安装目录与插件私有 dataDir 都位于 Hana 数据根之下，
+// 配置项和 sessionsDir 只作为补充候选。找不到时明确报错，不再回退固定机器路径。
+// 常见 HanaAgent 数据根参考目录：从环境变量与常见安装位置推导，
+// 覆盖发行版与内测版的不同数据根布局。
+function commonDataRootCandidates() {
+  const list = [];
+  for (const p of [process.env.APPDATA, process.env.LOCALAPPDATA, process.env.USERPROFILE, process.env.HOMEDRIVE]) {
+    if (!p) continue;
+    for (const sub of ["", "Hanako", "hana", ".hanako", ".hana", "HanaAgent", "hana-agent"]) {
+      try { list.push(join(p, sub)); } catch {}
+    }
+  }
+  return list;
+}
+
+function getDataRoot(ctx) {
+  const candidates = [];
+  try {
+    const pd = ctx?.pluginDir;
+    if (pd) candidates.push(dirname(dirname(pd)));
+  } catch {}
+  try {
+    const dataDir = ctx?.dataDir;
+    if (dataDir) candidates.push(dirname(dirname(dataDir)));
+  } catch {}
+  try {
+    const configured = ctx?.config?.get?.("dataDir");
+    if (configured) candidates.push(configured);
+  } catch {}
+  try {
+    const sd = ctx?.config?.get?.("sessionsDir");
+    if (sd) candidates.push(join(sd, "..", "..", ".."));
+  } catch {}
+  // 参考目录：常见 Hana 数据根位置
+  if (!ctx?.config?.get?.("dataDir")) candidates.push(...commonDataRootCandidates());
+
+  const unique = [...new Set(candidates.filter(Boolean).map((p) => join(p)))];
+  const markers = ["provider-catalog.json", "models.json", "auth.json", "usage-ledger.json", "agents"];
+  for (const root of unique) {
+    try {
+      if (existsSync(root) && markers.some((name) => existsSync(join(root, name)))) return root;
+    } catch {}
+  }
+  for (const root of unique) {
+    try { if (existsSync(root)) return root; } catch {}
+  }
+  // 最后：扫参考目录，含 agents 或 models/provider 的才算 Hana 数据根
+  for (const root of commonDataRootCandidates()) {
+    try {
+      if (existsSync(join(root, "agents")) || existsSync(join(root, "provider-catalog.json"))) return root;
+    } catch {}
+  }
+  throw new Error("Unable to resolve Hana data root from pluginDir, dataDir, or sessionsDir");
+}
+function getLedgerPath(ctx) {
+  return join(getDataRoot(ctx), "usage-ledger.json");
+}
+
+// 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），最后用动态数据根推导
+function getProviderCatalogPath(ctx) {
+  try {
+    const p = ctx.config?.get?.("providerCatalogPath") || ctx.config?.get?.("dataDir");
+    if (p && existsSync(p)) return existsSync(p) && p.endsWith(".json") ? p : join(p, "provider-catalog.json");
+  } catch {}
+  try {
+    const sd = ctx.config?.get?.("sessionsDir");
+    if (sd) {
+      const cand = join(sd, "..", "..", "..", "provider-catalog.json");
+      if (existsSync(cand)) return cand;
+    }
+  } catch {}
+  return join(getDataRoot(ctx), "provider-catalog.json");
+}
+
+function readAppearancePreference(ctx) {
+  const catalogPath = getProviderCatalogPath(ctx);
+  const candidates = [
+    catalogPath ? join(dirname(catalogPath), "user", "preferences.json") : null,
+    ctx.pluginDir ? join(dirname(dirname(ctx.pluginDir)), "user", "preferences.json") : null,
+    join(getDataRoot(ctx), "user", "preferences.json"),
+  ].filter(Boolean);
+  for (const file of [...new Set(candidates)]) {
+    try {
+      if (!existsSync(file)) continue;
+      const data = JSON.parse(readFileSync(file, "utf8"));
+      const theme = data?.appearance?.theme;
+      if (typeof theme === "string" && theme.trim()) {
+        return { theme: theme.trim(), source: "preferences" };
+      }
+    } catch {}
+  }
+  return { theme: null, source: "unavailable" };
+}
+
+// 供应商余额适配器：url 拼接 + 响应解析
+const BALANCE_ADAPTERS = {
+  deepseek: {
+    name: "DeepSeek",
+    url: (base) => base.replace(/\/+$/, "") + "/user/balance",
+    parse: (data) => {
+      const cny = (data.balance_infos || []).find((b) => b.currency === "CNY");
+      return cny ? { total: Math.round(Number(cny.total_balance) * 100) / 100, currency: "CNY" } : null;
+    },
+  },
+  moonshot: {
+    name: "Moonshot",
+    url: (base) => base.replace(/\/+$/, "") + "/users/me/balance",
+    parse: (data) => {
+      const d = data && data.data;
+      if (d && d.available_balance != null) {
+        return { total: Math.round(Number(d.available_balance) * 100) / 100, currency: "CNY" };
+      }
+      return null;
+    },
+  },
+};
+
+// 无公开余额接口的供应商说明
+const NO_BALANCE_API = {
+  mimo: "暂无余额接口",
+  zhipu: "暂无余额接口",
+  agnes: "全模态免费",
+  openai: "需配置 OpenAI Admin Key",
+  gemini: "暂无余额接口",
+  "openai-codex": "实验性配额未启用",
+  "xai-oauth": "Grok 订阅无公开接口",
+};
+
+// 从数据根的 agents/ 下枚举所有子代理的 sessions 目录（不硬编码具体 agent 名）
+function listAgentSessionDirs(root) {
+  const dirs = [];
+  try {
+    const agentsDir = join(root, "agents");
+    if (existsSync(agentsDir)) {
+      for (const sub of readdirSync(agentsDir)) {
+        const sd = join(agentsDir, sub, "sessions");
+        if (existsSync(sd)) dirs.push(sd);
+      }
+    }
+  } catch {}
+  return dirs;
+}
+
+// 参考目录：HanaAgent 实际可能使用的会话目录（含用户配置与常见数据根推导）
+function buildSessionCandidates(ctx) {
+  const cands = [];
+  try {
+    const dir = ctx.config?.get?.("sessionsDir");
+    if (dir && dir.trim()) cands.push(dir);
+  } catch {}
+  // 新宿主若暴露当前 JSONL，直接采用其目录；旧宿主此字段为空，继续走兼容路径。
+  try {
+    const sessionPath = String(ctx?.sessionPath || "").trim();
+    if (sessionPath.endsWith(".jsonl")) cands.push(dirname(sessionPath));
+  } catch {}
+  let root = null;
+  try { root = getDataRoot(ctx); } catch {}
+  if (root) {
+    // 默认优先 Hanako，不能把 readdir 的字母顺序（通常是 butter）当作当前 agent。
+    cands.push(join(root, "agents", "hanako", "sessions"));
+    // 再保留其他 agent 的目录，兼容手工配置缺失的旧数据布局。
+    for (const sd of listAgentSessionDirs(root)) cands.push(sd);
+  }
+  // 从插件目录向上推导的 agents
+  try {
+    const pd = ctx?.pluginDir;
+    if (pd) {
+      const up = dirname(dirname(pd));
+      cands.push(join(up, "agents", "hanako", "sessions"));
+      for (const sd of listAgentSessionDirs(up)) cands.push(sd);
+    }
+  } catch {}
+  // 去重
+  return [...new Set(cands.filter((c) => typeof c === "string" && c.trim()))];
+}
+
+function getSessionsDir(ctx) {
+  const cands = buildSessionCandidates(ctx);
+  for (const c of cands) {
+    try { if (existsSync(c)) return c; } catch {}
+  }
+  if (cands.length) return cands[0];
+  try { return join(getDataRoot(ctx), "agents", "hanako", "sessions"); } catch {
+    return null;
+  }
+}
+
+function listSessionFiles(dir) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((name) => name.endsWith(".jsonl"))
+    .map((name) => {
+      const full = join(dir, name);
+      const st = statSync(full);
+      return { name, size: st.size, mtime: st.mtimeMs };
+    })
+    .sort((a, b) => b.mtime - a.mtime);
+}
+
+// 会话标题：优先使用 HanaAgent 的正式标题（session-titles.json），首条用户消息仅作兜底
+let sessionTitlesCache = { path: "", mtime: 0, data: {} };
+// 新版 HanaAgent 将 GUI sessionId 与 JSONL 路径的正式对应关系存入根目录 SQLite。
+// 不能只依赖 .files.json：没有附件的新会话不会生成该侧车文件，因而会丢失左栏标题。
+let sessionManifestCache = { path: "", mtime: 0, idsByPath: new Map() };
+function normalizeSessionPath(value) {
+  return String(value || "").replace(/\//g, "\\").toLowerCase();
+}
+function readSessionManifestIds(ctx) {
+  try {
+    const path = join(getDataRoot(ctx), "session-manifest.db");
+    if (!existsSync(path)) return new Map();
+    const mtime = statSync(path).mtimeMs;
+    if (sessionManifestCache.path === path && sessionManifestCache.mtime === mtime) {
+      return sessionManifestCache.idsByPath;
+    }
+    const db = new DatabaseSync(path, { readOnly: true });
+    let rows = [];
+    try {
+      rows = db.prepare("SELECT session_id, current_locator_path FROM session_manifests WHERE current_locator_type = 'jsonl' AND deleted_at IS NULL").all();
+    } finally {
+      db.close();
+    }
+    const idsByPath = new Map();
+    for (const row of rows) {
+      if (row?.session_id && row?.current_locator_path) {
+        idsByPath.set(normalizeSessionPath(row.current_locator_path), String(row.session_id));
+      }
+    }
+    sessionManifestCache = { path, mtime, idsByPath };
+    return idsByPath;
+  } catch (e) {
+    dbg("session-manifest title lookup ERROR: " + String(e?.message || e));
+    return new Map();
+  }
+}
+function readSessionTitles(dir) {
+  try {
+    const full = join(dir, "session-titles.json");
+    if (!existsSync(full)) return {};
+    const mtime = statSync(full).mtimeMs;
+    if (sessionTitlesCache.path === full && sessionTitlesCache.mtime === mtime) return sessionTitlesCache.data;
+    const data = JSON.parse(readFileSync(full, "utf8"));
+    sessionTitlesCache = { path: full, mtime, data: data && typeof data === "object" ? data : {} };
+    return sessionTitlesCache.data;
+  } catch {
+    return {};
+  }
+}
+
+function cleanSessionTitleText(value) {
+  let s = String(value || "");
+  // 同一条 user 消息可能同时包含宿主注入块与用户正文：只剥离注入块，保留真实问题。
+  s = s.replace(/<vision-context>[\s\S]*?<\/vision-context>/gi, " ");
+  s = s.replace(/\[hana_(reference|context|reminder|skill|file)\][\s\S]*?\[\/hana_\1\]/gi, " ");
+  s = s.replace(/^\[SessionFile\]\s*\{.*\}\s*$/gim, " ");
+  s = s.replace(/^\[attached_image:[^\]]*\]\s*$/gim, " ");
+  s = s.replace(/^<file name=.*$/gim, " ");
+  s = s.replace(/^\[(?:image|attachment|file|audio|video|media)[^\]]*\].*$/gim, " ");
+  return s.replace(/\s+/g, " ").trim();
+}
+function isInjectedSessionTitle(value) {
+  const s = String(value || "").trim();
+  return !s || /^(?:\[hana_|\[sessionfile\]|\[attached_image:|<vision-context>|<file name=|\[(?:image|attachment|file|audio|video|media))/i.test(s);
+}
+function detectSessionTitle(ctx, dir, name) {
+  try {
+    const titles = readSessionTitles(dir);
+    let sessionId = "";
+    // HanaAgent 为有附件/SessionFile 的会话写入同名侧车文件，里面有稳定 sessionId
+    const sidecar = join(dir, name + ".files.json");
+    if (existsSync(sidecar)) {
+      try {
+        sessionId = JSON.parse(readFileSync(sidecar, "utf8"))?.sessionId || "";
+      } catch {}
+    }
+
+    // 侧车不存在时，从 JSONL 中的 SessionFile 引用提取 sessionId；同时保留首句标题兜底
+    const fd = readFileSync(join(dir, name), { encoding: "utf8" });
+    if (!sessionId) {
+      const idMatch = fd.match(/"sessionId"\s*:\s*"(sess_[^"]+)"/);
+      if (idMatch) sessionId = idMatch[1];
+    }
+    // 无附件的新会话没有 .files.json，也不会把 GUI sessionId 写进 JSONL。
+    // 从宿主 session-manifest.db 的正式 JSONL 路径映射补全，保证与左侧标题同源。
+    if (!sessionId) sessionId = readSessionManifestIds(ctx).get(normalizeSessionPath(join(dir, name))) || "";
+    // 与 HanaAgent 左侧会话列表同源：session-titles.json 的 key 随版本演进，
+    // 新条目是 sessionId，旧条目可能是完整路径或文件名，三种都兼容
+    const official = [sessionId && titles[sessionId], titles[join(dir, name)], titles[name]];
+    for (const value of official) {
+      if (value && !isInjectedSessionTitle(value)) return String(value).trim();
+    }
+
+    const lines = fd.split("\n");
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const obj = JSON.parse(line);
+        if (obj.type === "message" && obj.message && obj.message.role === "user") {
+          const c = obj.message.content;
+          let t = "";
+          if (Array.isArray(c)) {
+            const text = c.find((x) => x && x.type === "text");
+            if (text && text.text) t = text.text;
+          } else if (typeof c === "string") {
+            t = c;
+          }
+          const s = cleanSessionTitleText(t);
+          if (!s || isInjectedSessionTitle(s)) continue;
+          return s.slice(0, 30);
+        }
+      } catch {}
+    }
+  } catch {}
+  return "";
+}
+
+// 读文件头部识别会话使用的模型（不解析全文，快）
+function detectSessionModel(dir, name) {  try {
+    const fd = openFileHead(join(dir, name), 4096);
+    return fd;
+  } catch {
+    return null;
+  }
+}
+
+function openFileHead(full, bytes) {
+  const fd = readFileSync(full, { encoding: "utf8" });
+  const head = fd.slice(0, bytes);
+  const lines = head.split("\n");
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    try {
+      const obj = JSON.parse(line);
+      if (obj.type === "model_change" && obj.modelId) return obj.modelId;
+      if (obj.type === "message" && obj.message && obj.message.model) return obj.message.model;
+    } catch {}
+  }
+  return null;
+}
+
+function readSession(dir, name, limitTurns) {
+  const full = join(dir, name);
+  if (!existsSync(full)) return null;
+  const content = readFileSync(full, "utf8");
+  const parsed = parseSession(content, limitTurns);
+  if (!parsed) return null;
+  return { file: name, ...parsed };
+}
+
+// 探测“用户当前正在对话”的会话：所有会话里，最后一条 role:user 消息时间戳最新的那个。
+// 后台子代理 / 自动刷新会写 assistant/toolResult，但不会写 user 消息，因此能排掉后台干扰。
+const ACTIVE_TAIL_BYTES = 262144; // 读每个文件末尾 256KB 找最后一条 user 消息（够容纳长回复）
+const USER_TS_RE = /"role"\s*:\s*"user"[\s\S]{0,2000}?"timestamp"\s*:\s*(\d{13})/g;
+function detectActiveSession(dir) {
+  const files = listSessionFiles(dir).slice(0, 120);
+  let best = null;
+  let bestTs = -1;
+  for (const f of files) {
+    try {
+      const full = join(dir, f.name);
+      const st = statSync(full);
+      // 文件要有、要有内容
+      if (!st.isFile() || st.size < 10) continue;
+      const fd = readFileSync(full);
+      const tailLen = Math.min(fd.length, ACTIVE_TAIL_BYTES);
+      const tail = fd.slice(fd.length - tailLen).toString("utf8");
+      let lastUserTs = -1;
+      let m;
+      USER_TS_RE.lastIndex = 0;
+      while ((m = USER_TS_RE.exec(tail))) lastUserTs = Number(m[1]);
+      // 以「最后一条 user 消息时间」为主；没有则退化为文件 mtime（弱信号，排最后）
+      const score = lastUserTs > 0 ? lastUserTs : (f.mtime * 0.001);
+      if (score > bestTs) {
+        bestTs = score;
+        best = { file: f.name, userTs: lastUserTs, mtime: f.mtime };
+      }
+    } catch {}
+  }
+  return best;
+}
+
+// 将宿主焦点消息的 entryId 精确映射回本地 JSONL。
+// /api/sessions/messages 返回的 entryId 来自 JSONL 原始 message.id，且最后一条消息
+// 必然靠近文件尾部；只读尾部 2MB，避免轮询时反复读取完整大文件。
+const ENTRY_TAIL_BYTES = 2 * 1024 * 1024;
+const entryFileCache = new Map();
+function resolveSessionFileByEntryId(dir, entryId) {
+  if (entryFileCache.has(entryId)) {
+    const cached = entryFileCache.get(entryId);
+    if (cached && existsSync(join(dir, cached))) return cached;
+    entryFileCache.delete(entryId);
+  }
+  const needleCompact = `\"id\":\"${entryId}\"`;
+  const needleSpaced = `\"id\": \"${entryId}\"`;
+  for (const f of listSessionFiles(dir).slice(0, 160)) {
+    const full = join(dir, f.name);
+    let fd = null;
+    try {
+      const st = statSync(full);
+      const len = Math.min(st.size, ENTRY_TAIL_BYTES);
+      if (len <= 0) continue;
+      fd = openSync(full, "r");
+      const buf = Buffer.allocUnsafe(len);
+      readSync(fd, buf, 0, len, Math.max(0, st.size - len));
+      const tail = buf.toString("utf8");
+      if (tail.includes(needleCompact) || tail.includes(needleSpaced)) {
+        entryFileCache.set(entryId, f.name);
+        // 限制缓存大小，防止长期运行无限增长
+        if (entryFileCache.size > 512) entryFileCache.delete(entryFileCache.keys().next().value);
+        return f.name;
+      }
+    } catch {
+      // 单个会话损坏/锁定不影响其余候选
+    } finally {
+      if (fd != null) try { closeSync(fd); } catch {}
+    }
+  }
+  return null;
+}
+
+// 读 provider-catalog 拿 key（脱敏使用）
+function readProviderCatalog(ctx) {
+  try {
+    const p = getProviderCatalogPath(ctx);
+    if (p && existsSync(p)) {
+      return JSON.parse(readFileSync(p, "utf8"));
+    }
+  } catch {}
+  return null;
+}
+
+function readModelsConfig(ctx) {
+  try {
+    const catalogPath = getProviderCatalogPath(ctx);
+    const inferred = catalogPath ? join(catalogPath, "..", "models.json") : join(getDataRoot(ctx), "models.json");
+    const p = existsSync(inferred) ? inferred : join(getDataRoot(ctx), "models.json");
+    if (existsSync(p)) return JSON.parse(readFileSync(p, "utf8"));
+  } catch {}
+  return null;
+}
+
+function readAuthConfig(ctx) {
+  try {
+    const catalogPath = getProviderCatalogPath(ctx);
+    const inferred = catalogPath ? join(catalogPath, "..", "auth.json") : join(getDataRoot(ctx), "auth.json");
+    const p = existsSync(inferred) ? inferred : join(getDataRoot(ctx), "auth.json");
+    if (existsSync(p)) return JSON.parse(readFileSync(p, "utf8"));
+  } catch {}
+  return {};
+}
+
+const UPDATE_REPO_API = "https://api.github.com/repos/youyongdemao/HanaAgent-session-insight/releases/latest";
+
+function normalizeVersion(value) {
+  return String(value || "0.0.0").trim().replace(/^v/i, "").split("-")[0];
+}
+
+function compareVersions(a, b) {
+  const left = normalizeVersion(a).split(".").map((n) => Number.parseInt(n, 10) || 0);
+  const right = normalizeVersion(b).split(".").map((n) => Number.parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(left.length, right.length); i += 1) {
+    const diff = (left[i] || 0) - (right[i] || 0);
+    if (diff !== 0) return diff > 0 ? 1 : -1;
+  }
+  return 0;
+}
+
+function currentPluginVersion(ctx) {
+  try {
+    return JSON.parse(readFileSync(join(ctx.pluginDir, "manifest.json"), "utf8")).version || "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+function readGitHubToken(ctx) {
+  const catalogPath = getProviderCatalogPath(ctx);
+  const base = catalogPath ? dirname(catalogPath) : getDataRoot(ctx);
+  const mcpConfig = join(base, "plugin-data", "mcp", "config.json");
+  try {
+    if (!existsSync(mcpConfig)) return null;
+    const cfg = JSON.parse(readFileSync(mcpConfig, "utf8"));
+    const connector = (cfg.global?.mcp?.connectors || []).find((item) => (item.id || "").toLowerCase() === "github");
+    return connector?.env?.GITHUB_PERSONAL_ACCESS_TOKEN || null;
+  } catch {
+    return null;
+  }
+}
+
+async function latestRelease(ctx) {
+  const token = readGitHubToken(ctx);
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "Session-Insight-Updater",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(UPDATE_REPO_API, {
+    headers,
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(`GitHub HTTP ${response.status} ${text.slice(0, 300)}`);
+  }
+  const release = await response.json();
+  const version = normalizeVersion(release.tag_name || release.name);
+  const asset = Array.isArray(release.assets)
+    ? release.assets.find((item) => /session-insight.*\.zip$/i.test(item?.name || ""))
+    : null;
+  return { version, tag: release.tag_name || `v${version}`, asset };
+}
+
+function findWinRAR() {
+  const candidates = [
+    "D:\\Tools\\System Tools\\Winrar\\WinRAR.exe",
+    process.env.ProgramFiles && join(process.env.ProgramFiles, "WinRAR", "WinRAR.exe"),
+    process.env["ProgramFiles(x86)"] && join(process.env["ProgramFiles(x86)"], "WinRAR", "WinRAR.exe"),
+  ].filter(Boolean);
+  return candidates.find((file) => existsSync(file)) || null;
+}
+
+function runWinRAR(executable, args) {
+  return new Promise((resolve, reject) => {
+    execFile(executable, args, { windowsHide: true }, (error) => {
+      if (error) reject(error);
+      else resolve();
+    });
+  });
+}
+
+// 解压 zip：优先 WinRAR，不可用时降级用 Windows 内置 tar / PowerShell Expand-Archive
+function extractZip(zipPath, extractDir) {
+  const winrar = findWinRAR();
+  if (winrar) return runWinRAR(winrar, ["x", "-ibck", "-y", zipPath, `${extractDir}\\`]);
+  return new Promise((resolve, reject) => {
+    execFile("tar", ["-xf", zipPath, "-C", extractDir], { windowsHide: true }, (error) => {
+      if (!error) return resolve();
+      execFile("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${extractDir}' -Force`], { windowsHide: true }, (error2) => {
+        if (!error2) return resolve();
+        reject(new Error(`解压失败（WinRAR/tar/PowerShell 均不可用）：${error2?.message || "未知"}`));
+      });
+    });
+  });
+}
+
+async function installRelease(ctx, release) {
+  if (!release.asset?.browser_download_url) throw new Error("新版 Release 中没有找到 ZIP 安装包");
+  if ((release.asset.size || 0) > 30 * 1024 * 1024) throw new Error("安装包超过 30MB 安全上限");
+
+  const pluginDir = ctx.pluginDir;
+  const parentDir = dirname(pluginDir);
+  const hanaHome = dirname(parentDir);
+  const dataDir = join(hanaHome, "plugin-data", "session-insight");
+  const stamp = Date.now().toString(36);
+  const workDir = join(dataDir, "updates", stamp);
+  const extractDir = join(workDir, "extract");
+  const zipPath = join(workDir, "update.zip");
+  const oldVersion = currentPluginVersion(ctx);
+  const backupDir = join(dataDir, "backups", `${basename(pluginDir)}-v${oldVersion}-${stamp}`);
+  let movedToBackup = false;
+
+  mkdirSync(extractDir, { recursive: true });
+  mkdirSync(dirname(backupDir), { recursive: true });
+  try {
+    const downloadHeaders = { "User-Agent": "Session-Insight-Updater" };
+    const token = readGitHubToken(ctx);
+    if (token) downloadHeaders.Authorization = `Bearer ${token}`;
+    const response = await fetch(release.asset.browser_download_url, {
+      headers: downloadHeaders,
+      redirect: "follow",
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!response.ok) throw new Error(`下载更新包失败：HTTP ${response.status}`);
+    const payload = Buffer.from(await response.arrayBuffer());
+    if (payload.length < 1000 || payload.length > 30 * 1024 * 1024) throw new Error("更新包大小异常");
+    const declaredDigest = String(release.asset.digest || "");
+    if (/^sha256:/i.test(declaredDigest)) {
+      const actualDigest = createHash("sha256").update(payload).digest("hex");
+      if (actualDigest.toLowerCase() !== declaredDigest.slice(7).toLowerCase()) throw new Error("更新包 SHA256 校验失败");
+    }
+    writeFileSync(zipPath, payload);
+
+    await extractZip(zipPath, extractDir);
+    const manifestPath = join(extractDir, "manifest.json");
+    if (!existsSync(manifestPath)) throw new Error("更新包缺少 manifest.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    if (manifest.id !== "session-insight") throw new Error("更新包插件 ID 不匹配");
+    if (normalizeVersion(manifest.version) !== normalizeVersion(release.version)) {
+      throw new Error(`更新包版本不匹配：${manifest.version || "未知"}`);
+    }
+
+    renameSync(pluginDir, backupDir);
+    movedToBackup = true;
+    cpSync(extractDir, pluginDir, { recursive: true, force: true });
+    return { ok: true, version: manifest.version, previousVersion: oldVersion, backupDir };
+  } catch (error) {
+    if (movedToBackup) {
+      try {
+        rmSync(pluginDir, { recursive: true, force: true });
+        renameSync(backupDir, pluginDir);
+      } catch (rollbackError) {
+        throw new Error(`${error.message}；自动回滚失败：${rollbackError.message}`);
+      }
+    }
+    throw error;
+  } finally {
+    rmSync(workDir, { recursive: true, force: true });
+  }
+}
+
+const externalStatusCache = new Map();
+
+function cachedExternalStatus(key, ttlMs) {
+  const cached = externalStatusCache.get(key);
+  return cached && Date.now() - cached.at < ttlMs ? cached.data : null;
+}
+
+function storeExternalStatus(key, data) {
+  externalStatusCache.set(key, { at: Date.now(), data });
+  return data;
+
+function flushExternalCaches(){ externalStatusCache.clear(); }
+}
+
+function configValue(ctx, key) {
+  try {
+    const value = ctx.config?.get?.(key);
+    return typeof value === "string" ? value.trim() : value;
+  } catch {
+    return null;
+  }
+}
+
+async function requestJson(fetchFn, url, init = {}, timeoutMs = 10000) {
+  const response = await fetchFn(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  const text = await response.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch {}
+  return { ok: response.ok, status: response.status, data };
+}
+
+async function queryZhipuQuota(ctx, fetchFn, catalog) {
+  const provider = catalog?.providers?.zhipu;
+  if (!provider?.api_key) return null;
+  const endpoints = [
+    "https://api.z.ai/api/monitor/usage/quota/limit",
+    "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
+  ];
+  for (const url of endpoints) {
+    try {
+      const result = await requestJson(fetchFn, url, {
+        headers: { Authorization: provider.api_key, Accept: "application/json" },
+      });
+      const payload = result.data?.data;
+      const limits = Array.isArray(payload?.limits) ? payload.limits : [];
+      if (!result.ok || result.data?.success === false || !limits.length) continue;
+      const windows = limits.map((item) => {
+        const used = Number(item?.percentage ?? item?.usedPercent ?? 0);
+        return {
+          type: String(item?.type || "quota"),
+          usedPercent: Math.max(0, Math.min(100, used)),
+          remainingPercent: Math.max(0, Math.min(100, 100 - used)),
+          resetAt: item?.nextResetTime || item?.resetAt || null,
+        };
+      });
+      const primary = windows.find((item) => item.type === "TOKENS_LIMIT") || windows[0];
+      return {
+        provider: "zhipu",
+        name: "智谱 Coding Plan",
+        status: "ok",
+        kind: "quota",
+        label: "套餐剩余",
+        summary: `${primary.remainingPercent.toFixed(0)}%`,
+        remainingPercent: primary.remainingPercent,
+        resetAt: primary.resetAt,
+        windows,
+        plan: payload?.level || null,
+      };
+    } catch {}
+  }
+  return null;
+}
+
+async function queryOpenAICosts(ctx, fetchFn) {
+  const key = configValue(ctx, "openaiAdminKey");
+  if (!key) return null;
+  const cached = cachedExternalStatus("openai-costs", 300000);
+  if (cached) return cached;
+  const start = Math.floor(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1) / 1000);
+  try {
+    const result = await requestJson(fetchFn, `https://api.openai.com/v1/organization/costs?start_time=${start}&bucket_width=1d&limit=31`, {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+    }, 15000);
+    if (!result.ok || !Array.isArray(result.data?.data)) return null;
+    let total = 0;
+    let currency = "USD";
+    for (const bucket of result.data.data) {
+      for (const item of bucket?.results || []) {
+        const amount = item?.amount;
+        if (amount?.value != null) total += Number(amount.value) || 0;
+        if (amount?.currency) currency = String(amount.currency).toUpperCase();
+      }
+    }
+    return storeExternalStatus("openai-costs", {
+      provider: "openai",
+      name: "OpenAI API",
+      status: "ok",
+      kind: "cost",
+      label: "本月官方成本",
+      summary: `${currency === "USD" ? "$" : ""}${total.toFixed(2)}`,
+      total,
+      currency,
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function queryXaiBalance(ctx, fetchFn) {
+  const key = configValue(ctx, "xaiManagementKey");
+  const teamId = configValue(ctx, "xaiTeamId");
+  if (!key || !teamId) return null;
+  const cacheKey = `xai-balance:${teamId}`;
+  const cached = cachedExternalStatus(cacheKey, 300000);
+  if (cached) return cached;
+  try {
+    const url = `https://management-api.x.ai/v1/billing/teams/${encodeURIComponent(teamId)}/prepaid/balance`;
+    const result = await requestJson(fetchFn, url, {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+    }, 15000);
+    if (!result.ok) return null;
+    const raw = result.data?.total?.val ?? result.data?.total?.value ?? result.data?.total;
+    const cents = Number(raw);
+    if (!Number.isFinite(cents)) return null;
+    const total = Math.abs(cents) / 100;
+    return storeExternalStatus(cacheKey, {
+      provider: "xai",
+      name: "xAI API",
+      status: "ok",
+      kind: "balance",
+      label: "预付余额",
+      summary: `$${total.toFixed(2)}`,
+      total,
+      currency: "USD",
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function queryCodexQuota(ctx, fetchFn) {
+  if (configValue(ctx, "enableCodexQuota") === false) return null;
+  const auth = readAuthConfig(ctx)?.["openai-codex"];
+  if (!auth?.access) return null;
+  const cacheKey = `codex-quota:${auth.accountId || "default"}`;
+  const cached = cachedExternalStatus(cacheKey, 300000);
+  if (cached) return cached;
+  try {
+    const headers = {
+      Authorization: `Bearer ${auth.access}`,
+      Accept: "application/json",
+      "OpenAI-Beta": "codex-1",
+      originator: "Codex Desktop",
+    };
+    if (auth.accountId) headers["ChatGPT-Account-ID"] = auth.accountId;
+    const result = await requestJson(fetchFn, "https://chatgpt.com/backend-api/wham/usage", { headers }, 12000);
+    if (!result.ok || !result.data) return null;
+    const rate = result.data.rate_limit || result.data.rateLimit || result.data;
+    const normalizeWindow = (window, name) => {
+      if (!window || typeof window !== "object") return null;
+      const used = Number(window.used_percent ?? window.usedPercent);
+      if (!Number.isFinite(used)) return null;
+      return {
+        name,
+        usedPercent: Math.max(0, Math.min(100, used)),
+        remainingPercent: Math.max(0, Math.min(100, 100 - used)),
+        resetAt: window.reset_at ?? window.resets_at ?? window.resetsAt ?? null,
+        windowSeconds: window.limit_window_seconds ?? window.window_seconds ?? null,
+      };
+    };
+    const windows = [
+      normalizeWindow(rate.primary_window || rate.primaryWindow || rate.five_hour, "5 小时窗口"),
+      normalizeWindow(rate.secondary_window || rate.secondaryWindow || rate.weekly, "周窗口"),
+    ].filter(Boolean);
+    if (!windows.length) return null;
+    const limiting = windows.reduce((min, item) => item.remainingPercent < min.remainingPercent ? item : min, windows[0]);
+    const credits = Number(result.data?.credits?.balance ?? result.data?.credit_balance);
+    return storeExternalStatus(cacheKey, {
+      provider: "openai-codex",
+      name: "ChatGPT Codex",
+      status: "ok",
+      kind: "quota",
+      label: "订阅配额",
+      summary: `${limiting.remainingPercent.toFixed(0)}%`,
+      remainingPercent: limiting.remainingPercent,
+      resetAt: limiting.resetAt,
+      windows,
+      credits: Number.isFinite(credits) ? credits : null,
+      plan: result.data?.plan_type || result.data?.planType || null,
+      experimental: true,
+    });
+  } catch {
+    return null;
+  }
+}
+
+export default function registerPluginApiRoutes(app, ctx) {
+  try {
+    const logDir = ctx?.dataDir || join(getDataRoot(ctx), "plugin-data", "session-insight");
+    mkdirSync(logDir, { recursive: true });
+    debugLogPath = join(logDir, "session-insight-debug.log");
+  } catch {
+    debugLogPath = null;
+  }
+
+  // 会话上下文探测：验证新版 surfaceSession 链路能否拿到当前会话 sessionId
+  app.get("/api/probe-session", (c) => {
+    const pr = c.env?.pluginRouteRequest || null;
+    const principal = pr?.principal || null;
+    const result = {
+      hasRouteRequest: !!pr,
+      principalKind: principal?.kind || null,
+      credentialId: principal?.credentialId || null,
+      agentId: (typeof c.get === "function" && c.get("agentId")) || null,
+      ctxSessionId: ctx.sessionId || null,
+      ctxSessionPath: ctx.sessionPath || null,
+    };
+    dbg("probe-session: " + JSON.stringify(result));
+    return c.json(result);
+  });
+
+  // 纯插件主题源：读取 HanaAgent 持久化外观偏好，不依赖 renderer 补丁
+  app.get("/api/appearance", (c) => {
+    return c.json({ ok: true, ...readAppearancePreference(ctx) });
+  });
+
+  // GitHub Release 更新检查
+  app.get("/api/check-update", async (c) => {
+    try {
+      const currentVersion = currentPluginVersion(ctx);
+      const release = await latestRelease(ctx);
+      return c.json({
+        ok: true,
+        currentVersion,
+        latestVersion: release.version,
+        updateAvailable: compareVersions(release.version, currentVersion) > 0,
+        hasInstallAsset: Boolean(release.asset?.browser_download_url),
+      });
+    } catch (error) {
+      dbg("check-update ERROR: " + String(error?.message || error));
+      return c.json({ ok: false, error: String(error?.message || error) }, 502);
+    }
+  });
+
+  // 下载、校验、备份并覆盖安装最新版
+  app.post("/api/apply-update", async (c) => {
+    try {
+      const requested = await c.req.json().catch(() => ({}));
+      const release = await latestRelease(ctx);
+      const currentVersion = currentPluginVersion(ctx);
+      if (requested.version && normalizeVersion(requested.version) !== normalizeVersion(release.version)) {
+        return c.json({ ok: false, error: "Latest Release 已变化，请重新检查更新" }, 409);
+      }
+      if (compareVersions(release.version, currentVersion) <= 0) {
+        return c.json({ ok: true, alreadyLatest: true, version: currentVersion });
+      }
+      const result = await installRelease(ctx, release);
+      return c.json(result);
+    } catch (error) {
+      dbg("apply-update ERROR: " + String(error?.message || error));
+      return c.json({ ok: false, error: String(error?.message || error) }, 500);
+    }
+  });
+
+  // 会话列表（含模型识别）
+  app.get("/api/sessions", (c) => {
+    const dir = getSessionsDir(ctx);
+    const files = listSessionFiles(dir).slice(0, 60).map((f) => ({
+      name: f.name,
+      size: f.size,
+      mtime: f.mtime,
+      model: detectSessionModel(dir, f.name),
+      title: detectSessionTitle(ctx, dir, f.name),
+    }));
+    return c.json({ dir, sessions: files });
+  });
+
+  // 探测“用户当前正在对话”的会话：最后一条 user 消息时间戳最新的那个（能排掉后台子代理/自动刷新干扰）
+  app.get("/api/active", (c) => {
+    const dir = getSessionsDir(ctx);
+    const hit = detectActiveSession(dir);
+    dbg("active-session: " + JSON.stringify(hit || null));
+    return c.json({ dir, ...(hit || { file: null }) });
+  });
+
+  // 宿主焦点消息 entryId → 本地会话 JSONL 文件名
+  app.get("/api/resolve-entry", (c) => {
+    const entryId = String(c.req.query("entryId") || "").trim();
+    if (!/^[A-Za-z0-9_-]{4,128}$/.test(entryId)) {
+      return c.json({ error: "invalid entryId" }, 400);
+    }
+    const dir = getSessionsDir(ctx);
+    const file = resolveSessionFileByEntryId(dir, entryId);
+    dbg(`focus-entry: ${entryId} -> ${file || "not_found"}`);
+    return c.json({ file });
+  });
+
+  // 指定会话统计（默认最新）；?file=xxx.jsonl&limit=200
+  app.get("/api/stats", (c) => {
+    const dir = getSessionsDir(ctx);
+    const query = c.req.query();
+    const limit = Number(query.limit) || 200;
+    const files = listSessionFiles(dir);
+    if (files.length === 0) {
+      return c.json({ error: "no sessions found", dir });
+    }
+    if (query.file && !files.some((f) => f.name === query.file)) {
+      return c.json({ error: "session not found", file: query.file }, 404);
+    }
+    const name = query.file || files[0].name;
+    const result = readSession(dir, name, limit);
+    if (!result) {
+      return c.json({ error: "no usage data in session", file: name });
+    }
+    result.title = detectSessionTitle(ctx, dir, name); // HanaAgent 正式会话标题优先，首句兜底
+    return c.json(result);
+  });
+
+  // 多供应商余额（并行查询 + 60s 缓存，避免每次进入都全量查询）
+  let balanceCache = { at: 0, data: null };
+  // 动态供应商列表：从 HanaAgent provider-catalog 同步（只返回 id，绝不返回 api_key）
+let providersCache = { at: 0, data: null };
+function computeActiveProviders(ctx) {
+  const now = Date.now();
+  if (now - providersCache.at < 30000 && providersCache.data) return providersCache.data;
+  // models.json 是能力全集；真正启用集合必须由 API Key 配置或 OAuth 登录凭据证明
+  const modelsConfig = readModelsConfig(ctx);
+  const catalog = readProviderCatalog(ctx);
+  const auth = readAuthConfig(ctx);
+  const modelProviders = modelsConfig?.providers || {};
+  const active = new Set();
+
+  // API 供应商：只收录实际配置了 api_key 的条目
+  for (const [id, cfg] of Object.entries(catalog?.providers || {})) {
+    if (!cfg?.api_key) continue;
+    if (modelProviders[id]) active.add(id);
+    else if (id.endsWith("-oauth") && modelProviders[id.slice(0, -6)]) active.add(id.slice(0, -6));
+    else active.add(id);
+  }
+
+  // OAuth 供应商：只收录 auth.json 中已有有效登录凭据的条目；不返回任何凭据内容
+  for (const [authId, cfg] of Object.entries(auth || {})) {
+    if (cfg?.type !== "oauth" || (!cfg?.access && !cfg?.refresh)) continue;
+    const candidates = [authId, authId + "-oauth", authId.replace(/-oauth$/, "")];
+    const providerId = candidates.find((id) => modelProviders[id]);
+    if (providerId) active.add(providerId);
+  }
+
+  const source = Object.keys(modelProviders).length ? modelProviders : (catalog?.providers || {});
+  const list = Object.entries(source)
+    .filter(([id]) => active.has(id))
+    .map(([id, cfg]) => ({
+      id,
+      models: (cfg?.models || []).map((m) => (typeof m === "string" ? m : m?.id)).filter(Boolean),
+    }));
+  providersCache = { at: now, data: { providers: list } };
+  return providersCache.data;
+}
+app.get("/api/providers", (c) => c.json(computeActiveProviders(ctx)));
+
+app.get("/api/balance", async (c) => {
+    const now = Date.now();
+    const forceBal = c.req.query("force") === "1";
+    if (forceBal) { balanceCache = { at: 0, data: null }; flushExternalCaches(); }
+    if (!forceBal && now - balanceCache.at < 60000 && balanceCache.data) {
+      return c.json(balanceCache.data);
+    }
+    const catalog = readProviderCatalog(ctx);
+    if (!catalog?.providers) {
+      dbg("balance: provider catalog unavailable");
+      return c.json({ error: "provider catalog unavailable" });
+    }
+    dbg("balance: catalog loaded, has network.fetch: " + (typeof ctx.network?.fetch === "function"));
+    // ctx.network.fetch 不可用时回退全局 fetch（Node 18+）
+    const fetchFn =
+      typeof ctx.network?.fetch === "function"
+        ? (url, opts) => ctx.network.fetch(url, opts)
+        : (url, opts) => fetch(url, opts);
+    // 并行查询所有供应商（避免顺序累加导致最慢的一家拖垮整体）
+    const tasks = [];
+    for (const [provider, adapter] of Object.entries(BALANCE_ADAPTERS)) {
+      const p = catalog.providers[provider];
+      if (!p?.api_key || !p?.base_url) {
+        tasks.push(Promise.resolve({ provider, name: adapter.name, status: "no_key" }));
+        continue;
+      }
+      const url = adapter.url(p.base_url);
+      tasks.push(
+        (async () => {
+          dbg(`balance ${provider}: fetching ${url}`);
+          try {
+            const resp = await fetchFn(url, {
+              headers: { Authorization: `Bearer ${p.api_key}` },
+              signal: AbortSignal.timeout(8000),
+            });
+            const text = await resp.text();
+            dbg(`balance ${provider}: http ${resp.status}, body=${text.slice(0, 120)}`);
+            let data = null;
+            try {
+              data = JSON.parse(text);
+            } catch {}
+            if (!resp.ok) {
+              return { provider, name: adapter.name, status: "http_" + resp.status, detail: text.slice(0, 100) };
+            }
+            const parsed = adapter.parse(data);
+            if (parsed) {
+              const symbol = parsed.currency === "USD" ? "$" : "¥";
+              return {
+                provider,
+                name: adapter.name,
+                status: "ok",
+                kind: "balance",
+                label: "可用余额",
+                summary: `${symbol}${Number(parsed.total).toFixed(2)}`,
+                ...parsed,
+              };
+            }
+            return { provider, name: adapter.name, status: "parse_failed", detail: text.slice(0, 100) };
+          } catch (e) {
+            dbg(`balance ${provider}: ERROR ${String(e?.message || e)}`);
+            return { provider, name: adapter.name, status: "error", detail: String(e?.message || e).slice(0, 100) };
+          }
+        })()
+      );
+    }
+    tasks.push(queryZhipuQuota(ctx, fetchFn, catalog));
+    tasks.push(queryOpenAICosts(ctx, fetchFn));
+    tasks.push(queryXaiBalance(ctx, fetchFn));
+    tasks.push(queryCodexQuota(ctx, fetchFn));
+
+    const balances = (await Promise.all(tasks)).filter(Boolean);
+    const okProviders = new Set(balances.filter((item) => item.status === "ok").map((item) => item.provider));
+    const unsupported = [];
+    const activeIds = new Set(computeActiveProviders(ctx).providers.map((p) => p.id));
+    if (configValue(ctx, "xaiManagementKey") && configValue(ctx, "xaiTeamId")) activeIds.add("xai");
+    for (const [provider, defaultNote] of Object.entries(NO_BALANCE_API)) {
+      if (!activeIds.has(provider) || okProviders.has(provider)) continue;
+      let note = defaultNote;
+      if (provider === "zhipu") note = "当前账户非 Coding Plan 或配额不可用";
+      if (provider === "openai" && configValue(ctx, "openaiAdminKey")) note = "Admin Costs 查询失败";
+      if (provider === "openai-codex" && readAuthConfig(ctx)?.["openai-codex"]?.access) note = "Codex 配额接口暂不可用";
+      unsupported.push({ provider, note });
+    }
+    if (activeIds.has("xai") && !okProviders.has("xai")) {
+      unsupported.push({ provider: "xai", note: "Management Key 或 Team ID 无效" });
+    }
+    balanceCache = { at: now, data: { balances, unsupported } };
+    return c.json(balanceCache.data);
+  });
+
+  // 全局用量总览（agent/来源/日期/模型/延迟聚合，30s 缓存，可传 ?provider= 过滤）
+  app.get("/api/ledger-stats", (c) => {
+    const provider = c.req.query("provider") || null;
+    if(c.req.query("force")==="1"){ ledgerStatsCache = { at: 0, provider: null }; }
+    const r = computeLedgerStats(ctx, provider);
+    return c.json(r);
+  });
+
+  // 阈值提醒规则：按供应商持久化
+  function rulesFilePath(){
+    const dir = ctx?.dataDir || join(getDataRoot(ctx), "plugin-data", "session-insight");
+    mkdirSync(dir, { recursive: true });
+    return join(dir, "rules.json");
+  }
+  app.get("/rules", (c) => {
+    try {
+      const fp = rulesFilePath();
+      return c.json(existsSync(fp) ? JSON.parse(readFileSync(fp, "utf8")) : {});
+    } catch { return c.json({}); }
+  });
+  app.post("/rules", async (c) => {
+    try {
+      const body = await c.req.json();
+      const key = String(body?.provider || "").slice(0, 40);
+      if (!key) return c.json({ error: "no provider" });
+      const fp = rulesFilePath();
+      const cur = existsSync(fp) ? JSON.parse(readFileSync(fp, "utf8")) : {};
+      cur[key] = { enabled: !!body.enabled, pct: Math.max(5, Math.min(95, Number(body.pct) || 20)), fail: Math.max(1, Math.min(10, Number(body.fail) || 3)) };
+      writeFileSync(fp, JSON.stringify(cur, null, 2));
+      return c.json({ ok: true, provider: key, saved: cur[key] });
+    } catch (e) { return c.json({ error: String(e?.message || e) }); }
+  });
+
+  // 总消费金额（按用量总账计算，30s 缓存）
+  app.get("/api/total-cost", (c) => {
+    const r = computeTotalCost(ctx);
+    return c.json(r);
+  });
+
+  // 每百万 Token 价格表：来自 usage-parser 配置快照（非实时，标注更新时间与来源）
+  app.get("/api/pricing", (c) => {
+    const rows = [];
+    for (const [model, cfg] of Object.entries(PRICING)) {
+      const provider = PROVIDER_OF_MODEL[model] || null;
+      const srcNote = SOURCE_NOTE[model] || "";
+      if (cfg && cfg.peak) {
+        rows.push({ model, provider, tier: "peak", miss: cfg.peak.inputMiss, hit: cfg.peak.inputHit, out: cfg.peak.output, note: srcNote });
+        rows.push({ model, provider, tier: "offPeak", miss: cfg.offPeak.inputMiss, hit: cfg.offPeak.inputHit, out: cfg.offPeak.output, note: srcNote });
+      } else if (cfg) {
+        rows.push({ model, provider, tier: "flat", miss: cfg.inputMiss, hit: cfg.inputHit, out: cfg.output, note: srcNote });
+      }
+    }
+    return c.json({ snapshotAt: PRICING_SNAPSHOT_AT, currency: "CNY", rows });
+  });
+
+
+  // 用系统默认程序打开链接（绕过 Electron 内置窗口）
+  app.get("/api/open", (c) => {
+    const url = String(c.req.query().url || "").trim();
+    const allowedHosts = [
+      "platform.deepseek.com",
+      "platform.kimi.com",
+      "platform.xiaomimimo.com",
+      "bigmodel.cn",
+      "open.bigmodel.cn",
+      "apihub.agnes-ai.com",
+      "platform.openai.com",
+      "aistudio.google.com",
+      "chatgpt.com",
+      "grok.com",
+      "console.x.ai",
+      "github.com",
+    ];
+    try {
+      const u = new URL(url);
+      if (!allowedHosts.includes(u.hostname)) {
+        return c.json({ error: "host not allowed", host: u.hostname });
+      }
+    } catch {
+      return c.json({ error: "invalid url" });
+    }
+    dbg("open: " + url);
+    const cmd =
+      process.platform === "win32"
+        ? `start "" "${url}"`
+        : process.platform === "darwin"
+          ? `open "${url}"`
+          : `xdg-open "${url}"`;
+    exec(cmd, { windowsHide: true }, (err) => {
+      if (err) dbg("open exec error: " + String(err));
+    });
+    return c.json({ ok: true });
+  });
+
+  // 插件命名空间别名：走插件自身的鉴权链路，前端在根路由被拒时回退到这里
+  app.get("/open", (c) => {
+    const url = String(c.req.query().url || "").trim();
+    const hosts = ["platform.deepseek.com","platform.kimi.com","platform.xiaomimimo.com","bigmodel.cn","open.bigmodel.cn","apihub.agnes-ai.com","platform.openai.com","aistudio.google.com","chatgpt.com","grok.com","console.x.ai","github.com"];
+    let host = "";
+    try { host = new URL(url).hostname; } catch {}
+    if (!hosts.includes(host)) return c.json({ error: "host not allowed", host });
+    const cmd = process.platform === "win32"
+      ? `start "" "${url}"`
+      : process.platform === "darwin"
+        ? `open "${url}"`
+        : `xdg-open "${url}"`;
+    exec(cmd, { windowsHide: true }, () => {});
+    return c.json({ ok: true });
+  });
+}

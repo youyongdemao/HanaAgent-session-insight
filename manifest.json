@@ -1,0 +1,126 @@
+{
+  "manifestVersion": 1,
+  "id": "session-insight",
+  "name": "Session Insight",
+  "version": "1.2.12",
+  "description": "会话用量可视化：tokens、缓存命中率、费用、余额，widget 常驻状态条 + 图表页。",
+  "minAppVersion": "0.159.0",
+  "trust": "full-access",
+  "ui": {
+    "hostCapabilities": [
+      "external.open",
+      "clipboard.writeText"
+    ]
+  },
+  "capabilities": [
+    "resource.read",
+    "network.fetch",
+    "session"
+  ],
+  "network": {
+    "allowedHosts": [
+      "api.deepseek.com",
+      "api.moonshot.cn",
+      "api.github.com",
+      "github.com",
+      "objects.githubusercontent.com",
+      "release-assets.githubusercontent.com",
+      "open.bigmodel.cn",
+      "api.z.ai",
+      "management-api.x.ai",
+      "api.openai.com",
+      "chatgpt.com"
+    ],
+    "methods": [
+      "GET",
+      "POST"
+    ],
+    "defaultTimeoutMs": 15000,
+    "maxResponseBytes": 31457280
+  },
+  "contributes": {
+    "page": {
+      "title": {
+        "zh": "会话用量",
+        "en": "Session Insight"
+      },
+      "route": "/page",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 5h16v14H4z\"/><path d=\"M7 15l3-4 2 2 3-5 2 3\"/></svg>"
+    },
+    "widget": {
+      "title": {
+        "zh": "用量状态栏",
+        "en": "Usage Bar"
+      },
+      "route": "/widget",
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 12h3l2-5 3 10 2-7 2 2h4\"/></svg>"
+    },
+    "configuration": {
+      "properties": {
+        "sessionsDir": {
+          "type": "string",
+          "title": "会话目录",
+          "description": "Hana 会话 JSONL 所在目录。留空时从插件安装目录自动定位 Hana 数据根并寻找 agents/<agent>/sessions。",
+          "default": "",
+          "ui": {
+            "control": "text"
+          }
+        },
+        "deepseekApiKey": {
+          "type": "string",
+          "title": "DeepSeek API Key（可选）",
+          "description": "用于余额查询。留空时自动从 Hana 的 provider-catalog.json 读取。",
+          "default": "",
+          "ui": {
+            "control": "password"
+          }
+        },
+        "openaiAdminKey": {
+          "type": "string",
+          "title": "OpenAI Admin Key（可选）",
+          "description": "用于查询组织级 Usage / Costs。普通 Project Key 无权调用。",
+          "default": "",
+          "ui": {
+            "control": "password"
+          }
+        },
+        "xaiManagementKey": {
+          "type": "string",
+          "title": "xAI Management Key（可选）",
+          "description": "用于查询 xAI API 团队预付余额，与推理 API Key 分离。",
+          "default": "",
+          "ui": {
+            "control": "password"
+          }
+        },
+        "xaiTeamId": {
+          "type": "string",
+          "title": "xAI Team ID（可选）",
+          "description": "与 xAI Management Key 配套使用。",
+          "default": "",
+          "ui": {
+            "control": "text"
+          }
+        },
+        "enableCodexQuota": {
+          "type": "boolean",
+          "title": "Codex 订阅配额（实验性）",
+          "description": "读取 HanaAgent 已登录的 ChatGPT OAuth 配额；使用私有接口，默认关闭。",
+          "default": false,
+          "ui": {
+            "control": "switch"
+          }
+        },
+        "refreshSeconds": {
+          "type": "integer",
+          "title": "widget 刷新间隔（秒）",
+          "description": "侧边状态条自动刷新频率。",
+          "default": 30,
+          "ui": {
+            "control": "number"
+          }
+        }
+      }
+    }
+  }
+}
