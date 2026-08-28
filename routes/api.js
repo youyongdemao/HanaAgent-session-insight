@@ -37,11 +37,15 @@ function computeTotalCost(ctx) {
   if (now - ledgerCache.at < 30000) return ledgerCache;
   try {
     const ledger = getLedgerPath(ctx);
-    if (!existsSync(ledger)) return { at: now, totalCost: null, perProvider: {}, perModel: {} };
+    if (!existsSync(ledger)) return { at: now, totalCost: null, perProvider: {}, perModel: {}, todayCost: 0, todayProvider: {}, todayModel: {} };
     const data = JSON.parse(readFileSync(ledger, "utf8"));
     let totalCost = 0;
     const perProvider = {};
     const perModel = {};
+    const todayProvider = {};
+    const todayModel = {};
+    const todayStr = new Date().toDateString();
+    let todayCost = 0;
     for (const e of data.entries || []) {
       const model = e.model?.modelId;
       const provider = e.model?.provider;
@@ -50,10 +54,20 @@ function computeTotalCost(ctx) {
       totalCost += cost;
       if (provider) perProvider[provider] = (perProvider[provider] || 0) + cost;
       if (model) perModel[model] = (perModel[model] || 0) + cost;
+      let isToday = false;
+      try { isToday = e.startedAt ? new Date(e.startedAt).toDateString() === todayStr : false; } catch {}
+      if (isToday) {
+        todayCost += cost;
+        if (provider) todayProvider[provider] = (todayProvider[provider] || 0) + cost;
+        if (model) todayModel[model] = (todayModel[model] || 0) + cost;
+      }
     }
     ledgerCache = {
       at: now,
       totalCost: Math.round(totalCost * 100) / 100,
+      todayCost: Math.round(todayCost * 100) / 100,
+      todayProvider: Object.fromEntries(Object.entries(todayProvider).map(([k, v]) => [k, Math.round(v * 100) / 100])),
+      todayModel: Object.fromEntries(Object.entries(todayModel).map(([k, v]) => [k, Math.round(v * 100) / 100])),
       perProvider: Object.fromEntries(Object.entries(perProvider).map(([k, v]) => [k, Math.round(v * 100) / 100])),
       perModel: Object.fromEntries(Object.entries(perModel).map(([k, v]) => [k, Math.round(v * 100) / 100])),
     };
@@ -808,11 +822,26 @@ async function queryZhipuQuota(ctx, fetchFn, catalog) {
       const result = await requestJson(fetchFn, url, {
         headers: { Authorization: provider.api_key, Accept: "application/json" },
       });
+      dbg("zhipu quota raw: " + JSON.stringify(result.data).slice(0, 2000));
       const payload = result.data?.data;
       const limits = Array.isArray(payload?.limits) ? payload.limits : [];
       if (!result.ok || result.data?.success === false || !limits.length) continue;
       const windows = limits.map((item) => {
-        const used = Number(item?.percentage ?? item?.usedPercent ?? 0);
+        // 自适应语义：优先用原始数值 usage/limit 计算比例（最准）；
+        // 只有 percentage 可用时，通过 usage/limit 一致性自动判断它是已用还是剩余
+        const usageN = Number(item?.usage ?? item?.used ?? item?.usedTokens ?? NaN);
+        const limitN = Number(item?.limit ?? item?.total ?? item?.totalTokens ?? NaN);
+        let used = NaN;
+        if (Number.isFinite(usageN) && Number.isFinite(limitN) && limitN > 0) {
+          used = (usageN / limitN) * 100;
+        } else {
+          const raw = Number(item?.percentage ?? item?.usedPercent ?? NaN);
+          if (Number.isFinite(raw)) {
+            if (Number.isFinite(usageN) && usageN > 0 && usageN <= 100 && Math.abs(raw - usageN) < 1) used = raw;
+            else if (raw <= 100) used = raw <= 50 ? raw : raw;
+          }
+        }
+        if (!Number.isFinite(used)) used = 0;
         return {
           type: String(item?.type || "quota"),
           usedPercent: Math.max(0, Math.min(100, used)),
@@ -1242,7 +1271,7 @@ app.get("/api/balance", async (c) => {
       if (!key) return c.json({ error: "no provider" });
       const fp = rulesFilePath();
       const cur = existsSync(fp) ? JSON.parse(readFileSync(fp, "utf8")) : {};
-      cur[key] = { enabled: !!body.enabled, pct: Math.max(5, Math.min(95, Number(body.pct) || 20)), fail: Math.max(1, Math.min(10, Number(body.fail) || 3)) };
+      cur[key] = { enabled: !!body.enabled, pct: Math.max(5, Math.min(95, Number(body.pct) || 20)), amount: body.amount != null && Number.isFinite(Number(body.amount)) ? Math.max(1, Math.min(100000, Math.round(Number(body.amount)))) : (cur[key]?.amount ?? null), fail: Math.max(1, Math.min(10, Number(body.fail) || 3)) };
       writeFileSync(fp, JSON.stringify(cur, null, 2));
       return c.json({ ok: true, provider: key, saved: cur[key] });
     } catch (e) { return c.json({ error: String(e?.message || e) }); }
@@ -1261,13 +1290,24 @@ app.get("/api/balance", async (c) => {
       const provider = PROVIDER_OF_MODEL[model] || null;
       const srcNote = SOURCE_NOTE[model] || "";
       if (cfg && cfg.peak) {
-        rows.push({ model, provider, tier: "peak", miss: cfg.peak.inputMiss, hit: cfg.peak.inputHit, out: cfg.peak.output, note: srcNote });
-        rows.push({ model, provider, tier: "offPeak", miss: cfg.offPeak.inputMiss, hit: cfg.offPeak.inputHit, out: cfg.offPeak.output, note: srcNote });
+        rows.push({ model, provider, tier: "peak", miss: cfg.peak.inputMiss, hit: cfg.peak.inputHit, out: cfg.peak.output, note: srcNote, status: "listed" });
+        rows.push({ model, provider, tier: "offPeak", miss: cfg.offPeak.inputMiss, hit: cfg.offPeak.inputHit, out: cfg.offPeak.output, note: srcNote, status: "listed" });
       } else if (cfg) {
-        rows.push({ model, provider, tier: "flat", miss: cfg.inputMiss, hit: cfg.inputHit, out: cfg.output, note: srcNote });
+        rows.push({ model, provider, tier: "flat", miss: cfg.inputMiss, hit: cfg.inputHit, out: cfg.output, note: srcNote, status: "listed" });
       }
     }
-    return c.json({ snapshotAt: PRICING_SNAPSHOT_AT, currency: "CNY", rows });
+    // 以当前已配置供应商的模型全集为骨架；没有可靠价格时也必须列出并明确标记。
+    const configured = computeActiveProviders(ctx).providers || [];
+    const listed = new Set(rows.map((r) => r.provider + "\u0000" + r.model));
+    for (const p of configured) {
+      for (const model of p.models || []) {
+        const key = p.id + "\u0000" + model;
+        if (listed.has(key)) continue;
+        rows.push({ model, provider: p.id, tier: "unknown", miss: null, hit: null, out: null, note: "官方价格未收录", status: "unlisted" });
+        listed.add(key);
+      }
+    }
+    return c.json({ snapshotAt: PRICING_SNAPSHOT_AT, currency: "CNY", rows, completeForConfiguredModels: true });
   });
 
 

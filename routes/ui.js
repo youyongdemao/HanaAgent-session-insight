@@ -15,8 +15,7 @@ function renderShell(c, ctx, surface) {
   const withToken = (url) => {
     let u = url;
     if (token) u += `${u.includes("?") ? "&" : "?"}${new URLSearchParams({ token })}`;
-    u += `${u.includes("?") ? "&" : "?"}si_v=v2-recovered-20260828-v7`;
-    if (hot) u += `&${new URLSearchParams({ hot })}`;
+    u += `${u.includes("?") ? "&" : "?"}si_v=v2-detail-tools-unify-20260829&${new URLSearchParams({ hot })}`;
     return u;
   };
   const panelCss = withToken(`${base}/assets/${v2 ? "panel-v2.css" : "panel.css"}`);
