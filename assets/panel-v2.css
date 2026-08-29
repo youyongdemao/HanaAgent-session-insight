@@ -815,15 +815,16 @@ body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:
 
 /* ── 任务类别：左扇形占比 + 右 Token 条形用量 ── */
 #usage-overview #taskCat{display:block}
-.taskcat-layout{display:grid;grid-template-columns:minmax(280px,.95fr) minmax(220px,1.05fr);gap:16px;align-items:center;min-width:0}
+.taskcat-layout{display:grid;grid-template-columns:minmax(300px,1.08fr) minmax(220px,.92fr);gap:18px;align-items:center;min-width:0}
 .task-fan-wrap,.task-bars-wrap{min-width:0}
 .task-view-title{font-size:10.5px;color:var(--text-muted);margin-bottom:8px}
 .task-fan-svg{display:block;width:100%;height:auto;overflow:visible}
-.task-fan-sector{transform-origin:130px 120px;opacity:0;animation:taskFanIn .46s var(--ease) forwards;animation-delay:var(--fan-delay,0ms)}
+.task-fan-sector{transform-origin:190px 120px;opacity:0;filter:saturate(.72) brightness(.84);animation:taskFanIn .46s var(--ease) forwards;animation-delay:var(--fan-delay,0ms)}
 @keyframes taskFanIn{0%{opacity:0;transform:scale(.72)}100%{opacity:1;transform:scale(1)}}
-.task-fan-leader{fill:none;stroke-width:1.2;opacity:.78;vector-effect:non-scaling-stroke}
-.task-fan-label{fill:var(--text-light);font:500 10px var(--font-mono)}
-.task-fan-pct{fill:var(--text-muted);font:9px var(--font-mono)}
+.task-fan-leader{fill:none;stroke-width:1.1;opacity:.58;filter:saturate(.65) brightness(.86);vector-effect:non-scaling-stroke}
+.task-fan-label{fill:color-mix(in srgb,var(--text-light) 72%,var(--text-muted));font:500 12px var(--font-mono)}
+.task-fan-pct{fill:var(--text-muted);font:10.5px var(--font-mono)}
 .task-bars-wrap{display:grid;align-content:center}
 .task-bars-wrap .src-row{grid-template-columns:76px minmax(80px,1fr) 64px!important}
+.task-bars-wrap .src-row .track i{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 26%,var(--bg-card)),color-mix(in srgb,var(--accent) 48%,var(--bg-card)));filter:saturate(.72) brightness(.88)}
 @media(max-width:1180px){.taskcat-layout{grid-template-columns:1fr}.task-fan-wrap{max-width:440px;margin:0 auto;width:100%}}
