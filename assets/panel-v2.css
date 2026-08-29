@@ -612,8 +612,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* ── 用量详情页：Token 构成 / 来源分布 / 趋势 / 详细化增强 ── */
 /* Token 构成 */
 #usage-overview .tok-comp{display:grid;gap:12px}
-#usage-overview .tok-track{display:flex;height:22px;border-radius:12px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent)}
-#usage-overview .tok-track i{height:100%;transition:width .6s var(--ease)}
+#usage-overview .tok-track{display:flex;height:24px;border-radius:12px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent);gap:2px;padding:1px}
+#usage-overview .tok-track i{height:100%;border-radius:7px;transition:width .6s var(--ease);min-width:0}
 #usage-overview .tok-track i.t-hit{background:linear-gradient(90deg,var(--si-green),color-mix(in srgb,var(--si-green) 70%,#fff))}
 #usage-overview .tok-track i.t-in{background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 70%,#fff))}
 #usage-overview .tok-track i.t-miss{background:linear-gradient(90deg,var(--si-amber),color-mix(in srgb,var(--si-amber) 70%,#fff))}
