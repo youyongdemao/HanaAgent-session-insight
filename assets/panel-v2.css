@@ -763,3 +763,5 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-visual .pvmodel .track i{display:block;height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 42%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
 .w-detail-visual .pvmodel b{font:500 11px var(--font-mono);color:var(--text-light);text-align:right}
 .w-detail-visual .pvmodel-empty{font-size:10.5px;color:var(--text-muted);padding-left:14px}
+/* ── 详情卡标题右上角时间范围状态窗 ── */
+.w-detail-range{font:500 11px var(--font-mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:8px;padding:3px 10px;margin-left:auto}
