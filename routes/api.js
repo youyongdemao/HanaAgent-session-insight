@@ -90,7 +90,7 @@ function computeLedgerStats(ctx, provider) {
     const ledger = getLedgerPath(ctx);
     if (!existsSync(ledger)) return { at: now, empty: true, provider };
     const data = JSON.parse(readFileSync(ledger, "utf8"));
-    const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, byProvider = {}, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
+    const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, byProvider = {}, rangeProv = { hour: {}, day: {}, week: {} }, rangeModel = { hour: {}, day: {}, week: {} }, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
     const latAll = [];
     const timeCosts = [];
     let callCount = 0, errCount = 0, tokInput = 0, tokOutput = 0, tokCacheHit = 0, tokCacheMiss = 0, tokTotal = 0;
@@ -144,6 +144,22 @@ function computeLedgerStats(ctx, provider) {
       byProvider[pv].cost += cc;
       byProvider[pv].tokens += u.totalTokens || (inTot + outT);
       byProvider[pv].cacheHit += hitT; byProvider[pv].cacheMiss += miss;
+      // 按时间范围聚合供应商/模型（24h / 100天 / 100周）
+      if (Number.isFinite(tsCost)) {
+        const ranges = [['hour', 24*3600e3], ['day', 100*86400e3], ['week', 100*7*86400e3]];
+        for (const [u, span] of ranges) {
+          if (tsCost < now - span) continue;
+          rangeProv[u][pv] = rangeProv[u][pv] || { tokens: 0, cost: 0, calls: 0 };
+          rangeProv[u][pv].tokens += u.totalTokens || (inTot + outT);
+          rangeProv[u][pv].cost += cc;
+          rangeProv[u][pv].calls++;
+          rangeModel[u][m] = rangeModel[u][m] || { tokens: 0, cost: 0, calls: 0, provider: pv };
+          rangeModel[u][m].tokens += u.totalTokens || (inTot + outT);
+          rangeModel[u][m].cost += cc;
+          rangeModel[u][m].calls++;
+          rangeModel[u][m].provider = pv;
+        }
+      }
       // 状态分类
       const stt = e.status || "ok";
       byStatus[stt] = byStatus[stt] || { calls: 0, cost: 0 };
@@ -187,6 +203,8 @@ function computeLedgerStats(ctx, provider) {
       days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost) }])),
       models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { provider: v.provider, calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       providers: Object.fromEntries(Object.entries(byProvider).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
+      rangeProviders: Object.fromEntries(Object.entries(rangeProv).map(([u, o]) => [u, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { tokens: v.tokens, cost: round2(v.cost), calls: v.calls }]))])),
+      rangeModels: Object.fromEntries(Object.entries(rangeModel).map(([u, o]) => [u, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { provider: v.provider, tokens: v.tokens, cost: round2(v.cost), calls: v.calls }]))])),
       statuses: Object.fromEntries(Object.entries(byStatus).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
       sessions: Object.fromEntries(Object.entries(bySession).sort((a, b) => b[1].cost - a[1].cost).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, model: v.model }])),
       hours: Object.fromEntries(Object.entries(byHour).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),

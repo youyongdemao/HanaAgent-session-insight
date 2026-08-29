@@ -741,3 +741,9 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-overlay .w-detail-visual svg{width:100%!important;max-width:100%!important;height:auto;display:block}
 .w-detail-overlay .w-detail-visual>div{min-width:0;width:100%}
 .w-detail-overlay .w-detail-card .card{overflow:hidden}
+/* ── 用量布局：Token消费统计整行 + 左侧两卡竖排 + 供应商排行右列 ── */
+#usage-overview .panel[data-chart="tokpanel"]{margin-bottom:14px}
+#usage-overview .usage-layout{grid-template-columns:1.1fr .9fr}
+#usage-overview .usage-layout .usage-left{display:grid;gap:14px;min-width:0}
+#usage-overview .usage-layout .usage-left>.panel{min-width:0}
+@media(max-width:920px){#usage-overview .usage-layout{grid-template-columns:1fr}#usage-overview .usage-layout .usage-left{grid-template-columns:1fr}}
