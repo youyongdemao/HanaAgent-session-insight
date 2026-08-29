@@ -99,7 +99,7 @@ function computeLedgerStats(ctx, provider) {
       const cost = calcEntryCost(e);
       const cc = cost || 0;
       const tsCost = Date.parse(e.startedAt || "");
-      if (Number.isFinite(tsCost)) timeCosts.push({ ts: tsCost, cost: cc });
+      if (Number.isFinite(tsCost)) timeCosts.push({ ts: tsCost, cost: cc, tokens: e.usage?.totalTokens || 0 });
       callCount++;
       // agent 归属
       const agent = e.attribution?.agentId || "未知";
@@ -170,11 +170,13 @@ function computeLedgerStats(ctx, provider) {
     latAll.sort((a, b) => a - b);
     const pct = (q) => (latAll.length ? latAll[Math.min(latAll.length - 1, Math.floor(q * latAll.length))] : 0);
     const round2 = (v) => Math.round(v * 100) / 100;
-    const recentBuckets = (spanMs, count) => { const start = now - spanMs, out = Array(count).fill(0); for (const x of timeCosts) { if (x.ts < start || x.ts > now) continue; const idx = Math.max(0, Math.min(count - 1, Math.floor(((x.ts - start) / spanMs) * count))); out[idx] += x.cost; } return out.map(v => Math.round(v * 1e6) / 1e6); };
-    const timeBuckets = { hour: recentBuckets(24 * 3600e3, 100), day: recentBuckets(100 * 86400e3, 100), week: recentBuckets(100 * 7 * 86400e3, 100) };
+    const recentBuckets = (spanMs, count, key) => { const start = now - spanMs, out = Array(count).fill(0); for (const x of timeCosts) { if (x.ts < start || x.ts > now) continue; const idx = Math.max(0, Math.min(count - 1, Math.floor(((x.ts - start) / spanMs) * count))); out[idx] += x[key] || 0; } return key === "tokens" ? out.map(v => Math.round(v)) : out.map(v => Math.round(v * 1e6) / 1e6); };
+    const timeBuckets = { hour: recentBuckets(24 * 3600e3, 100, "cost"), day: recentBuckets(100 * 86400e3, 100, "cost"), week: recentBuckets(100 * 7 * 86400e3, 100, "cost") };
+    const tokenBuckets = { hour: recentBuckets(24 * 3600e3, 100, "tokens"), day: recentBuckets(100 * 86400e3, 100, "tokens"), week: recentBuckets(100 * 7 * 86400e3, 100, "tokens") };
     ledgerStatsCache = {
       at: now,
       timeBuckets,
+      tokenBuckets,
       provider,
       calls: callCount,
       errors: errCount,
