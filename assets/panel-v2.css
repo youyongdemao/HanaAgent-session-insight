@@ -669,3 +669,17 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .uh-sub span:nth-child(1) b{color:var(--accent)}
 #usage-overview .uh-sub span:nth-child(3) b{color:var(--si-red)}
 @media(max-width:720px){#usage-overview .uh-main{flex-direction:column;align-items:flex-start;gap:18px}#usage-overview .uh-divider{width:100%;height:1px}}
+/* ── 排行卡：命中率副标 ── */
+.rank-row span{display:grid;gap:2px;min-width:0}
+.rank-row span em{font-style:normal;font-size:9.5px;color:var(--green);font-weight:400;font-family:var(--font-mono)}
+
+/* ── 放大详情卡：供应商/模型详单 ── */
+.pv-detail-row{padding:12px 10px;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent);display:grid;gap:9px}
+.pv-detail-row:last-child{border:0}
+.pv-detail-row .pdr-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pv-detail-row .pdr-head b{font:500 13px var(--font-mono);color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-detail-row .pdr-hr{font:400 11px var(--font-mono);color:var(--green);white-space:nowrap}
+.pv-detail-row .track{height:8px;border-radius:5px;overflow:hidden}
+.pv-detail-row .track i{display:block;height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 52%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
+.pv-detail-row .pdr-meta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.pv-detail-row .pdr-meta span{font:400 10.5px var(--font-mono);color:var(--text-muted);white-space:nowrap}

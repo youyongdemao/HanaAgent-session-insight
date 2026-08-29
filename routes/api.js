@@ -90,7 +90,7 @@ function computeLedgerStats(ctx, provider) {
     const ledger = getLedgerPath(ctx);
     if (!existsSync(ledger)) return { at: now, empty: true, provider };
     const data = JSON.parse(readFileSync(ledger, "utf8"));
-    const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
+    const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, byProvider = {}, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
     const latAll = [];
     const timeCosts = [];
     let callCount = 0, errCount = 0, tokInput = 0, tokOutput = 0, tokCacheHit = 0, tokCacheMiss = 0, tokTotal = 0;
@@ -123,7 +123,7 @@ function computeLedgerStats(ctx, provider) {
       }
       // 模型
       const m = e.model?.modelId || "unknown";
-      byModel[m] = byModel[m] || { calls: 0, cost: 0, tokens: 0 };
+      byModel[m] = byModel[m] || { calls: 0, cost: 0, tokens: 0, cacheHit: 0, cacheMiss: 0 };
       byModel[m].calls++;
       byModel[m].cost += cc;
       byModel[m].tokens += e.usage?.totalTokens || 0;
@@ -134,6 +134,14 @@ function computeLedgerStats(ctx, provider) {
       const hitT = u.cache?.readTokens != null ? u.cache.readTokens : Math.max(0, inTot - miss);
       const outT = u.output?.totalTokens ?? 0;
       tokInput += inTot; tokOutput += outT; tokCacheHit += hitT; tokCacheMiss += miss; tokTotal += (u.totalTokens || (inTot + outT));
+      byModel[m].cacheHit += hitT; byModel[m].cacheMiss += miss;
+      // 供应商聚合
+      const pv = e.model?.provider || "unknown";
+      byProvider[pv] = byProvider[pv] || { calls: 0, cost: 0, tokens: 0, cacheHit: 0, cacheMiss: 0 };
+      byProvider[pv].calls++;
+      byProvider[pv].cost += cc;
+      byProvider[pv].tokens += u.totalTokens || (inTot + outT);
+      byProvider[pv].cacheHit += hitT; byProvider[pv].cacheMiss += miss;
       // 状态分类
       const stt = e.status || "ok";
       byStatus[stt] = byStatus[stt] || { calls: 0, cost: 0 };
@@ -173,7 +181,8 @@ function computeLedgerStats(ctx, provider) {
       agents: Object.fromEntries(Object.entries(byAgent).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
       subsystems: Object.fromEntries(Object.entries(bySubsystem).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
       days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost) }])),
-      models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
+      models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
+      providers: Object.fromEntries(Object.entries(byProvider).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       statuses: Object.fromEntries(Object.entries(byStatus).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
       sessions: Object.fromEntries(Object.entries(bySession).sort((a, b) => b[1].cost - a[1].cost).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, model: v.model }])),
       hours: Object.fromEntries(Object.entries(byHour).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
