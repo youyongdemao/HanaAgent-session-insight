@@ -747,3 +747,19 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .usage-layout .usage-left{display:grid;gap:14px;min-width:0}
 #usage-overview .usage-layout .usage-left>.panel{min-width:0}
 @media(max-width:920px){#usage-overview .usage-layout{grid-template-columns:1fr}#usage-overview .usage-layout .usage-left{grid-template-columns:1fr}}
+/* ── 详情大卡（modal）内供应商→模型层级 ── */
+.w-detail-visual .pvtree-group{display:grid;gap:10px;padding:14px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
+.w-detail-visual .pvtree-group:last-child{border-bottom:0}
+.w-detail-visual .pvtree-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:6px}
+.w-detail-visual .pvtree-head b{font:600 14px var(--font-mono);color:var(--text-light)}
+.w-detail-visual .pvtree-tok{font:500 13px var(--font-mono);color:var(--accent)}
+.w-detail-visual .pvtree-group>.track{height:8px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent);margin-bottom:8px}
+.w-detail-visual .pvtree-group>.track i{display:block;height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 52%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
+.w-detail-visual .pvtree-models{display:grid;gap:6px;padding-left:14px}
+.w-detail-visual .pvmodel{display:grid;grid-template-columns:1fr 1fr 60px;gap:12px;align-items:center;padding:6px 0;border-top:1px dashed color-mix(in srgb,var(--text) 8%,transparent)}
+.w-detail-visual .pvmodel:first-child{border-top:0}
+.w-detail-visual .pvmodel span{font-size:11px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-detail-visual .pvmodel .track{height:5px;border-radius:4px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent)}
+.w-detail-visual .pvmodel .track i{display:block;height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 42%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
+.w-detail-visual .pvmodel b{font:500 11px var(--font-mono);color:var(--text-light);text-align:right}
+.w-detail-visual .pvmodel-empty{font-size:10.5px;color:var(--text-muted);padding-left:14px}
