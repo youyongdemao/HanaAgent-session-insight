@@ -110,9 +110,10 @@ function computeLedgerStats(ctx, provider) {
       byAgent[agentKey].tokens += e.usage?.totalTokens || 0;
       // 来源
       const sub = e.source?.subsystem || "other";
-      bySubsystem[sub] = bySubsystem[sub] || { calls: 0, cost: 0 };
+      bySubsystem[sub] = bySubsystem[sub] || { calls: 0, cost: 0, tokens: 0 };
       bySubsystem[sub].calls++;
       bySubsystem[sub].cost += cc;
+      bySubsystem[sub].tokens += e.usage?.totalTokens || 0;
       // 日期
       const d = String(e.startedAt || "").slice(0, 10);
       if (d) {
@@ -123,10 +124,11 @@ function computeLedgerStats(ctx, provider) {
       }
       // 模型
       const m = e.model?.modelId || "unknown";
-      byModel[m] = byModel[m] || { calls: 0, cost: 0, tokens: 0, cacheHit: 0, cacheMiss: 0 };
+      byModel[m] = byModel[m] || { calls: 0, cost: 0, tokens: 0, cacheHit: 0, cacheMiss: 0, provider: e.model?.provider || null };
       byModel[m].calls++;
       byModel[m].cost += cc;
       byModel[m].tokens += e.usage?.totalTokens || 0;
+      if (e.model?.provider) byModel[m].provider = e.model.provider;
       // Token 细分（输入 / 输出 / 缓存命中 / 缓存未命中）
       const u = e.usage || {};
       const inTot = u.input?.totalTokens ?? u.input?.uncachedTokens ?? 0;
@@ -181,9 +183,9 @@ function computeLedgerStats(ctx, provider) {
       calls: callCount,
       errors: errCount,
       agents: Object.fromEntries(Object.entries(byAgent).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
-      subsystems: Object.fromEntries(Object.entries(bySubsystem).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
+      subsystems: Object.fromEntries(Object.entries(bySubsystem).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
       days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost) }])),
-      models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
+      models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { provider: v.provider, calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       providers: Object.fromEntries(Object.entries(byProvider).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       statuses: Object.fromEntries(Object.entries(byStatus).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
       sessions: Object.fromEntries(Object.entries(bySession).sort((a, b) => b[1].cost - a[1].cost).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, model: v.model }])),

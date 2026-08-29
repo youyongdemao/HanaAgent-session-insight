@@ -710,3 +710,22 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .td-summary .td-kpi div:first-child b{color:var(--accent)}
 .td-summary .td-note{font-size:10.5px;color:var(--text-muted);text-align:center}
 @media(max-width:720px){.td-summary .td-kpi{grid-template-columns:repeat(2,1fr)}}
+/* ── 消耗 Token 任务类别（来源分布，中文） ── */
+#usage-overview #taskCat .src-row{grid-template-columns:96px 1fr 72px}
+#usage-overview #taskCat .src-row b{font:500 11px var(--font-mono);color:var(--accent)}
+
+/* ── 供应商 / 模型 层级大卡 ── */
+#usage-overview #providerTree .pvtree-group{display:grid;gap:8px;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
+#usage-overview #providerTree .pvtree-group:last-child{border:0}
+#usage-overview #providerTree .pvtree-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#usage-overview #providerTree .pvtree-head b{font:600 13px var(--font-mono);color:var(--text-light)}
+#usage-overview #providerTree .pvtree-tok{font:500 12px var(--font-mono);color:var(--accent)}
+#usage-overview #providerTree .track{height:7px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent)}
+#usage-overview #providerTree .track i{display:block;height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 52%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
+#usage-overview #providerTree .pvtree-models{display:grid;gap:4px;padding-left:12px;margin-top:2px}
+#usage-overview #providerTree .pvmodel{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:center;font-size:10.5px}
+#usage-overview #providerTree .pvmodel span{color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#usage-overview #providerTree .pvmodel .track{height:5px}
+#usage-overview #providerTree .pvmodel em{font-style:normal;font-family:var(--font-mono);font-size:9.5px;color:var(--green)}
+#usage-overview #providerTree .pvmodel b{font:500 10.5px var(--font-mono);color:var(--text-light)}
+#usage-overview #providerTree .pvmodel-empty{font-size:10px;color:var(--text-muted);padding-left:12px}
