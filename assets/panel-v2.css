@@ -683,3 +683,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .pv-detail-row .track i{display:block;height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 52%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
 .pv-detail-row .pdr-meta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
 .pv-detail-row .pdr-meta span{font:400 10.5px var(--font-mono);color:var(--text-muted);white-space:nowrap}
+/* ── Token 构成等总览信息卡：hover 放大 + 按压回弹 ── */
+#usage-overview .si-tool{transform:scale(1);transition:transform .24s cubic-bezier(.22,.8,.28,1),box-shadow .3s,border-color .24s,background .24s;will-change:transform}
+#usage-overview .si-tool:hover{transform:scale(1.012);border-color:color-mix(in srgb,var(--accent) 42%,transparent);box-shadow:0 6px 22px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:4}
+#usage-overview .si-tool:active{transform:scale(.975);transition-duration:.1s}
+@keyframes siToolRelease{0%{transform:scale(.975)}38%{transform:scale(1.015)}62%{transform:scale(.995)}79%{transform:scale(1.006)}100%{transform:scale(1)}}
