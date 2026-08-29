@@ -781,8 +781,8 @@ body:not([data-surface="widget"]) #usage-overview .panel.si-release{animation:us
 @keyframes usageOverviewCardRelease{0%{transform:scale(.975)}100%{transform:scale(1.018)}}
 
 /* Token 消费统计、供应商排行：整卡固定，仅保留内部图表与控件动效 */
-body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"],body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"]{transform:none!important;animation:none!important;transition:border-color .24s,box-shadow .3s,background .24s;will-change:auto}
-body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:hover,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:active,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"].si-press,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"].si-release,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"]:hover,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"]:active,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"].si-press,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"].si-release{transform:none!important;animation:none!important}
+body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"]{transform:none!important;animation:none!important;transition:border-color .24s,box-shadow .3s,background .24s;will-change:auto}
+body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"]:hover,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"]:active,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"].si-press,body:not([data-surface="widget"]) #usage-overview .panel[data-chart="providerTree"].si-release{transform:none!important;animation:none!important}
 /* ── seg 滑块每个选项：上下各扩 10px 点击判定热区 ── */
 .seg>[data-v]{position:relative}
 .seg>[data-v]::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px;z-index:0;pointer-events:auto}
@@ -867,3 +867,7 @@ body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:
 .w-detail-overlay .model-metric-card:hover::before{opacity:1}
 .w-detail-overlay .model-metric-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;background:linear-gradient(135deg,color-mix(in srgb,var(--text) 5%,transparent),transparent 40%);box-shadow:inset 0 1px 0 var(--si-glass-hi)}
 .w-detail-overlay .model-metric-card:hover::after{opacity:1}
+/* ── 用量大卡：标题图上移统一（与费用概览同高，距卡片上边框等距） ── */
+#usage-overview .panel[data-chart="tokpanel"] h3,#usage-overview .panel[data-chart="cachePanel"] h3{position:relative;top:-15px;margin-bottom:-15px}
+#usage-overview .panel[data-chart="tokpanel"] .st-wrap,#usage-overview .panel[data-chart="cachePanel"] .st-wrap{display:grid;gap:0}
+#usage-overview .panel[data-chart="tokpanel"] .stg,#usage-overview .panel[data-chart="cachePanel"] .stg{margin-bottom:0}
