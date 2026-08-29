@@ -93,6 +93,7 @@ function computeLedgerStats(ctx, provider) {
     const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, byProvider = {}, rangeProv = { hour: {}, day: {}, week: {} }, rangeModel = { hour: {}, day: {}, week: {} }, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
     const latAll = [];
     const timeCosts = [];
+    const timeCache = [];
     let callCount = 0, errCount = 0, tokInput = 0, tokOutput = 0, tokCacheHit = 0, tokCacheMiss = 0, tokTotal = 0;
     for (const e of data.entries || []) {
       if (provider && e.model?.provider !== provider) continue; // 按供应商过滤
@@ -135,6 +136,7 @@ function computeLedgerStats(ctx, provider) {
       const miss = u.cache?.missTokens != null ? u.cache.missTokens : (u.input?.uncachedTokens != null ? u.input.uncachedTokens : inTot);
       const hitT = u.cache?.readTokens != null ? u.cache.readTokens : Math.max(0, inTot - miss);
       const outT = u.output?.totalTokens ?? 0;
+      if (Number.isFinite(tsCost)) timeCache.push({ ts: tsCost, hit: hitT, miss });
       tokInput += inTot; tokOutput += outT; tokCacheHit += hitT; tokCacheMiss += miss; tokTotal += (u.totalTokens || (inTot + outT));
       byModel[m].cacheHit += hitT; byModel[m].cacheMiss += miss;
       // 供应商聚合
@@ -195,10 +197,13 @@ function computeLedgerStats(ctx, provider) {
     const recentBuckets = (spanMs, count, key) => { const start = now - spanMs, out = Array(count).fill(0); for (const x of timeCosts) { if (x.ts < start || x.ts > now) continue; const idx = Math.max(0, Math.min(count - 1, Math.floor(((x.ts - start) / spanMs) * count))); out[idx] += x[key] || 0; } return key === "tokens" ? out.map(v => Math.round(v)) : out.map(v => Math.round(v * 1e6) / 1e6); };
     const timeBuckets = { hour: recentBuckets(24 * 3600e3, 100, "cost"), day: recentBuckets(100 * 86400e3, 100, "cost"), week: recentBuckets(100 * 7 * 86400e3, 100, "cost") };
     const tokenBuckets = { hour: recentBuckets(24 * 3600e3, 100, "tokens"), day: recentBuckets(100 * 86400e3, 100, "tokens"), week: recentBuckets(100 * 7 * 86400e3, 100, "tokens") };
+    const recentCacheRates = (spanMs, count) => { const start = now - spanMs, hit = Array(count).fill(0), miss = Array(count).fill(0); for (const x of timeCache) { if (x.ts < start || x.ts > now) continue; const idx = Math.max(0, Math.min(count - 1, Math.floor(((x.ts - start) / spanMs) * count))); hit[idx] += x.hit || 0; miss[idx] += x.miss || 0; } return hit.map((v, i) => (v + miss[i]) > 0 ? Math.round((v / (v + miss[i])) * 1000) / 10 : 0); };
+    const cacheRateBuckets = { hour: recentCacheRates(24 * 3600e3, 100), day: recentCacheRates(100 * 86400e3, 100), week: recentCacheRates(100 * 7 * 86400e3, 100) };
     ledgerStatsCache = {
       at: now,
       timeBuckets,
       tokenBuckets,
+      cacheRateBuckets,
       provider,
       calls: callCount,
       errors: errCount,

@@ -809,3 +809,21 @@ body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:
 .model-donut-legend span i{width:8px;height:8px;border-radius:3px}
 .model-donut-legend span b{font:500 9.5px var(--font-mono);color:var(--text-light)}
 @media(max-width:760px){.model-metrics-grid{grid-template-columns:1fr}.model-rank-row,.model-hit-row{grid-template-columns:minmax(90px,1fr) minmax(70px,1fr) 58px}}
+
+/* ── 缓存命中统计大卡 ── */
+#usage-overview .panel[data-chart="cachePanel"]{margin-bottom:14px}
+
+/* ── 任务类别：左扇形占比 + 右 Token 条形用量 ── */
+#usage-overview #taskCat{display:block}
+.taskcat-layout{display:grid;grid-template-columns:minmax(280px,.95fr) minmax(220px,1.05fr);gap:16px;align-items:center;min-width:0}
+.task-fan-wrap,.task-bars-wrap{min-width:0}
+.task-view-title{font-size:10.5px;color:var(--text-muted);margin-bottom:8px}
+.task-fan-svg{display:block;width:100%;height:auto;overflow:visible}
+.task-fan-sector{transform-origin:130px 120px;opacity:0;animation:taskFanIn .46s var(--ease) forwards;animation-delay:var(--fan-delay,0ms)}
+@keyframes taskFanIn{0%{opacity:0;transform:scale(.72)}100%{opacity:1;transform:scale(1)}}
+.task-fan-leader{fill:none;stroke-width:1.2;opacity:.78;vector-effect:non-scaling-stroke}
+.task-fan-label{fill:var(--text-light);font:500 10px var(--font-mono)}
+.task-fan-pct{fill:var(--text-muted);font:9px var(--font-mono)}
+.task-bars-wrap{display:grid;align-content:center}
+.task-bars-wrap .src-row{grid-template-columns:76px minmax(80px,1fr) 64px!important}
+@media(max-width:1180px){.taskcat-layout{grid-template-columns:1fr}.task-fan-wrap{max-width:440px;margin:0 auto;width:100%}}
