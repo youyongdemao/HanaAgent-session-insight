@@ -729,3 +729,9 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview #providerTree .pvmodel em{font-style:normal;font-family:var(--font-mono);font-size:9.5px;color:var(--green)}
 #usage-overview #providerTree .pvmodel b{font:500 10.5px var(--font-mono);color:var(--text-light)}
 #usage-overview #providerTree .pvmodel-empty{font-size:10px;color:var(--text-muted);padding-left:12px}
+/* ── 详情大卡：修图表溢出/裁切 ── */
+.w-detail-overlay .w-detail-card{overflow-x:hidden;width:min(960px,calc(100vw - 24px))}
+.w-detail-overlay .w-detail-visual.card,.w-detail-overlay .w-detail-visual{overflow:visible!important;width:100%;min-width:0}
+.w-detail-overlay .w-detail-visual svg{width:100%!important;max-width:100%!important;height:auto;display:block}
+.w-detail-overlay .w-detail-visual>div{min-width:0;width:100%}
+.w-detail-overlay .w-detail-card .card{overflow:hidden}
