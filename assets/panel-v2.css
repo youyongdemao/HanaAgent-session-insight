@@ -656,17 +656,20 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .panel h3 .st-wrap em{font-style:normal;font-size:10px;color:var(--text-muted);font-weight:400}
 #usage-overview .grid2,#usage-overview .grid3{gap:14px;margin-bottom:0}
 /* ── 用量总览 hero：开放式大字，消耗 Token + 平均缓存命中率为两个主数字 ── */
-#usage-overview .usage-hero{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-bottom:18px;padding:4px 2px;align-items:start}
-#usage-overview .uh-main{display:grid;gap:18px}
-#usage-overview .uh-main .uh-num{display:flex;align-items:center;gap:26px}
+#usage-overview .usage-hero{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-bottom:18px;padding:4px 2px;align-items:stretch}
+#usage-overview .uh-main{display:flex;align-items:center;gap:30px}
+#usage-overview .uh-side{display:grid;gap:20px;min-width:0;flex:1}
 #usage-overview .uh-block{display:grid;gap:6px;min-width:0}
 #usage-overview .uh-block .uh-label{font-size:12px;color:var(--text-muted);white-space:nowrap}
-#usage-overview .uh-block b{font:400 clamp(42px,5vw,64px)/1 var(--font-mono);letter-spacing:-.045em;color:color-mix(in srgb,var(--text-light) 88%,var(--text-muted));font-variant-numeric:tabular-nums}
-#usage-overview .uh-hit b{color:var(--green)}
-#usage-overview .uh-divider{width:1px;height:64px;background:color-mix(in srgb,var(--text) 14%,transparent);flex:none}
-#usage-overview .uh-sub{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center}
-#usage-overview .uh-sub span{font-size:11.5px;color:var(--text-muted);white-space:nowrap}
-#usage-overview .uh-sub b{font:500 14px var(--font-mono);color:var(--text-light);margin-left:6px}
+/* 最重：总消耗 Token */
+#usage-overview .uh-primary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.05em;color:color-mix(in srgb,var(--text-light) 92%,var(--text-muted));font-variant-numeric:tabular-nums}
+/* 次重：平均缓存命中率 */
+#usage-overview .uh-secondary b{font:400 clamp(28px,3.2vw,42px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums}
+#usage-overview .uh-divider{width:1px;align-self:center;height:96px;background:color-mix(in srgb,var(--text) 14%,transparent);flex:none}
+/* 最弱：三个小信息 */
+#usage-overview .uh-sub{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+#usage-overview .uh-sub span{font-size:11px;color:var(--text-muted);white-space:nowrap;opacity:.85}
+#usage-overview .uh-sub b{font:400 13px var(--font-mono);color:var(--text-light);margin-left:5px;opacity:.92}
 #usage-overview .uh-sub span:nth-child(1) b{color:var(--accent)}
 #usage-overview .uh-sub span:nth-child(3) b{color:var(--si-red)}
 @media(max-width:920px){#usage-overview .usage-hero{grid-template-columns:1fr}}
