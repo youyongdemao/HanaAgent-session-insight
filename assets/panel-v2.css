@@ -766,6 +766,13 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* ── 详情卡标题右上角时间范围状态窗 ── */
 .w-detail-range{font:500 11px var(--font-mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:8px;padding:3px 10px;margin-left:auto}
 
+/* ── 所有放大详情图表：统一左右安全区，动画期间也不贴边 ── */
+.w-detail-overlay #wDetailBody{min-width:0;padding:0 10px 12px;box-sizing:border-box;overflow-x:hidden}
+.w-detail-overlay .w-detail-visual.card,.w-detail-overlay .w-detail-visual{width:100%;max-width:100%;min-width:0;box-sizing:border-box!important;padding:20px 30px 24px!important;margin-left:auto;margin-right:auto;overflow:hidden!important}
+.w-detail-overlay .w-detail-visual svg{display:block;width:100%!important;max-width:100%!important;height:auto;margin:0 auto;box-sizing:border-box}
+.w-detail-overlay .w-detail-visual .card{width:100%;max-width:100%;box-sizing:border-box;margin-left:auto;margin-right:auto}
+@media(max-width:720px){.w-detail-overlay #wDetailBody{padding-left:4px;padding-right:4px}.w-detail-overlay .w-detail-visual.card,.w-detail-overlay .w-detail-visual{padding-left:18px!important;padding-right:18px!important}}
+
 /* ── 用量总览：所有有圆角卡底的实体卡统一交互动效 ── */
 body:not([data-surface="widget"]) #usage-overview .panel{transform:scale(1)!important;transform-origin:center;transition:transform .24s cubic-bezier(.22,.8,.28,1),border-color .24s,box-shadow .3s,background .24s;will-change:transform}
 body:not([data-surface="widget"]) #usage-overview .panel:hover{transform:scale(1.018)!important;border-color:color-mix(in srgb,var(--accent) 46%,transparent);box-shadow:0 9px 28px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:4}
