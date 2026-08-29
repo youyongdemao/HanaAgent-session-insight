@@ -834,3 +834,36 @@ body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:
 .task-bars-wrap .src-row .track{height:7px;border-radius:5px}
 .task-bars-wrap .src-row .track i{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 26%,var(--bg-card)),color-mix(in srgb,var(--accent) 48%,var(--bg-card)));filter:saturate(.72) brightness(.88)}
 @media(max-width:1180px){.taskcat-layout{grid-template-columns:1fr}.task-fan-wrap{max-width:440px;margin:0 auto;width:100%}}
+
+/* ── 模型 Token 占比扇环（左右结构） ── */
+.model-donut-split{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center;min-width:0}
+.model-donut-main{flex:none}
+.w-detail-overlay .model-donut-main svg{width:170px!important;max-width:170px!important;height:170px!important;display:block}
+.model-donut-legend{display:grid;gap:8px;min-width:0}
+.model-donut-legend span{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:var(--text-light)}
+.model-donut-legend span i{width:10px;height:10px;border-radius:3px}
+.model-donut-legend span em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.model-donut-legend span b{font:500 11px var(--font-mono);color:var(--accent)}
+.w-detail-overlay .model-donut svg circle{stroke-linecap:round}
+
+/* ── 模型 Token 消耗：左对齐排名 ── */
+.w-detail-overlay .model-rank-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
+.w-detail-overlay .model-rank-row .model-rank-no{font:600 11px var(--font-mono);color:var(--text-muted);text-align:center;line-height:1}
+.w-detail-overlay .model-rank-row .model-rank-main{min-width:0}
+.w-detail-overlay .model-rank-row .model-rank-main strong{display:block;font-size:12px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;margin-bottom:7px}
+.w-detail-overlay .model-rank-row .model-rank-main .track{height:6px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent)}
+.w-detail-overlay .model-rank-row .model-rank-main .track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 48%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
+.w-detail-overlay .model-rank-row>b{font:600 12px var(--font-mono);color:var(--accent);white-space:nowrap}
+@media(max-width:640px){.model-donut-split{grid-template-columns:1fr .model-donut-main{margin:0 auto}}}
+/* ── 供应商详情仪表盘：卡片玻璃 + 光晕 + 选中放大 / 按压回弹 ── */
+.w-detail-overlay .model-metrics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.w-detail-overlay .model-metric-card{position:relative;overflow:hidden;min-width:0;padding:16px;border-radius:14px;background:linear-gradient(180deg,color-mix(in srgb,var(--bg-card) 46%,transparent),color-mix(in srgb,var(--bg-card) 26%,transparent));border:1px solid color-mix(in srgb,var(--text) 8%,transparent);box-shadow:inset 0 1px 0 var(--si-glass-hi);transform:scale(1);transition:transform .24s cubic-bezier(.22,.8,.28,1),border-color .24s,box-shadow .3s,background .24s;will-change:transform}
+.w-detail-overlay .model-metric-card:hover{transform:scale(1.018);border-color:color-mix(in srgb,var(--accent) 46%,transparent);box-shadow:0 9px 28px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:4}
+.w-detail-overlay .model-metric-card:active{transform:scale(.975);transition-duration:.1s}
+.w-detail-overlay .model-metric-card.provider-tree-card{grid-column:1/-1}
+.w-detail-overlay .model-metric-card h4{margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-light)}
+/* ── 卡片光晕光照 ── */
+.w-detail-overlay .model-metric-card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(260px circle at 50% 0%,color-mix(in srgb,var(--accent) 22%,transparent),transparent 70%)}
+.w-detail-overlay .model-metric-card:hover::before{opacity:1}
+.w-detail-overlay .model-metric-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;background:linear-gradient(135deg,color-mix(in srgb,var(--text) 5%,transparent),transparent 40%);box-shadow:inset 0 1px 0 var(--si-glass-hi)}
+.w-detail-overlay .model-metric-card:hover::after{opacity:1}
