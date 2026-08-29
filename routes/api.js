@@ -147,17 +147,21 @@ function computeLedgerStats(ctx, provider) {
       // 按时间范围聚合供应商/模型（24h / 100天 / 100周）
       if (Number.isFinite(tsCost)) {
         const ranges = [['hour', 24*3600e3], ['day', 100*86400e3], ['week', 100*7*86400e3]];
-        for (const [u, span] of ranges) {
+        for (const [rangeUnit, span] of ranges) {
           if (tsCost < now - span) continue;
-          rangeProv[u][pv] = rangeProv[u][pv] || { tokens: 0, cost: 0, calls: 0 };
-          rangeProv[u][pv].tokens += u.totalTokens || (inTot + outT);
-          rangeProv[u][pv].cost += cc;
-          rangeProv[u][pv].calls++;
-          rangeModel[u][m] = rangeModel[u][m] || { tokens: 0, cost: 0, calls: 0, provider: pv };
-          rangeModel[u][m].tokens += u.totalTokens || (inTot + outT);
-          rangeModel[u][m].cost += cc;
-          rangeModel[u][m].calls++;
-          rangeModel[u][m].provider = pv;
+          rangeProv[rangeUnit][pv] = rangeProv[rangeUnit][pv] || { tokens: 0, cost: 0, calls: 0, cacheHit: 0, cacheMiss: 0 };
+          rangeProv[rangeUnit][pv].tokens += u.totalTokens || (hitT + miss + outT);
+          rangeProv[rangeUnit][pv].cost += cc;
+          rangeProv[rangeUnit][pv].calls++;
+          rangeProv[rangeUnit][pv].cacheHit += hitT;
+          rangeProv[rangeUnit][pv].cacheMiss += miss;
+          rangeModel[rangeUnit][m] = rangeModel[rangeUnit][m] || { tokens: 0, cost: 0, calls: 0, provider: pv, cacheHit: 0, cacheMiss: 0 };
+          rangeModel[rangeUnit][m].tokens += u.totalTokens || (hitT + miss + outT);
+          rangeModel[rangeUnit][m].cost += cc;
+          rangeModel[rangeUnit][m].calls++;
+          rangeModel[rangeUnit][m].provider = pv;
+          rangeModel[rangeUnit][m].cacheHit += hitT;
+          rangeModel[rangeUnit][m].cacheMiss += miss;
         }
       }
       // 状态分类
@@ -203,8 +207,8 @@ function computeLedgerStats(ctx, provider) {
       days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost) }])),
       models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { provider: v.provider, calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       providers: Object.fromEntries(Object.entries(byProvider).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
-      rangeProviders: Object.fromEntries(Object.entries(rangeProv).map(([u, o]) => [u, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { tokens: v.tokens, cost: round2(v.cost), calls: v.calls }]))])),
-      rangeModels: Object.fromEntries(Object.entries(rangeModel).map(([u, o]) => [u, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { provider: v.provider, tokens: v.tokens, cost: round2(v.cost), calls: v.calls }]))])),
+      rangeProviders: Object.fromEntries(Object.entries(rangeProv).map(([rangeUnit, o]) => [rangeUnit, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { tokens: v.tokens, cost: round2(v.cost), calls: v.calls, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }]))])),
+      rangeModels: Object.fromEntries(Object.entries(rangeModel).map(([rangeUnit, o]) => [rangeUnit, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { provider: v.provider, tokens: v.tokens, cost: round2(v.cost), calls: v.calls, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }]))])),
       statuses: Object.fromEntries(Object.entries(byStatus).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
       sessions: Object.fromEntries(Object.entries(bySession).sort((a, b) => b[1].cost - a[1].cost).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, model: v.model }])),
       hours: Object.fromEntries(Object.entries(byHour).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),

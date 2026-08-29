@@ -787,3 +787,25 @@ body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:
 .seg>[data-v]{position:relative}
 .seg>[data-v]::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px;z-index:0;pointer-events:auto}
 .seg>[data-v]>*{position:relative;z-index:2}
+
+/* ── 供应商排行详情：模型参数可视化仪表盘 ── */
+.provider-detail-dashboard{display:grid;gap:20px}
+.provider-detail-dashboard h4{margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-light)}
+.provider-tree-block{min-width:0;padding-bottom:4px}
+.model-metrics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.model-metric-card{min-width:0;padding:14px;border-radius:13px;background:color-mix(in srgb,var(--bg-card) 42%,transparent);border:1px solid color-mix(in srgb,var(--text) 8%,transparent);box-sizing:border-box;overflow:hidden}
+.model-rank-row,.model-hit-row{display:grid;grid-template-columns:minmax(100px,1.2fr) minmax(90px,1fr) 66px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
+.model-rank-row:last-child,.model-hit-row:last-child{border-bottom:0}
+.model-rank-row>span,.model-hit-row>span{font-size:10.5px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.model-rank-row>.track,.model-hit-row>.track{height:6px;border-radius:5px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent)}
+.model-rank-row>.track i,.model-hit-row>.track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 48%,transparent),var(--accent));animation:growX .72s var(--ease) forwards}
+.model-hit-row>.track i{background:linear-gradient(90deg,color-mix(in srgb,var(--green) 45%,transparent),var(--green))}
+.model-rank-row>b,.model-hit-row>b{font:500 10.5px var(--font-mono);color:var(--text-light);text-align:right}
+.model-hit-row>b{color:var(--green)}
+.model-donut{position:relative;width:150px;height:150px;margin:0 auto 10px}
+.w-detail-overlay .model-donut svg{width:150px!important;max-width:150px!important;height:150px!important}
+.model-donut-legend{display:grid;gap:5px}
+.model-donut-legend span{display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:7px;align-items:center;font-size:9.5px;color:var(--text-muted)}
+.model-donut-legend span i{width:8px;height:8px;border-radius:3px}
+.model-donut-legend span b{font:500 9.5px var(--font-mono);color:var(--text-light)}
+@media(max-width:760px){.model-metrics-grid{grid-template-columns:1fr}.model-rank-row,.model-hit-row{grid-template-columns:minmax(90px,1fr) minmax(70px,1fr) 58px}}
