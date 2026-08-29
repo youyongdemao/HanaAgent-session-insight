@@ -765,3 +765,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-visual .pvmodel-empty{font-size:10.5px;color:var(--text-muted);padding-left:14px}
 /* ── 详情卡标题右上角时间范围状态窗 ── */
 .w-detail-range{font:500 11px var(--font-mono);color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:8px;padding:3px 10px;margin-left:auto}
+
+/* ── 用量总览：所有有圆角卡底的实体卡统一交互动效 ── */
+body:not([data-surface="widget"]) #usage-overview .panel{transform:scale(1)!important;transform-origin:center;transition:transform .24s cubic-bezier(.22,.8,.28,1),border-color .24s,box-shadow .3s,background .24s;will-change:transform}
+body:not([data-surface="widget"]) #usage-overview .panel:hover{transform:scale(1.018)!important;border-color:color-mix(in srgb,var(--accent) 46%,transparent);box-shadow:0 9px 28px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:4}
+body:not([data-surface="widget"]) #usage-overview .panel:active,body:not([data-surface="widget"]) #usage-overview .panel.si-press{transform:scale(.975)!important;transition-duration:.1s}
+body:not([data-surface="widget"]) #usage-overview .panel.si-release{animation:usageOverviewCardRelease .46s cubic-bezier(.16,.82,.24,1) both!important}
+@keyframes usageOverviewCardRelease{0%{transform:scale(.975)}100%{transform:scale(1.018)}}
