@@ -779,3 +779,7 @@ body:not([data-surface="widget"]) #usage-overview .panel:hover{transform:scale(1
 body:not([data-surface="widget"]) #usage-overview .panel:active,body:not([data-surface="widget"]) #usage-overview .panel.si-press{transform:scale(.975)!important;transition-duration:.1s}
 body:not([data-surface="widget"]) #usage-overview .panel.si-release{animation:usageOverviewCardRelease .46s cubic-bezier(.16,.82,.24,1) both!important}
 @keyframes usageOverviewCardRelease{0%{transform:scale(.975)}100%{transform:scale(1.018)}}
+/* ── seg 滑块每个选项：上下各扩 10px 点击判定热区 ── */
+.seg>[data-v]{position:relative}
+.seg>[data-v]::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px;z-index:0;pointer-events:auto}
+.seg>[data-v]>*{position:relative;z-index:2}
