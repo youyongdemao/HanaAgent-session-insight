@@ -609,3 +609,49 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview #usageEvents .event-row .ev-cost{font:400 10.5px var(--font-mono);color:var(--accent);justify-self:end}
 #usage-overview #usageEvents .event-row .ev-tok{font:400 10px var(--font-mono);color:var(--text-muted);min-width:52px;text-align:right}
 #usage-overview #usageEvents .empty{padding:26px;text-align:center;font-size:12px}
+/* ── 用量详情页：Token 构成 / 来源分布 / 趋势 / 详细化增强 ── */
+/* Token 构成 */
+#usage-overview .tok-comp{display:grid;gap:12px}
+#usage-overview .tok-track{display:flex;height:22px;border-radius:12px;overflow:hidden;background:color-mix(in srgb,var(--text) 6%,transparent)}
+#usage-overview .tok-track i{height:100%;transition:width .6s var(--ease)}
+#usage-overview .tok-track i.t-hit{background:linear-gradient(90deg,var(--si-green),color-mix(in srgb,var(--si-green) 70%,#fff))}
+#usage-overview .tok-track i.t-in{background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 70%,#fff))}
+#usage-overview .tok-track i.t-miss{background:linear-gradient(90deg,var(--si-amber),color-mix(in srgb,var(--si-amber) 70%,#fff))}
+#usage-overview .tok-legend{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:center}
+#usage-overview .tok-legend span{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-muted)}
+#usage-overview .tok-legend span i{width:10px;height:10px;border-radius:3px;flex:none}
+#usage-overview .tok-legend span b{font:500 12px var(--font-mono);color:var(--text-light)}
+#usage-overview .tok-legend .t-hit i{background:var(--si-green)}
+#usage-overview .tok-legend .t-in i{background:var(--accent)}
+#usage-overview .tok-legend .t-miss i{background:var(--si-amber)}
+#usage-overview .tok-legend .t-out i{background:var(--text-light)}
+#usage-overview .tok-legend em{font-style:normal;font:500 12px var(--font-mono);color:var(--accent);margin-left:auto}
+
+/* 来源分布行（复用 track 风格） */
+#usage-overview .src-row{display:grid;grid-template-columns:96px 1fr 52px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent);font-size:11.5px}
+#usage-overview .src-row:last-child{border:0}
+#usage-overview .src-row span{color:var(--text-light)}
+#usage-overview .src-row b{font:500 11px var(--font-mono);color:var(--accent);text-align:right}
+
+/* 事件时间线增强字段 */
+#usage-overview #usageEvents .event-row{grid-template-columns:42px 1fr auto auto auto auto}
+#usage-overview #usageEvents .event-row .ev-dur{font:400 10px var(--font-mono);color:var(--text-muted);white-space:nowrap}
+#usage-overview #usageEvents .event-row .ev-hr{font:400 10px var(--font-mono);color:var(--si-green);white-space:nowrap}
+
+/* 模型明细表头 */
+#usage-overview .model-detail .md-head{display:grid;grid-template-columns:1.4fr .55fr .7fr .7fr;gap:12px;padding:8px 12px;font-size:10.5px;color:var(--text-muted);background:color-mix(in srgb,var(--text) 3%,transparent)}
+
+/* 今日费用卡微调 */
+#usage-overview .today-kpi{min-height:96px}
+/* ── 用量会话页：会话选择器 ── */
+#usage-session .session-pick{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;border-radius:14px;background:color-mix(in srgb,var(--bg-card) 55%,transparent);border:1px solid color-mix(in srgb,var(--text) 10%,transparent);backdrop-filter:blur(8px)}
+#usage-session .session-pick label{font-size:12px;color:var(--text-muted);white-space:nowrap}
+#usage-session .session-pick select{flex:1;min-width:0;max-width:520px;padding:8px 12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--text) 14%,transparent);background:color-mix(in srgb,var(--bg-card) 80%,transparent);color:var(--text-light);font:500 12px var(--font-mono);cursor:pointer;transition:border-color .2s var(--ease)}
+#usage-session .session-pick select:hover{border-color:color-mix(in srgb,var(--accent) 40%,transparent)}
+#usage-session .session-pick select:focus{outline:none;border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+
+/* ── 用量总览：面板间距与标题 ── */
+#usage-overview .panel{margin-bottom:14px}
+#usage-overview .panel h3 .st-wrap{display:grid;gap:2px}
+#usage-overview .panel h3 .st-wrap em{font-style:normal;font-size:10px;color:var(--text-muted);font-weight:400}
+#usage-overview .grid2,#usage-overview .grid3{gap:14px;margin-bottom:0}

@@ -90,10 +90,10 @@ function computeLedgerStats(ctx, provider) {
     const ledger = getLedgerPath(ctx);
     if (!existsSync(ledger)) return { at: now, empty: true, provider };
     const data = JSON.parse(readFileSync(ledger, "utf8"));
-    const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 };
+    const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
     const latAll = [];
     const timeCosts = [];
-    let callCount = 0, errCount = 0;
+    let callCount = 0, errCount = 0, tokInput = 0, tokOutput = 0, tokCacheHit = 0, tokCacheMiss = 0, tokTotal = 0;
     for (const e of data.entries || []) {
       if (provider && e.model?.provider !== provider) continue; // 按供应商过滤
       const cost = calcEntryCost(e);
@@ -123,9 +123,31 @@ function computeLedgerStats(ctx, provider) {
       }
       // 模型
       const m = e.model?.modelId || "unknown";
-      byModel[m] = byModel[m] || { calls: 0, cost: 0 };
+      byModel[m] = byModel[m] || { calls: 0, cost: 0, tokens: 0 };
       byModel[m].calls++;
       byModel[m].cost += cc;
+      byModel[m].tokens += e.usage?.totalTokens || 0;
+      // Token 细分（输入 / 输出 / 缓存命中 / 缓存未命中）
+      const u = e.usage || {};
+      const inTot = u.input?.totalTokens ?? u.input?.uncachedTokens ?? 0;
+      const miss = u.cache?.missTokens != null ? u.cache.missTokens : (u.input?.uncachedTokens != null ? u.input.uncachedTokens : inTot);
+      const hitT = u.cache?.readTokens != null ? u.cache.readTokens : Math.max(0, inTot - miss);
+      const outT = u.output?.totalTokens ?? 0;
+      tokInput += inTot; tokOutput += outT; tokCacheHit += hitT; tokCacheMiss += miss; tokTotal += (u.totalTokens || (inTot + outT));
+      // 状态分类
+      const stt = e.status || "ok";
+      byStatus[stt] = byStatus[stt] || { calls: 0, cost: 0 };
+      byStatus[stt].calls++;
+      byStatus[stt].cost += cc;
+      // 会话聚合
+      const sid = e.attribution?.sessionId || "未知会话";
+      bySession[sid] = bySession[sid] || { calls: 0, cost: 0, tokens: 0, model: e.model?.modelId || "–" };
+      bySession[sid].calls++;
+      bySession[sid].cost += cc;
+      bySession[sid].tokens += u.totalTokens || (inTot + outT);
+      // 按小时聚合（调用数 / 费用）
+      const hk = String(e.startedAt || "").slice(0, 13);
+      if (hk) { byHour[hk] = byHour[hk] || { calls: 0, cost: 0 }; byHour[hk].calls++; byHour[hk].cost += cc; }
       // 延迟
       const dur = e.durationMs;
       if (dur != null && dur > 0) {
@@ -151,7 +173,11 @@ function computeLedgerStats(ctx, provider) {
       agents: Object.fromEntries(Object.entries(byAgent).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
       subsystems: Object.fromEntries(Object.entries(bySubsystem).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
       days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost) }])),
-      models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
+      models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
+      statuses: Object.fromEntries(Object.entries(byStatus).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
+      sessions: Object.fromEntries(Object.entries(bySession).sort((a, b) => b[1].cost - a[1].cost).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, model: v.model }])),
+      hours: Object.fromEntries(Object.entries(byHour).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost) }])),
+      tokens: { input: tokInput, output: tokOutput, cacheHit: tokCacheHit, cacheMiss: tokCacheMiss, total: tokTotal, hitRate: tokTotal ? (tokCacheHit + tokCacheMiss) > 0 ? tokCacheHit / (tokCacheHit + tokCacheMiss) : 0 : 0 },
       latency: {
         n: latAll.length,
         avg: latAll.length ? Math.round(latAll.reduce((a, b) => a + b, 0) / latAll.length) : 0,
@@ -1109,6 +1135,7 @@ export default function registerPluginApiRoutes(app, ctx) {
       return c.json({ error: "no usage data in session", file: name });
     }
     result.title = detectSessionTitle(ctx, dir, name); // HanaAgent 正式会话标题优先，首句兜底
+    result.file = name;
     return c.json(result);
   });
 
@@ -1282,6 +1309,7 @@ app.get("/api/balance", async (c) => {
           output: outTok,
           cacheHit: e.usage?.cache?.hitTokens ?? null,
           cacheMiss: e.usage?.cache?.missTokens ?? null,
+          hitRatio: e.usage?.cache?.hitRatio != null ? e.usage.cache.hitRatio : null,
         };
       });
       return c.json({ at: Date.now(), entries: out, total: filtered.length });
