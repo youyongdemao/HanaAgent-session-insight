@@ -1252,6 +1252,44 @@ app.get("/api/balance", async (c) => {
     return c.json(r);
   });
 
+  // 实时调用事件流：最近若干条 ledger entry 摘要（事件时间线真实渲染）
+  app.get("/api/events", (c) => {
+    const limit = Math.min(120, Math.max(1, Number(c.req.query("limit")) || 40));
+    const provider = c.req.query("provider") || null;
+    try {
+      const ledger = getLedgerPath(ctx);
+      if (!existsSync(ledger)) return c.json({ at: Date.now(), empty: true, entries: [] });
+      const data = JSON.parse(readFileSync(ledger, "utf8"));
+      const rows = (data.entries || []);
+      const filtered = provider ? rows.filter(e => e.model?.provider === provider) : rows;
+      filtered.sort((a,b)=>Date.parse(b.startedAt||"0")-Date.parse(a.startedAt||"0"));
+      const out = filtered.slice(0, limit).map(e => {
+        const cost = calcEntryCost(e);
+        const u = e.usage || {};
+        const inp = u.input?.totalTokens ?? u.input?.uncachedTokens ?? 0;
+        const outTok = u.output?.totalTokens ?? 0;
+        return {
+          ts: e.startedAt || null,
+          model: e.model?.modelId || "unknown",
+          provider: e.model?.provider || null,
+          subsystem: e.source?.subsystem || "other",
+          agentId: e.attribution?.agentId || "unknown",
+          agentKind: e.attribution?.kind || "other",
+          durationMs: e.durationMs ?? null,
+          status: e.status || "ok",
+          cost: cost == null ? null : Math.round(cost*1000000)/1000000,
+          input: inp,
+          output: outTok,
+          cacheHit: e.usage?.cache?.hitTokens ?? null,
+          cacheMiss: e.usage?.cache?.missTokens ?? null,
+        };
+      });
+      return c.json({ at: Date.now(), entries: out, total: filtered.length });
+    } catch (e) {
+      return c.json({ at: Date.now(), error: String(e?.message||e), entries: [] });
+    }
+  });
+
   // 阈值提醒规则：按供应商持久化
   function rulesFilePath(){
     const dir = ctx?.dataDir || join(getDataRoot(ctx), "plugin-data", "session-insight");
