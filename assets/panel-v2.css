@@ -295,8 +295,11 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
 }
 
 /* ── 费用概览卡静止：整卡不放大/回弹，只保留内部 seg 控件光效 ── */
-.hero-cost .card{transform:none!important}
-.hero-cost .card:hover,.hero-cost .card:active,.hero-cost .card.si-press,.hero-cost .card.si-release{transform:none!important;animation:none!important;border-color:color-mix(in srgb,var(--accent) 42%,transparent);box-shadow:0 4px 18px var(--si-glow),inset 0 1px 0 var(--si-glass-hi)}
+.hero-cost .card{transform:scale(1);transition:transform .24s cubic-bezier(.22,.8,.28,1),border-color .24s,box-shadow .3s,background .24s;will-change:transform}
+.hero-cost .card:hover{transform:scale(1.018);border-color:color-mix(in srgb,var(--accent) 46%,transparent);box-shadow:0 9px 28px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:4}
+.hero-cost .card:active,.hero-cost .card.si-press{transform:scale(.975);transition-duration:.1s}
+.hero-cost .card.si-release{animation:heroCostRelease .46s cubic-bezier(.16,.82,.24,1) both}
+@keyframes heroCostRelease{0%{transform:scale(.975)}100%{transform:scale(1.018)}}
 
 /* ── hero 区两卡：选中放大 / 点击回弹 / 玻璃光照 ── */
 /* ── hero 区两卡：与其他卡片一致的克制反馈（无位移缩放） ── */
