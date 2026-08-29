@@ -819,13 +819,18 @@ body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:
 .task-fan-wrap,.task-bars-wrap{min-width:0}
 .task-view-title{font-size:10.5px;color:var(--text-muted);margin-bottom:8px}
 .task-fan-svg{display:block;width:100%;height:auto;overflow:visible}
-.task-fan-sector{transform-origin:190px 120px;opacity:1;filter:saturate(.72) brightness(.84)}
+.task-fan-sector{transform-origin:190px 120px;opacity:1;filter:saturate(.72) brightness(.84);stroke:var(--bg-card);stroke-width:2.5;stroke-linejoin:round}
 .task-fan-sector.task-fan-enter{opacity:0;animation:taskFanIn .46s var(--ease) forwards;animation-delay:var(--fan-delay,0ms)}
-@keyframes taskFanIn{0%{opacity:0;transform:scale(.72)}100%{opacity:1;transform:scale(1)}}
-.task-fan-leader{fill:none;stroke-width:1.1;opacity:.58;filter:saturate(.65) brightness(.86);vector-effect:non-scaling-stroke}
-.task-fan-label{fill:color-mix(in srgb,var(--text-light) 72%,var(--text-muted));font:500 12px var(--font-mono)}
-.task-fan-pct{fill:var(--text-muted);font:10.5px var(--font-mono)}
-.task-bars-wrap{display:grid;align-content:center}
-.task-bars-wrap .src-row{grid-template-columns:76px minmax(80px,1fr) 64px!important}
+@keyframes taskFanIn{0%{opacity:0;transform:scale(.78)}100%{opacity:1;transform:scale(1)}}
+.task-fan-leader{fill:none;stroke-width:1.3;opacity:.72;vector-effect:non-scaling-stroke}
+.task-fan-label{fill:var(--text-light);font:600 13px var(--font-mono)}
+.task-fan-pct{fill:var(--text-muted);font:12px var(--font-mono)}
+.task-bars-wrap{display:grid;align-content:center;min-width:0}
+.bars-list{display:grid;gap:10px;min-width:0}
+.task-bars-wrap .src-row{grid-template-columns:86px minmax(90px,1fr) 74px!important;padding:9px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 9%,transparent)}
+.task-bars-wrap .src-row:last-child{border-bottom:0}
+.task-bars-wrap .src-row>span{font-size:12px;color:var(--text-light)}
+.task-bars-wrap .src-row b{font:500 12px var(--font-mono);color:var(--text-light)}
+.task-bars-wrap .src-row .track{height:7px;border-radius:5px}
 .task-bars-wrap .src-row .track i{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 26%,var(--bg-card)),color-mix(in srgb,var(--accent) 48%,var(--bg-card)));filter:saturate(.72) brightness(.88)}
 @media(max-width:1180px){.taskcat-layout{grid-template-columns:1fr}.task-fan-wrap{max-width:440px;margin:0 auto;width:100%}}
