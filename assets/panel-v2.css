@@ -819,7 +819,8 @@ body:not([data-surface="widget"]) #usage-overview .panel[data-chart="tokpanel"]:
 .task-fan-wrap,.task-bars-wrap{min-width:0}
 .task-view-title{font-size:10.5px;color:var(--text-muted);margin-bottom:8px}
 .task-fan-svg{display:block;width:100%;height:auto;overflow:visible}
-.task-fan-sector{transform-origin:190px 120px;opacity:0;filter:saturate(.72) brightness(.84);animation:taskFanIn .46s var(--ease) forwards;animation-delay:var(--fan-delay,0ms)}
+.task-fan-sector{transform-origin:190px 120px;opacity:1;filter:saturate(.72) brightness(.84)}
+.task-fan-sector.task-fan-enter{opacity:0;animation:taskFanIn .46s var(--ease) forwards;animation-delay:var(--fan-delay,0ms)}
 @keyframes taskFanIn{0%{opacity:0;transform:scale(.72)}100%{opacity:1;transform:scale(1)}}
 .task-fan-leader{fill:none;stroke-width:1.1;opacity:.58;filter:saturate(.65) brightness(.86);vector-effect:non-scaling-stroke}
 .task-fan-label{fill:color-mix(in srgb,var(--text-light) 72%,var(--text-muted));font:500 12px var(--font-mono)}
