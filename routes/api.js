@@ -1364,13 +1364,13 @@ app.get("/api/balance", async (c) => {
     mkdirSync(dir, { recursive: true });
     return join(dir, "rules.json");
   }
-  app.get("/rules", (c) => {
+  app.get("/api/rules", (c) => {
     try {
       const fp = rulesFilePath();
       return c.json(existsSync(fp) ? JSON.parse(readFileSync(fp, "utf8")) : {});
     } catch { return c.json({}); }
   });
-  app.post("/rules", async (c) => {
+  app.post("/api/rules", async (c) => {
     try {
       const body = await c.req.json();
       const key = String(body?.provider || "").slice(0, 40);
