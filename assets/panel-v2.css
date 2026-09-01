@@ -1035,6 +1035,7 @@ body:not([data-surface="widget"]) #usage-overview .panel.is-selected.ov-release-
 #usage-session .session-composition.si-release,#usage-session .session-providers.si-release{animation:sessionCompoRelease .5s cubic-bezier(.16,.82,.24,1) both!important}
 @keyframes sessionCompoRelease{0%{transform:translateZ(0) scale(.97)}100%{transform:translateZ(0) scale(1.02)}}
 .se-col{display:flex;flex-direction:column;gap:12px;min-width:0;height:100%}
+#usage-session .se-col .session-composition{flex:1 1 auto;align-content:start}
 .session-mini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:auto}
 .uh-mini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 #usage-overview .uh-mini{transform:translateY(-5px)}
