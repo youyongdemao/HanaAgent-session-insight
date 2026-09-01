@@ -69,7 +69,7 @@ body[data-surface="widget"] .widget{width:100%;padding:16px;display:grid;gap:14p
 @media(max-width:1080px){.layout{grid-template-columns:1fr}.widget{position:static;min-height:0}.hero{grid-template-columns:1fr 1fr}.grid2,.grid3,.detail-grid{grid-template-columns:1fr}.provider-item{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}}
 
 /* ── 顶栏操作按钮 ── */
-.top-actions{display:flex;gap:6px;margin-left:auto}
+.top-actions{display:flex;gap:6px;margin-left:auto;margin-right:30px}
 .tbtn{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:10px;color:var(--text-light);border:1px solid var(--si-glass-border);background:color-mix(in srgb,var(--bg-card) 50%,transparent);box-shadow:inset 0 1px 0 var(--si-glass-hi);cursor:pointer;transition:border-color .16s,box-shadow .16s,color .16s,transform .12s ease}
 .tbtn:hover{border-color:color-mix(in srgb,var(--accent) 45%,transparent);color:var(--accent);box-shadow:0 3px 14px var(--si-glow)}
 .tbtn:active{transform:scale(.95)}
@@ -721,7 +721,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* ── 今日数据统计卡（hero 右侧） ── */
 #usage-overview .uh-main{height:100%}
 #usage-overview .uh-today{border-radius:16px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;height:calc(100% - 5px);align-self:start}
-#usage-overview .uh-secondary b{font-size:clamp(42px,4.8vw,64px);transform:translate(5px,20px) scale(1.2);transform-origin:center;display:inline-block}
+#usage-overview .uh-secondary b{font-size:clamp(42px,4.8vw,64px);transform:translate(58px,20px) scale(1.2);transform-origin:center;display:inline-block}
 #usage-overview .today-stats{display:flex;flex-direction:column;gap:14px;min-width:0;flex:1}
 #usage-overview .today-stats .ts-main{display:flex;align-items:center;gap:20px;min-width:0;flex-wrap:wrap}
 #usage-overview .today-stats .ts-tok{display:grid;gap:4px;min-width:0}
