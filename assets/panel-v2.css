@@ -5,7 +5,7 @@
   --font-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
   --r-lg:18px; --r-md:12px; --ease:cubic-bezier(.22,.75,.25,1);
   /* 状态色常量：不依赖宿主主题变量，保证绿/黄/红状态点在不同主题下都可见 */
-  --si-green:#22c55e; --si-amber:#f59e0b; --si-amber-glow:color-mix(in srgb,#f59e0b 70%,transparent); --si-red:#ef4444; --si-muted:#94a3b8;
+  --si-green:#22c55e; --si-amber:#f59e0b; --si-amber-glow:color-mix(in srgb,#f59e0b 70%,transparent); --si-red:#ef4444; --si-red-soft:#c26a63; --si-red-soft-glow:color-mix(in srgb,#c26a63 55%,transparent); --si-muted:#94a3b8;
   --si-glass-border:color-mix(in srgb,var(--text) 10%,transparent);
   --si-glass-hi:color-mix(in srgb,#fff 28%,transparent);
   --si-glow:color-mix(in srgb,var(--accent) 22%,transparent);
@@ -524,7 +524,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child{
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child .ah-num{font-size:clamp(36px,4vw,52px);color:color-mix(in srgb,var(--text-light) 82%,var(--text-muted));text-shadow:none}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child{padding-left:clamp(4px,1vw,16px)}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(56px,6.4vw,82px);text-shadow:0 5px 28px color-mix(in srgb,var(--si-green) 26%,transparent)}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num.low,.ah-num.low{color:var(--si-red);text-shadow:0 5px 30px color-mix(in srgb,var(--si-red) 42%,transparent)}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num.low,.ah-num.low{color:var(--si-red-soft);text-shadow:0 0 18px var(--si-red-soft-glow),0 5px 30px color-mix(in srgb,var(--si-red-soft) 30%,transparent)}
 @media(max-width:720px){body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:1fr;gap:22px}.hero-pricing .api-hero .ah-block:last-child{padding-left:0}}
 
 /* 独立阈值提醒卡 */
@@ -697,10 +697,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .uh-secondary b,#usage-session .uh-secondary b{font:400 clamp(36px,4.2vw,56px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--green) 46%,transparent)}
 /* 会话页：命中率与本会话 Token 同字号、数字底边对齐 */
 #usage-session .uh-secondary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums}
-#usage-overview .uh-secondary b.low,#usage-session .uh-secondary b.low{color:var(--si-red);text-shadow:none}
-#usage-overview .today-stats .ts-hit b.low{color:var(--si-red)}
-.model-detail-row code.md-hit.low{color:var(--si-red)}
-#wHitAvg.low,#wHitRound.low{color:var(--si-red)}
+#usage-overview .uh-secondary b.low,#usage-session .uh-secondary b.low{color:var(--si-red-soft);text-shadow:0 0 16px var(--si-red-soft-glow)}
+#usage-overview .today-stats .ts-hit b.low{color:var(--si-red-soft);text-shadow:0 0 12px var(--si-red-soft-glow)}
+.model-detail-row code.md-hit.low{color:var(--si-red-soft);text-shadow:0 0 10px var(--si-red-soft-glow)}
+#wHitAvg.low,#wHitRound.low{color:var(--si-red-soft);text-shadow:0 0 12px var(--si-red-soft-glow)}
 #usage-session .uh-main .uh-tok,#usage-session .uh-main .uh-side{align-self:end}
 #usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,#fff 12%,transparent),transparent);flex:none}
 /* 最弱：三个小信息 */
