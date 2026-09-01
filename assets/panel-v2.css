@@ -697,6 +697,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .uh-secondary b,#usage-session .uh-secondary b{font:400 clamp(36px,4.2vw,56px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--green) 46%,transparent)}
 /* 会话页：命中率与本会话 Token 同字号、数字底边对齐 */
 #usage-session .uh-secondary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums}
+#usage-overview .uh-secondary b.low,#usage-session .uh-secondary b.low{color:var(--si-red);text-shadow:none}
+#usage-overview .today-stats .ts-hit b.low{color:var(--si-red)}
+.model-detail-row code.md-hit.low{color:var(--si-red)}
+#wHitAvg.low,#wHitRound.low{color:var(--si-red)}
 #usage-session .uh-main .uh-tok,#usage-session .uh-main .uh-side{align-self:end}
 #usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,#fff 12%,transparent),transparent);flex:none}
 /* 最弱：三个小信息 */
