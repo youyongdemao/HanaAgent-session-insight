@@ -728,7 +728,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* ── 今日数据统计卡（hero 右侧） ── */
 #usage-overview .uh-main{height:100%}
 #usage-overview .uh-today{border-radius:16px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;height:calc(100% - 5px);align-self:start}
-#usage-overview .uh-secondary b{font-size:clamp(42px,4.8vw,64px);transform:translate(58px,20px) scale(1.2);transform-origin:center;display:inline-block}
+#usage-overview .uh-secondary b{font-size:clamp(42px,4.8vw,64px);transform:translate(0,-8px) scale(1.2);transform-origin:left bottom;display:inline-block}
 #usage-overview .today-stats{display:flex;flex-direction:column;gap:14px;min-width:0;flex:1}
 #usage-overview .today-stats .ts-main{display:flex;align-items:center;gap:20px;min-width:0;flex-wrap:wrap}
 #usage-overview .today-stats .ts-tok{display:grid;gap:4px;min-width:0}
