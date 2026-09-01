@@ -1027,6 +1027,9 @@ body:not([data-surface="widget"]) #usage-overview .panel.is-selected.ov-release-
 @media(max-width:820px){.session-extra{grid-template-columns:1fr}}
 .session-extra .panel{display:flex;flex-direction:column}
 .session-composition{display:grid!important;gap:9px;align-content:start;padding:23px 18px}
+#usage-session .session-composition{display:flex!important;flex-direction:column;justify-content:space-between}
+#usage-session .session-composition h3{flex:none}
+#usage-session .session-composition .scomp-row{flex:none}
 .session-providers{display:flex;flex-direction:column}
 #usage-session .session-composition,#usage-session .session-providers{position:relative;isolation:isolate;transform-origin:center;transform:translateZ(0) scale(1);will-change:transform,box-shadow;transition:transform .24s cubic-bezier(.22,.8,.28,1),border-color .24s ease,box-shadow .3s ease,filter .3s ease}
 #usage-session .session-composition:hover,#usage-session .session-providers:hover{transform:translateZ(0) scale(1.02);border-color:color-mix(in srgb,var(--accent) 48%,transparent);box-shadow:0 9px 28px color-mix(in srgb,var(--si-glow) 88%,transparent),inset 0 1px 0 var(--si-glass-hi);z-index:4}
