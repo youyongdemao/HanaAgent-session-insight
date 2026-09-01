@@ -524,6 +524,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child{
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child .ah-num{font-size:clamp(36px,4vw,52px);color:color-mix(in srgb,var(--text-light) 82%,var(--text-muted));text-shadow:none}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child{padding-left:clamp(4px,1vw,16px)}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(56px,6.4vw,82px);text-shadow:0 5px 28px color-mix(in srgb,var(--si-green) 26%,transparent)}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num.low,.ah-num.low{color:var(--si-red);text-shadow:0 5px 30px color-mix(in srgb,var(--si-red) 42%,transparent)}
 @media(max-width:720px){body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:1fr;gap:22px}.hero-pricing .api-hero .ah-block:last-child{padding-left:0}}
 
 /* 独立阈值提醒卡 */

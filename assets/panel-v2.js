@@ -142,7 +142,7 @@ function renderApiOverview(){
   const quotaRows=bal.filter(b=>b.status==="ok"&&b.kind==="quota"&&Number.isFinite(Number(b.remainingPercent))).map(b=>'<span class="bl-row"><i></i>'+esc(b.name||b.provider)+'<b>'+esc(b.summary||Number(b.remainingPercent).toFixed(0)+"%")+'</b></span>');
   const others=curKeys.filter(x=>x!==primary).map(x=>'<span class="bl-row"><i></i>'+esc(x)+'<b>'+byCur[x].toFixed(2)+'</b></span>');
   const balanceRows=breakRows.concat(others,quotaRows);const balanceEl=document.getElementById("tBalSub");
-  if(primary){const sym=primary==="CNY"?"¥":"$";set("#tBal",sym+byCur[primary].toFixed(2));if(balanceEl)balanceEl.innerHTML=balanceRows.join("")||'<span class="bl-row"><i></i>暂无可统计余额</span>';}
+  if(primary){const sym=primary==="CNY"?"¥":"$";const balNum=byCur[primary];const w=Number(balNum);const tBalEl=document.getElementById("tBal");if(tBalEl)tBalEl.textContent=sym+balNum.toFixed(2);if(tBalEl)tBalEl.classList.toggle("low",primary==="CNY"&&Number.isFinite(w)&&w<10);if(balanceEl)balanceEl.innerHTML=balanceRows.join("")||'<span class="bl-row"><i></i>暂无可统计余额</span>';}
   else{set("#tBal","–");if(balanceEl)balanceEl.innerHTML=quotaRows.join("")||'<span class="bl-row"><i></i>无可统计余额</span>';}
   const balTip=bal.filter(b=>b.status==="ok"&&b.kind==="balance"&&b.total!=null).map(b=>b.name+" "+b.summary).join(" · ");
   const tCost=document.getElementById("tCost");if(tCost&&balTip)tCost.title=balTip;
