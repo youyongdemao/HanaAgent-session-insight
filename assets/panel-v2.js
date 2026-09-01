@@ -114,7 +114,7 @@ function closeSessionMenu(){const m=$("#sessionMenu"),t=$("#sessionTrigger");if(
 function pickSession(file){if(!file){state.stats=null;renderUsageSession();return;}state.userSelectedFile=file;state.activeFile=file;closeSessionMenu();fetchJson("/api/stats?file="+encodeURIComponent(file)).then(r=>{if(r&&!r.error){state.stats=r;renderUsageSession();}}).catch(()=>{});renderUsageSessions();}
 function renderUsageDistribution(){
   const lg=state.ledger;const $=document.querySelector.bind(document);const lat=lg?.latency?.buckets||{};const lats=[lat.lt1||0,lat["1_3"]||0,lat["3_10"]||0,lat.gt10||0];
-  const lh=$("#latHist");if(lh){const lmx=Math.max(...lats,1);const lnames=["<1s","1–3s","3–10s",">10s"];lh.innerHTML='<div class="lat-list">'+lats.map((v,i)=>{const p=Math.round(v/lmx*100);return '<div class="lat-row"><span>'+lnames[i]+'</span><div class="track"><i style="width:'+p+'%"></i></div><b>'+String(Math.round(v))+'</b></div>';}).join('')+'</div>';}
+  const lh=$("#latHist");if(lh){const lmx=Math.max(...lats,1);const lnames=["<1s","1–3s","3–10s",">10s"];const fmtN=v=>String(Math.round(v));lh.innerHTML=bars(lats,{w:520,h:170,format:fmtN,xLabels:i=>lnames[i],xticks:4,yMax:lmx*1.15,fill:"rgba(141,187,210,.58)"});}
   const set=(id,v)=>{const e=$(id);if(e)e.textContent=v;};set("#dP50",lg?.latency?.p50?fmtPct((lg.latency.p50/1000).toFixed(1)):"–");set("#dP95",lg?.latency?.p95?fmtPct((lg.latency.p95/1000).toFixed(1)):"–");
 }
 function renderApiOverview(){
