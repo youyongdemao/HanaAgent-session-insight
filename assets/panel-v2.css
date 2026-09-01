@@ -90,9 +90,9 @@ body[data-surface="widget"] .widget{width:100%;padding:16px;display:grid;gap:14p
 @keyframes icPop{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
 @keyframes rot360{to{transform:rotate(360deg)}}
 
-/* ── API 非总览页面的大面板保持静止；用量页由下方统一交互系统管理 ── */
-body:not([data-surface="widget"]) #view-api .panel,body:not([data-surface="widget"]) .api-hero{transform:none!important}
-body:not([data-surface="widget"]) #view-api .panel:active,body:not([data-surface="widget"]) #view-api .panel.si-press,body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-surface="widget"]) .api-hero.si-press,body:not([data-surface="widget"]) .api-hero.si-release{transform:none!important;animation:none!important}
+/* ── API hero 保持静止；API 面板卡由下方统一交互系统管理 ── */
+body:not([data-surface="widget"]) .api-hero{transform:none!important}
+body:not([data-surface="widget"]) .api-hero.si-press,body:not([data-surface="widget"]) .api-hero.si-release{transform:none!important;animation:none!important}
 
 /* ── 接入状态表 ── */
 .state-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px;max-height:240px;overflow:auto;padding-right:2px}
@@ -882,6 +882,14 @@ body:not([data-surface="widget"]) #usage-overview .panel.is-selected.ov-release-
 @keyframes overviewDampedIn{0%{transform:translateZ(0) scale(.972)}100%{transform:translateZ(0) scale(1.012)}}
 @keyframes overviewDampedOut{0%{transform:translateZ(0) scale(.972)}100%{transform:translateZ(0) scale(1)}}
 @keyframes overviewDampedSelectedOut{0%{transform:translateZ(0) scale(.972)}100%{transform:translateZ(0) scale(1.008)}}
+/* ── API 管理页卡片：用量页同款 选中放大/按压/回弹 ── */
+body:not([data-surface="widget"]) #view-api .panel,body:not([data-surface="widget"]) #view-api .card,body:not([data-surface="widget"]) #view-api .chart-card,body:not([data-surface="widget"]) #view-api .provider-item{--ov-hover-scale:1.016;--ov-selected-scale:1.012;--ov-press-scale:.97;position:relative;isolation:isolate;transform-origin:center;transform:translateZ(0) scale(1);animation:none;will-change:transform,box-shadow,filter;transition:transform .3s cubic-bezier(.2,.72,.22,1),border-color .24s ease,box-shadow .34s ease,background .32s ease,filter .32s ease}
+body:not([data-surface="widget"]) #view-api .panel:hover,body:not([data-surface="widget"]) #view-api .card:hover,body:not([data-surface="widget"]) #view-api .chart-card:hover,body:not([data-surface="widget"]) #view-api .provider-item:hover{transform:translateZ(0) scale(var(--ov-hover-scale));border-color:color-mix(in srgb,var(--accent) 48%,transparent);box-shadow:0 10px 32px color-mix(in srgb,var(--si-glow) 88%,transparent),inset 0 1px 0 var(--si-glass-hi);filter:saturate(1.04) brightness(1.015);z-index:4}
+body:not([data-surface="widget"]) #view-api .panel.si-press,body:not([data-surface="widget"]) #view-api .card.si-press,body:not([data-surface="widget"]) #view-api .chart-card.si-press,body:not([data-surface="widget"]) #view-api .provider-item.si-press{transform:translateZ(0) scale(var(--ov-press-scale))!important;animation:none!important;transition:transform .11s cubic-bezier(.3,.05,.65,.2),filter .11s ease;filter:brightness(.985) saturate(.98)}
+body:not([data-surface="widget"]) #view-api .panel.ov-release-in,body:not([data-surface="widget"]) #view-api .card.ov-release-in,body:not([data-surface="widget"]) #view-api .chart-card.ov-release-in,body:not([data-surface="widget"]) #view-api .provider-item.ov-release-in{animation:overviewDampedIn .72s cubic-bezier(.18,.75,.2,1) both!important}
+body:not([data-surface="widget"]) #view-api .panel.ov-release-out,body:not([data-surface="widget"]) #view-api .card.ov-release-out,body:not([data-surface="widget"]) #view-api .chart-card.ov-release-out,body:not([data-surface="widget"]) #view-api .provider-item.ov-release-out{animation:overviewDampedOut .72s cubic-bezier(.18,.75,.2,1) both!important}
+body:not([data-surface="widget"]) #view-api .panel.ov-back,body:not([data-surface="widget"]) #view-api .card.ov-back,body:not([data-surface="widget"]) #view-api .chart-card.ov-back,body:not([data-surface="widget"]) #view-api .provider-item.ov-back{transform:translateZ(0) scale(1)!important;transition:transform .3s cubic-bezier(.22,.8,.28,1)!important;animation:none!important}
+body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-surface="widget"]) #view-api .card.si-release,body:not([data-surface="widget"]) #view-api .chart-card.si-release,body:not([data-surface="widget"]) #view-api .provider-item.si-release{animation:overviewDampedOut .72s cubic-bezier(.18,.75,.2,1) both!important}
 /* ── seg 滑块每个选项：上下各扩 10px 点击判定热区 ── */
 .seg>[data-v]{position:relative}
 .seg>[data-v]::before{content:"";position:absolute;left:0;right:0;top:-10px;bottom:-10px;z-index:3;pointer-events:auto}
