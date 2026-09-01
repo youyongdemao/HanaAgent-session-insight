@@ -686,6 +686,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .grid2,#usage-overview .grid3{gap:14px;margin-bottom:0}
 /* ── 用量总览 hero：开放式大字，消耗 Token + 平均缓存命中率为两个主数字 ── */
 #usage-overview .usage-hero,#usage-session .usage-hero{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-bottom:18px;padding:4px 2px;align-items:stretch}
+#usage-overview .usage-hero{margin-top:10px}
 #usage-session .usage-hero{min-height:150px;padding:16px 8px 12px;margin-bottom:10px;gap:18px}
 #usage-overview .uh-main,#usage-session .uh-main{display:flex;align-items:stretch;gap:30px}
 #usage-overview .uh-side,#usage-session .uh-side{display:grid;gap:20px;min-width:0;flex:1;align-content:space-between}
