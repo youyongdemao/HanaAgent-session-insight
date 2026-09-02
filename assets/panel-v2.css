@@ -1083,6 +1083,18 @@ body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-sur
 .session-charts .chart-scroll::-webkit-scrollbar{height:8px}
 .session-charts .chart-scroll::-webkit-scrollbar-track{background:transparent}
 .session-charts .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 22%,transparent);border-radius:4px}
+.scroll-chart{display:flex;align-items:stretch;gap:6px;min-height:200px}
+.scroll-chart .sc-yaxis{flex:none;width:60px;min-width:60px;overflow:visible;color:var(--text-muted)}
+.scroll-chart .sc-yaxis svg{width:60px;height:auto;overflow:visible}
+.scroll-chart .chart-scroll{flex:1;min-width:0;min-height:200px;overflow-x:auto;overflow-y:hidden;position:relative}
+.scroll-chart .chart-scroll svg{width:auto;max-width:none;height:auto}
+.scroll-chart .scl-wrap{display:flex;flex-direction:column;min-width:0}
+.scl-legend{display:flex;gap:12px;margin:0 0 4px;padding-left:6px;flex-wrap:wrap}
+.scl-legend span{display:inline-flex;align-items:center;gap:5px;font:400 10px var(--font-mono);color:var(--text-muted);white-space:nowrap}
+.scl-legend span i{width:9px;height:9px;border-radius:3px;background:var(--c,var(--accent));display:inline-block}
+.scroll-chart .chart-scroll::-webkit-scrollbar{height:8px}
+.scroll-chart .chart-scroll::-webkit-scrollbar-track{background:transparent}
+.scroll-chart .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 22%,transparent);border-radius:4px}
 .sessd-grid{display:grid;gap:18px}
 .sessd-title{font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px}
 .session-composition{display:grid;gap:9px;align-content:start}
