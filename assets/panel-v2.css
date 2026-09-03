@@ -1094,6 +1094,7 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
 .scl-legend{display:flex;gap:12px;margin:0 0 4px;padding-left:6px;flex-wrap:wrap}
 .scl-legend span{display:inline-flex;align-items:center;gap:5px;font:400 10px var(--font-mono);color:var(--text-muted);white-space:nowrap}
 .scl-legend span i{width:9px;height:9px;border-radius:3px;background:var(--c,var(--accent));display:inline-block}
+.scl-legend.pe-fixed-legend{position:absolute;top:12px;right:16px;z-index:5;gap:10px;margin:0;padding:4px 8px;border-radius:8px;background:color-mix(in srgb,var(--bg-card) 60%,transparent);backdrop-filter:blur(6px);border:1px solid color-mix(in srgb,var(--text) 10%,transparent)}
 .scroll-chart .chart-scroll::-webkit-scrollbar{height:8px}
 .scroll-chart .chart-scroll::-webkit-scrollbar-track{background:transparent}
 .scroll-chart .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 22%,transparent);border-radius:4px}
