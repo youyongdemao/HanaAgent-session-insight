@@ -1051,11 +1051,10 @@ body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-sur
 #usage-session .session-composition h3{flex:none}
 #usage-session .session-composition .scomp-row{flex:none}
 .session-providers{display:flex;flex-direction:column}
-#usage-session .session-composition,#usage-session .session-providers{position:relative;isolation:isolate;transform-origin:center;transform:translateZ(0) scale(1);will-change:transform,box-shadow;transition:transform .24s cubic-bezier(.22,.8,.28,1),border-color .24s ease,box-shadow .3s ease,filter .3s ease}
-#usage-session .session-composition:hover,#usage-session .session-providers:hover{transform:translateZ(0) scale(1.02);border-color:color-mix(in srgb,var(--accent) 48%,transparent);box-shadow:0 9px 28px color-mix(in srgb,var(--si-glow) 88%,transparent),inset 0 1px 0 var(--si-glass-hi);z-index:4}
-#usage-session .session-composition:active,#usage-session .session-providers:active{transform:translateZ(0) scale(.97);transition-duration:.11s}
-#usage-session .session-composition.si-press,#usage-session .session-providers.si-press{transform:translateZ(0) scale(.97)!important;animation:none!important;transition:transform .11s cubic-bezier(.3,.05,.65,.2),filter .11s ease;filter:brightness(.985)}
-#usage-session .session-composition.si-release,#usage-session .session-providers.si-release{animation:sessionCompoRelease .5s cubic-bezier(.16,.82,.24,1) both!important}
+#usage-session .session-composition,#usage-session .session-providers{position:relative;isolation:isolate;transform-origin:center;transform:translateZ(0) scale(1);will-change:transform,box-shadow;transition:transform .22s ease,border-color .22s ease,box-shadow .28s ease,background .22s ease,filter .22s ease}
+#usage-session .session-composition:hover,#usage-session .session-providers:hover{transform:translateZ(0) scale(1.035);border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 6px 20px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);filter:saturate(1.05) brightness(1.02);z-index:3}
+#usage-session .session-composition:active,#usage-session .session-providers:active,#usage-session .session-composition.si-press,#usage-session .session-providers.si-press{transform:translateZ(0) scale(.97)!important;animation:none!important;transition:transform .12s cubic-bezier(.3,.05,.65,.2),filter .12s ease;filter:brightness(.985)}
+#usage-session .session-composition.si-release,#usage-session .session-providers.si-release{animation:sessionMiniRelease .5s cubic-bezier(.16,.82,.24,1) both!important}
 @keyframes sessionCompoRelease{0%{transform:translateZ(0) scale(.97)}100%{transform:translateZ(0) scale(1.02)}}
 .se-col{display:flex;flex-direction:column;gap:12px;min-width:0;height:100%}
 #usage-session .se-col .session-composition{flex:1 1 auto;align-content:start}
