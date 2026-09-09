@@ -139,6 +139,7 @@ function computeLedgerStats(ctx, provider) {
       if (Number.isFinite(tsCost)) timeCache.push({ ts: tsCost, hit: hitT, miss });
       tokInput += inTot; tokOutput += outT; tokCacheHit += hitT; tokCacheMiss += miss; tokTotal += (u.totalTokens || (inTot + outT));
       byModel[m].cacheHit += hitT; byModel[m].cacheMiss += miss;
+      if (d) { byDay[d].cacheHit = (byDay[d].cacheHit || 0) + hitT; byDay[d].cacheMiss = (byDay[d].cacheMiss || 0) + miss; }
       // 供应商聚合
       const pv = e.model?.provider || "unknown";
       byProvider[pv] = byProvider[pv] || { calls: 0, cost: 0, tokens: 0, cacheHit: 0, cacheMiss: 0 };
@@ -209,7 +210,7 @@ function computeLedgerStats(ctx, provider) {
       errors: errCount,
       agents: Object.fromEntries(Object.entries(byAgent).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
       subsystems: Object.fromEntries(Object.entries(bySubsystem).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
-      days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost) }])),
+      days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost), cacheHit: v.cacheHit || 0, cacheMiss: v.cacheMiss || 0, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : null }])),
       models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { provider: v.provider, calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       providers: Object.fromEntries(Object.entries(byProvider).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       rangeProviders: Object.fromEntries(Object.entries(rangeProv).map(([rangeUnit, o]) => [rangeUnit, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { tokens: v.tokens, cost: round2(v.cost), calls: v.calls, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }]))])),
