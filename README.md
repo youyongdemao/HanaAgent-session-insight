@@ -74,6 +74,19 @@
 
 价格数据均来自各供应商官方定价页，查不到的模型标为「未收录」，不做估算。
 
+## 插件形态（manifest v2）
+
+本插件已迁到 `manifestVersion: 2`，用 `contributes.cards[]` 声明两张卡片：
+
+| 卡片 id | 形态 | 说明 |
+|---------|------|------|
+| `session-insight` | `realization: "page"` + `siteNavEntry` | 完整数据面板，出现在站点导航 |
+| `session-insight-widget` | `pageOf: "session-insight"` | 常驻侧栏的用量状态条 |
+
+两张卡片都是 `cardForm: "flush"` + `titlebar: "translucent"`，与 HanaAgent 的玻璃卡片语言一致。
+
+兼容期说明：manifest 里暂时同时保留 `contributes.page` / `contributes.widget` 两份 legacy 声明，让尚未支持 `cards[]` 的旧版宿主也能加载。新版宿主会记一条「legacy surface」警告，不影响功能。确认全部用户升级到支持 `cards[]` 的版本后，这两段会被删掉。
+
 ## 更新通道
 
 内置更新检查与历史版本完全一致，指向同一个仓库和同一套约定：

@@ -1,15 +1,17 @@
 {
-  "manifestVersion": 1,
+  "manifestVersion": 2,
   "id": "session-insight",
   "name": "Session Insight",
-  "version": "2.1.0",
-  "description": "会话用量可视化：tokens、缓存命中率、费用、余额，widget 常驻状态条 + 图表页。",
-  "minAppVersion": "0.159.0",
+  "version": "2.2.0",
+  "description": "会话用量可视化：tokens、缓存命中率、费用、余额，状态栏卡片常驻 + 完整数据面板。",
+  "minAppVersion": "0.450.0",
   "trust": "full-access",
+  "activationEvents": [
+    "onStartup"
+  ],
   "ui": {
     "hostCapabilities": [
-      "external.open",
-      "clipboard.writeText"
+      "external.open"
     ]
   },
   "capabilities": [
@@ -25,6 +27,8 @@
       "github.com",
       "objects.githubusercontent.com",
       "release-assets.githubusercontent.com",
+      "cdn.jsdelivr.net",
+      "raw.githubusercontent.com",
       "open.bigmodel.cn",
       "api.z.ai",
       "management-api.x.ai",
@@ -39,6 +43,27 @@
     "maxResponseBytes": 31457280
   },
   "contributes": {
+    "cards": [
+      {
+        "id": "session-insight",
+        "title": "会话用量",
+        "description": "会话 Token、缓存命中率、费用与余额的完整数据面板，含逐轮图表与费用简报。",
+        "route": "/page",
+        "cardForm": "flush",
+        "titlebar": "translucent",
+        "realization": "page",
+        "siteNavEntry": true
+      },
+      {
+        "id": "session-insight-widget",
+        "title": "用量状态栏",
+        "description": "常驻侧栏的当前会话用量状态条：模型、缓存命中、Token、费用、余额与对话标题。",
+        "route": "/widget",
+        "cardForm": "flush",
+        "titlebar": "translucent",
+        "pageOf": "session-insight"
+      }
+    ],
     "page": {
       "title": {
         "zh": "会话用量",
