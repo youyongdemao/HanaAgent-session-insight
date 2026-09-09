@@ -4,7 +4,7 @@ import { exec, execFile } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 import { join, dirname, basename } from "node:path";
 import { createHash } from "node:crypto";
-import { parseSession, PROVIDER_OF_MODEL, PRICING, priceFor, SOURCE_NOTE, PRICING_SNAPSHOT_AT } from "../lib/usage-parser.js";
+import { parseSession, PROVIDER_OF_MODEL, PRICING, priceFor, SOURCE_NOTE, PRICING_SNAPSHOT_AT, setPricingConfig } from "../lib/usage-parser.js";
 
 let debugLogPath = null;
 function dbg(msg) {
@@ -688,6 +688,61 @@ function readAuthConfig(ctx) {
 }
 
 const UPDATE_REPO_API = "https://api.github.com/repos/youyongdemao/HanaAgent-session-insight/releases/latest";
+
+// ── 计费配置：远程全量数据库 + 本地缓存 + 内置兜底 ──
+// 数据库放在仓库根目录 pricing.json，全量收录所有已知供应商；
+// 插件每天拉一次，失败或超时就继续用内置那份。
+const PRICING_DB_URLS = [
+  "https://cdn.jsdelivr.net/gh/youyongdemao/HanaAgent-session-insight@main/pricing.json",
+  "https://raw.githubusercontent.com/youyongdemao/HanaAgent-session-insight/main/pricing.json",
+];
+const PRICING_DB_TTL = 24 * 60 * 60 * 1000;
+let pricingDbState = { at: 0, ok: false, source: "builtin", snapshotAt: PRICING_SNAPSHOT_AT, error: null };
+
+async function loadPricingDb(force = false) {
+  const now = Date.now();
+  if (!force && pricingDbState.at && now - pricingDbState.at < PRICING_DB_TTL) return pricingDbState;
+  let lastError = null;
+  for (const url of PRICING_DB_URLS) {
+    try {
+      const res = await fetch(url, { headers: { "User-Agent": "Session-Insight-Pricing" }, signal: AbortSignal.timeout(10000) });
+      if (!res.ok) { lastError = `HTTP ${res.status}`; continue; }
+      const json = await res.json();
+      if (setPricingConfig(json)) {
+        pricingDbState = { at: now, ok: true, source: url, snapshotAt: json.snapshotAt || PRICING_SNAPSHOT_AT, error: null };
+        dbg("pricing-db: loaded from " + url);
+        return pricingDbState;
+      }
+      lastError = "配置校验失败";
+    } catch (e) {
+      lastError = String(e?.message || e);
+    }
+  }
+  pricingDbState = { at: now, ok: false, source: "builtin", snapshotAt: PRICING_SNAPSHOT_AT, error: lastError };
+  dbg("pricing-db: fallback to builtin, " + lastError);
+  return pricingDbState;
+}
+
+// 宿主供应商/模型配置变化感知：只比 mtime + size，不做全文 hash
+let hostConfigStamp = null;
+function hostConfigChanged(ctx) {
+  const paths = [];
+  try { paths.push(getProviderCatalogPath(ctx)); } catch {}
+  try { paths.push(join(getDataRoot(ctx), "models.json")); } catch {}
+  const sig = paths.filter(Boolean).map((p) => {
+    try { const s = statSync(p); return `${p}:${s.mtimeMs}:${s.size}`; } catch { return `${p}:none`; }
+  }).join("|");
+  if (hostConfigStamp === null) { hostConfigStamp = sig; return false; }
+  if (sig !== hostConfigStamp) { hostConfigStamp = sig; dbg("host-config changed"); return true; }
+  return false;
+}
+
+// 配置变化时清掉依赖它的缓存，下一次取数重新计算
+function invalidateConfigCaches() {
+  try { ledgerStatsCache = { at: 0, provider: null }; } catch {}
+  try { balanceCache = { at: 0, data: null }; } catch {}
+  try { externalStatusCache.clear(); } catch {}
+}
 
 function normalizeVersion(value) {
   return String(value || "0.0.0").trim().replace(/^v/i, "").split("-")[0];
@@ -1393,8 +1448,15 @@ app.get("/api/balance", async (c) => {
     return c.json(r);
   });
 
-  // 每百万 Token 价格表：来自 usage-parser 配置快照（非实时，标注更新时间与来源）
-  app.get("/api/pricing", (c) => {
+  // 宿主供应商/模型配置变化时，清掉依赖它的缓存，让下一次取数用新配置重算
+  app.use("/api/*", async (c, next) => {
+    if (hostConfigChanged(ctx)) invalidateConfigCaches();
+    await next();
+  });
+
+  // 每百万 Token 价格表：来自远程计费数据库（缓存 24h）或内置快照，标注更新时间与来源
+  app.get("/api/pricing", async (c) => {
+    await loadPricingDb();
     const rows = [];
     for (const [model, cfg] of Object.entries(PRICING)) {
       const provider = PROVIDER_OF_MODEL[model] || null;
@@ -1417,7 +1479,22 @@ app.get("/api/balance", async (c) => {
         listed.add(key);
       }
     }
-    return c.json({ snapshotAt: PRICING_SNAPSHOT_AT, currency: "CNY", rows, completeForConfiguredModels: true });
+    return c.json({ snapshotAt: PRICING_SNAPSHOT_AT, currency: "CNY", rows, completeForConfiguredModels: true, db: { source: pricingDbState.source, ok: pricingDbState.ok, error: pricingDbState.error, fetchedAt: pricingDbState.at || null } });
+  });
+
+  // 手动重新加载：重拉计费数据库 + 重读宿主供应商配置 + 清缓存
+  app.post("/api/reload-config", async (c) => {
+    hostConfigStamp = null;
+    invalidateConfigCaches();
+    const db = await loadPricingDb(true);
+    let configuredCount = 0;
+    try { configuredCount = (computeActiveProviders(ctx).providers || []).length; } catch {}
+    return c.json({
+      ok: true,
+      pricing: { source: db.source, ok: db.ok, error: db.error, snapshotAt: db.snapshotAt, fetchedAt: db.at || null },
+      models: Object.keys(PRICING).length,
+      configuredProviders: configuredCount,
+    });
   });
 
 
