@@ -739,8 +739,10 @@ function hostConfigChanged(ctx) {
 
 // 配置变化时清掉依赖它的缓存，下一次取数重新计算
 function invalidateConfigCaches() {
+  try { ledgerCache = { at: 0, totalCost: 0, perProvider: {}, perModel: {} }; } catch {}
   try { ledgerStatsCache = { at: 0, provider: null }; } catch {}
   try { balanceCache = { at: 0, data: null }; } catch {}
+  try { providersCache = { at: 0, data: null }; } catch {}
   try { externalStatusCache.clear(); } catch {}
 }
 
