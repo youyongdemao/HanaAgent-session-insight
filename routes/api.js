@@ -767,16 +767,18 @@ function runWinRAR(executable, args) {
   });
 }
 
-// 解压 zip：优先 WinRAR，不可用时降级用 Windows 内置 tar / PowerShell Expand-Archive
+// 解压 zip：优先 Windows 内置 tar，其次 PowerShell Expand-Archive，最后才回退 WinRAR（非必需）
 function extractZip(zipPath, extractDir) {
-  const winrar = findWinRAR();
-  if (winrar) return runWinRAR(winrar, ["x", "-ibck", "-y", zipPath, `${extractDir}\\`]);
   return new Promise((resolve, reject) => {
     execFile("tar", ["-xf", zipPath, "-C", extractDir], { windowsHide: true }, (error) => {
       if (!error) return resolve();
       execFile("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", `Expand-Archive -LiteralPath '${zipPath}' -DestinationPath '${extractDir}' -Force`], { windowsHide: true }, (error2) => {
         if (!error2) return resolve();
-        reject(new Error(`解压失败（WinRAR/tar/PowerShell 均不可用）：${error2?.message || "未知"}`));
+        const winrar = findWinRAR();
+        if (winrar) {
+          return runWinRAR(winrar, ["x", "-ibck", "-y", zipPath, `${extractDir}\\`]).then(resolve).catch(() => reject(new Error(`解压失败（tar / PowerShell / WinRAR 均不可用）：${error2?.message || "未知"}`)));
+        }
+        reject(new Error(`解压失败（tar / PowerShell 均不可用，未检测到 WinRAR）：${error2?.message || "未知"}`));
       });
     });
   });
