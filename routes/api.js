@@ -1485,7 +1485,8 @@ app.get("/api/balance", async (c) => {
   });
 
   // 手动重新加载：重拉计费数据库 + 重读宿主供应商配置 + 清缓存
-  app.post("/api/reload-config", async (c) => {
+  // GET 与 POST 都接受，方便排查与手动触发
+  const reloadConfigHandler = async (c) => {
     hostConfigStamp = null;
     invalidateConfigCaches();
     const db = await loadPricingDb(true);
@@ -1497,7 +1498,9 @@ app.get("/api/balance", async (c) => {
       models: Object.keys(PRICING).length,
       configuredProviders: configuredCount,
     });
-  });
+  };
+  app.post("/api/reload-config", reloadConfigHandler);
+  app.get("/api/reload-config", reloadConfigHandler);
 
 
   // 用系统默认程序打开链接（绕过 Electron 内置窗口）
