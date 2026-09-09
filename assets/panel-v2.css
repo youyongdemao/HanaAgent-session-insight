@@ -1215,8 +1215,26 @@ body[data-surface="widget"] .widget{grid-template-columns:minmax(0,1fr);min-widt
 body[data-surface="widget"] .widget>*{min-width:0}
 body[data-surface="widget"] .w-quota-meta span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ── 数字转轮：强制继承宿主字号/字体/字重/颜色，避免被 .span 类规则改掉 ── */
-.od,.od *{font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;color:inherit!important}
+/* ── 数字转轮：强制继承宿主字号/字体/字重/颜色，并消除宿主 span 规则带来的 margin / 行高干扰 ── */
+.od,.od *{font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;color:inherit!important;margin:0!important;padding:0!important}
+.od{display:inline-block!important;height:1em!important;line-height:1em!important}
+.od-d{display:block!important;height:1em!important;line-height:1em!important}
+.od-strip{display:block!important;line-height:0!important}
+/* 切换会话时的静默重渲染：动画瞬时完成，避免整页重播 */
+.si-quiet *{animation-duration:.001s!important;animation-delay:0s!important;transition-duration:.001s!important}
+
+/* ── 会话选择器：与卡片同一套悬停放大 / 按压 / 松开 / 光标光斑 ── */
+body:not([data-surface="widget"]) #usage-session .session-trigger{position:relative;isolation:isolate;transform-origin:center;transform:translateZ(0) scale(1);will-change:transform,box-shadow,filter;transition:transform .3s cubic-bezier(.2,.72,.22,1),border-color .24s ease,box-shadow .34s ease,background .32s ease,filter .32s ease}
+body:not([data-surface="widget"]) #usage-session .session-trigger>*:not(.si-glow-spot):not(.si-border-glow){position:relative;z-index:2}
+body:not([data-surface="widget"]) #usage-session .session-trigger:hover{transform:translateZ(0) scale(1.016);border-color:color-mix(in srgb,var(--accent) 48%,transparent);box-shadow:0 10px 32px color-mix(in srgb,var(--si-glow) 88%,transparent),inset 0 1px 0 var(--si-glass-hi);filter:saturate(1.04) brightness(1.015);z-index:4}
+body:not([data-surface="widget"]) #usage-session .session-trigger:active,body:not([data-surface="widget"]) #usage-session .session-trigger.si-press{transform:translateZ(0) scale(.97)!important;animation:none!important;transition:transform .11s cubic-bezier(.3,.05,.65,.2),filter .11s ease!important;filter:brightness(.985) saturate(.98)}
+body:not([data-surface="widget"]) #usage-session .session-trigger.si-release{animation:none!important}
+body:not([data-surface="widget"]) #usage-session .session-trigger>.si-glow-spot{display:block!important;pointer-events:none;--gr:340px;background:radial-gradient(var(--gr) circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--accent) 32%,transparent) 0%,color-mix(in srgb,var(--accent) 18%,transparent) 36%,color-mix(in srgb,var(--accent) 8%,transparent) 64%,transparent 90%)}
+body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glow{display:block!important;pointer-events:none}
+/* 圆环中心等 flex 居中容器：不做基线补偿、不渐隐，避免被容器裁切 */
+.ring-core .od,.sprov-ring-core .od,.model-donut-main .od,.td-ring-main .od,.tc-ring-main .od,.w-donut-copy .od,.ring-state .od,.w-ring .od,.w-share-donut .od{vertical-align:0!important;-webkit-mask-image:none!important;mask-image:none!important}
+/* 圆环中心数字垂直居中：消除行盒 descent 造成的偏上 */
+.ring-core strong,.sprov-ring-core strong,.td-ring-main strong,.tc-ring-main strong,.model-donut-main strong,.w-donut-copy>b{display:flex;align-items:center;justify-content:center}
 /* ── 延迟统计 mini 卡片动效 ── */
 .lat-kpis>div{position:relative;overflow:hidden;transform:scale(1);transition:transform .22s cubic-bezier(.22,.8,.28,1),border-color .22s,box-shadow .26s,background .22s;will-change:transform;cursor:default}
 .lat-kpis>div:hover{transform:scale(1.03);border-color:color-mix(in srgb,var(--accent) 48%,transparent);box-shadow:0 6px 20px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:3}

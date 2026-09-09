@@ -122,6 +122,7 @@ function computeLedgerStats(ctx, provider) {
         byDay[d].calls++;
         byDay[d].tokens += e.usage?.totalTokens || 0;
         byDay[d].cost += cc;
+        if ((e.status || "ok") !== "ok") byDay[d].err = (byDay[d].err || 0) + 1;
       }
       // 模型
       const m = e.model?.modelId || "unknown";
@@ -210,7 +211,7 @@ function computeLedgerStats(ctx, provider) {
       errors: errCount,
       agents: Object.fromEntries(Object.entries(byAgent).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
       subsystems: Object.fromEntries(Object.entries(bySubsystem).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens }])),
-      days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, tokens: v.tokens, cost: round2(v.cost), cacheHit: v.cacheHit || 0, cacheMiss: v.cacheMiss || 0, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : null }])),
+      days: Object.fromEntries(Object.entries(byDay).sort((a, b) => a[0].localeCompare(b[0])).map(([k, v]) => [k, { calls: v.calls, err: v.err || 0, tokens: v.tokens, cost: round2(v.cost), cacheHit: v.cacheHit || 0, cacheMiss: v.cacheMiss || 0, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : null }])),
       models: Object.fromEntries(Object.entries(byModel).map(([k, v]) => [k, { provider: v.provider, calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       providers: Object.fromEntries(Object.entries(byProvider).map(([k, v]) => [k, { calls: v.calls, cost: round2(v.cost), tokens: v.tokens, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }])),
       rangeProviders: Object.fromEntries(Object.entries(rangeProv).map(([rangeUnit, o]) => [rangeUnit, Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { tokens: v.tokens, cost: round2(v.cost), calls: v.calls, cacheHit: v.cacheHit, cacheMiss: v.cacheMiss, hitRate: (v.cacheHit + v.cacheMiss) > 0 ? v.cacheHit / (v.cacheHit + v.cacheMiss) : 0 }]))])),
