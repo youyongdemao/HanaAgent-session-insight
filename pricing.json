@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "snapshotAt": "2026-09-09",
+  "snapshotAt": "2026-09-10",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。价格单位统一为「元 / 百万 tokens」。字段缺失或非法时，插件回退到内置配置。",
@@ -253,10 +253,10 @@
     "grok-4.3": {
       "provider": "xai-oauth",
       "contextWindow": 1000000,
-      "source": "xAI 官方定价（输出价未核实，暂按输入 3 倍估）",
+      "source": "xAI 官方定价（$1.25/$0.20/$2.50，按 1 美元≈6.8 元折算）",
       "sourceUrl": "https://docs.x.ai/developers/models",
-      "updatedAt": "2026-09-09",
-      "flat": { "inputMiss": 8.5, "inputHit": 1.36, "output": 25.5 }
+      "updatedAt": "2026-09-10",
+      "flat": { "inputMiss": 8.5, "inputHit": 1.36, "output": 17.0 }
     }
   }
 }
