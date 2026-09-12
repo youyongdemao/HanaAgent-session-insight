@@ -34,11 +34,10 @@ function calcEntryCost(e) {
 
 function computeTotalCost(ctx) {
   const now = Date.now();
-  if (now - ledgerCache.at < 30000) return ledgerCache;
+  if (now - ledgerCache.at < 10000) return ledgerCache;
   try {
-    const ledger = getLedgerPath(ctx);
-    if (!existsSync(ledger)) return { at: now, totalCost: null, perProvider: {}, perModel: {}, todayCost: 0, todayProvider: {}, todayModel: {} };
-    const data = JSON.parse(readFileSync(ledger, "utf8"));
+    const { entries: ledgerEntries } = readLedgerEntries(ctx);
+    if (!ledgerEntries.length) return { at: now, totalCost: null, perProvider: {}, perModel: {}, todayCost: 0, todayProvider: {}, todayModel: {} };
     let totalCost = 0;
     const perProvider = {};
     const perModel = {};
@@ -46,7 +45,7 @@ function computeTotalCost(ctx) {
     const todayModel = {};
     const todayStr = new Date().toDateString();
     let todayCost = 0;
-    for (const e of data.entries || []) {
+    for (const e of ledgerEntries) {
       const model = e.model?.modelId;
       const provider = e.model?.provider;
       const cost = calcEntryCost(e);
@@ -85,17 +84,16 @@ let ledgerStatsCache = { at: 0, provider: null };
 // provider 可选：传入则只统计该供应商的数据
 function computeLedgerStats(ctx, provider) {
   const now = Date.now();
-  if (now - ledgerStatsCache.at < 30000 && ledgerStatsCache.provider === provider) return ledgerStatsCache;
+  if (now - ledgerStatsCache.at < 10000 && ledgerStatsCache.provider === provider) return ledgerStatsCache;
   try {
-    const ledger = getLedgerPath(ctx);
-    if (!existsSync(ledger)) return { at: now, empty: true, provider };
-    const data = JSON.parse(readFileSync(ledger, "utf8"));
+    const { entries: ledgerEntries } = readLedgerEntries(ctx);
+    if (!ledgerEntries.length) return { at: now, empty: true, provider };
     const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, byProvider = {}, rangeProv = { hour: {}, day: {}, week: {} }, rangeModel = { hour: {}, day: {}, week: {} }, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
     const latAll = [];
     const timeCosts = [];
     const timeCache = [];
     let callCount = 0, errCount = 0, tokInput = 0, tokOutput = 0, tokCacheHit = 0, tokCacheMiss = 0, tokTotal = 0;
-    for (const e of data.entries || []) {
+    for (const e of ledgerEntries) {
       if (provider && e.model?.provider !== provider) continue; // 按供应商过滤
       const cost = calcEntryCost(e);
       const cc = cost || 0;
@@ -292,6 +290,41 @@ function getDataRoot(ctx) {
 }
 function getLedgerPath(ctx) {
   return join(getDataRoot(ctx), "usage-ledger.json");
+}
+function getLedgerSqlitePath(ctx) {
+  return join(getDataRoot(ctx), "usage-ledger.sqlite");
+}
+// 账本条目：宿主自 2026-09-09 起把账本迁到 SQLite（usage-ledger.sqlite.usage_entries），旧 JSON 文件已停更。
+// 优先读 SQLite，读不到再回退 JSON；两边条目结构一致（entry_json 就是原来的 entry 对象）。
+let ledgerEntriesCache = { at: 0, entries: [], source: null };
+function readLedgerEntries(ctx) {
+  const now = Date.now();
+  if (now - ledgerEntriesCache.at < 5000) return ledgerEntriesCache;
+  const sqlitePath = getLedgerSqlitePath(ctx);
+  const jsonPath = getLedgerPath(ctx);
+  let entries = null, source = null;
+  if (existsSync(sqlitePath)) {
+    try {
+      const db = new DatabaseSync(sqlitePath, { readOnly: true });
+      try {
+        const rows = db.prepare("SELECT entry_json FROM usage_entries ORDER BY entry_order").all();
+        entries = [];
+        for (const r of rows) {
+          try { entries.push(JSON.parse(r.entry_json)); } catch {}
+        }
+        source = "sqlite";
+      } finally { db.close(); }
+    } catch (e) { dbg("ledger sqlite read failed: " + String(e?.message || e)); }
+  }
+  if (!entries && existsSync(jsonPath)) {
+    try {
+      const data = JSON.parse(readFileSync(jsonPath, "utf8"));
+      entries = data.entries || [];
+      source = "json";
+    } catch (e) { dbg("ledger json read failed: " + String(e?.message || e)); }
+  }
+  if (entries) ledgerEntriesCache = { at: now, entries, source };
+  return ledgerEntriesCache;
 }
 
 // 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），最后用动态数据根推导
@@ -1385,10 +1418,8 @@ app.get("/api/balance", async (c) => {
     const limit = Math.min(120, Math.max(1, Number(c.req.query("limit")) || 40));
     const provider = c.req.query("provider") || null;
     try {
-      const ledger = getLedgerPath(ctx);
-      if (!existsSync(ledger)) return c.json({ at: Date.now(), empty: true, entries: [] });
-      const data = JSON.parse(readFileSync(ledger, "utf8"));
-      const rows = (data.entries || []);
+      const rows = readLedgerEntries(ctx).entries;
+      if (!rows.length) return c.json({ at: Date.now(), empty: true, entries: [] });
       const filtered = provider ? rows.filter(e => e.model?.provider === provider) : rows;
       filtered.sort((a,b)=>Date.parse(b.startedAt||"0")-Date.parse(a.startedAt||"0"));
       const out = filtered.slice(0, limit).map(e => {

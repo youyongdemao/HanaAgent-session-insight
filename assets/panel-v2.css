@@ -796,7 +796,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .td-ring-legend{display:grid;gap:8px;min-width:0}
 .td-ring-legend span{display:grid;grid-template-columns:10px auto minmax(0,1fr);gap:8px;align-items:center;font-size:11px;color:var(--text-light);white-space:nowrap}
 .td-ring-legend span i{width:10px;height:10px;border-radius:3px;background:var(--c)}
-.td-ring-legend span b{font:500 11px var(--font-mono);color:var(--text-light);justify-self:end;margin-left:4px;white-space:nowrap}
+.td-ring-legend span b{font:500 11px var(--font-mono);color:var(--text-light);justify-self:start;margin-left:4px;white-space:nowrap}
 .td-ring-legend span b .pct{color:var(--accent);font-weight:600}
 @media(max-width:640px){.td-ring{grid-template-columns:1fr}.td-ring-main{margin:0 auto}}
 .td-sub-row{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
