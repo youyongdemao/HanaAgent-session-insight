@@ -1495,16 +1495,29 @@ app.get("/api/balance", async (c) => {
     // 有裸键的模型只呈现一次（走裸键那行）；只有跨厂商同名的才单独按限定键列出。
     const bareModels = new Set();
     for (const k of Object.keys(PRICING)) if (!k.includes("::")) bareModels.add(k);
-    // 只展示宿主里真正配置/登录过的供应商（价格库是全量收录，界面要按配置过滤）
+    // 只展示宿主里真正配置/登录过的供应商与模型（价格库是全量收录，界面要按配置过滤）
     const configured = computeActiveProviders(ctx).providers || [];
-    const configuredSet = new Set(configured.map((p) => p.id));
+    const cfgByProvider = new Map();
+    const cfgModelSet = new Set();
+    for (const p of configured) {
+      const set = new Set(p.models || []);
+      cfgByProvider.set(p.id, set);
+      for (const m of set) cfgModelSet.add(m);
+    }
+    // 供应商 id 存在变体（xai-oauth / zhipu-coding 等），匹配不上时退回按模型名判断
+    const keepByConfig = (provider, model) => {
+      if (!provider) return false;
+      const set = cfgByProvider.get(provider);
+      if (set) return set.size === 0 || set.has(model);
+      return cfgModelSet.has(model);
+    };
     for (const [key, cfg] of Object.entries(PRICING)) {
       const sep = key.indexOf("::");
       const scopedProvider = sep > 0 ? key.slice(0, sep) : null;
       const model = sep > 0 ? key.slice(sep + 2) : key;
       if (scopedProvider && bareModels.has(model)) continue;
       const provider = scopedProvider || PROVIDER_OF_MODEL[key] || null;
-      if (!provider || !configuredSet.has(provider)) continue;
+      if (!keepByConfig(provider, model)) continue;
       const srcNote = SOURCE_NOTE[key] || SOURCE_NOTE[model] || "";
       if (cfg && cfg.peak) {
         rows.push({ model, provider, tier: "peak", miss: cfg.peak.inputMiss, hit: cfg.peak.inputHit, out: cfg.peak.output, note: srcNote, status: "listed" });
@@ -1514,13 +1527,12 @@ app.get("/api/balance", async (c) => {
       }
     }
     // 以当前已配置供应商的模型全集为骨架；没有可靠价格时也必须列出并明确标记。
-    const listed = new Set(rows.map((r) => r.provider + "\u0000" + r.model));
+    const listedModels = new Set(rows.map((r) => r.model));
     for (const p of configured) {
       for (const model of p.models || []) {
-        const key = p.id + "\u0000" + model;
-        if (listed.has(key)) continue;
+        if (listedModels.has(model)) continue;
         rows.push({ model, provider: p.id, tier: "unknown", miss: null, hit: null, out: null, note: "官方价格未收录", status: "unlisted" });
-        listed.add(key);
+        listedModels.add(model);
       }
     }
     return c.json({ snapshotAt: PRICING_SNAPSHOT_AT, currency: "CNY", rows, completeForConfiguredModels: true, db: { source: pricingDbState.source, ok: pricingDbState.ok, error: pricingDbState.error, fetchedAt: pricingDbState.at || null } });
