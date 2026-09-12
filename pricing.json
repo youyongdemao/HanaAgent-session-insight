@@ -2601,6 +2601,379 @@
       },
       "contextWindow": 131072
     },
+    "openrouter::openai/gpt-5.6-sol": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 102
+      },
+      "contextWindow": 1050000,
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "output": 15
+        }
+      ]
+    },
+    "openrouter::openai/gpt-5.6-terra": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 122.4
+      },
+      "contextWindow": 1050000,
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "output": 18
+        }
+      ]
+    },
+    "openrouter::openai/gpt-5.6-luna": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 2.72,
+        "inputHit": 0.27,
+        "output": 12.24
+      },
+      "contextWindow": 1050000,
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 0.4,
+          "inputHit": 0.04,
+          "output": 1.8
+        }
+      ]
+    },
+    "openrouter::openai/gpt-5.4": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 153
+      },
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 5,
+          "inputHit": 0.5,
+          "output": 22.5
+        }
+      ]
+    },
+    "openrouter::openai/gpt-5.2": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 11.9,
+        "inputHit": 1.19,
+        "output": 95.2
+      },
+      "contextWindow": 400000
+    },
+    "openrouter::openai/gpt-5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 8.5,
+        "inputHit": 0.85,
+        "output": 68
+      },
+      "contextWindow": 400000
+    },
+    "openrouter::openai/gpt-4o": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 17,
+        "inputHit": 8.5,
+        "output": 68
+      },
+      "contextWindow": 128000
+    },
+    "openrouter::anthropic/claude-opus-5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "contextWindow": 1000000
+    },
+    "openrouter::anthropic/claude-sonnet-4.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 40.8,
+        "inputHit": 4.08,
+        "output": 153
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "minPromptTokens": 200000,
+          "inputMiss": 6,
+          "inputHit": 0.6,
+          "output": 22.5
+        }
+      ]
+    },
+    "openrouter::anthropic/claude-opus-4.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "contextWindow": 200000
+    },
+    "openrouter::google/gemini-2.5-pro": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 17,
+        "inputHit": 1.7,
+        "output": 102
+      },
+      "contextWindow": 1048576,
+      "tiers": [
+        {
+          "minPromptTokens": 200000,
+          "inputMiss": 2.5,
+          "inputHit": 0.25,
+          "output": 15
+        }
+      ]
+    },
+    "openrouter::google/gemini-2.5-flash": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.2,
+        "output": 17
+      },
+      "contextWindow": 1048576
+    },
+    "openrouter::deepseek/deepseek-chat": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.75,
+        "inputHit": 1.75,
+        "output": 7
+      },
+      "contextWindow": 131072
+    },
+    "openrouter::deepseek/deepseek-v3.2": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.83,
+        "inputHit": 0.91,
+        "output": 2.72
+      },
+      "contextWindow": 131072
+    },
+    "openrouter::z-ai/glm-5.3": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 9.52,
+        "inputHit": 1.77,
+        "output": 29.92
+      },
+      "contextWindow": 1048576
+    },
+    "openrouter::z-ai/glm-5.3-flash": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 0.51,
+        "inputHit": 0.1,
+        "output": 1.7
+      },
+      "contextWindow": 1048576
+    },
+    "openrouter::z-ai/glm-4.7": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 2.72,
+        "inputHit": 0.54,
+        "output": 11.9
+      },
+      "contextWindow": 202752
+    },
+    "openrouter::moonshotai/kimi-k2.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 3.06,
+        "inputHit": 0.48,
+        "output": 15.3
+      },
+      "contextWindow": 262144
+    },
+    "openrouter::qwen/qwen3.5-397b-a17b": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 3.74,
+        "inputHit": 1.53,
+        "output": 23.8
+      },
+      "contextWindow": 256000
+    },
+    "openrouter::minimax/minimax-m2.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.84,
+        "inputHit": 0.18,
+        "output": 7.34
+      },
+      "contextWindow": 204800
+    },
+    "together::Qwen/Qwen3-235B-A22B-Instruct-2507-tput": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计；官方名 Qwen3 235B A22B Instruct 2507 FP8 Throughput",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.36,
+        "inputHit": 1.36,
+        "output": 4.08
+      },
+      "contextWindow": 262144
+    },
+    "together::meta-llama/Llama-3.3-70B-Instruct-Turbo": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 7.07,
+        "inputHit": 7.07,
+        "output": 7.07
+      },
+      "contextWindow": 131072
+    },
+    "together::openai/gpt-oss-120b": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 1.02,
+        "output": 4.08
+      },
+      "contextWindow": 131072
+    },
+    "fireworks::gpt-oss-120b": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 accounts/fireworks/models/gpt-oss-120b",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.1,
+        "output": 4.08
+      },
+      "contextWindow": 131072,
+      "tiers": [
+        {
+          "tier": "standard",
+          "inputMiss": 0.15,
+          "inputHit": 0.015,
+          "output": 0.6
+        },
+        {
+          "tier": "priority",
+          "inputMiss": 0.18,
+          "inputHit": 0.018,
+          "output": 0.72
+        }
+      ]
+    },
+    "siliconflow::deepseek-v3.2": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方名 deepseek-ai/DeepSeek-V3.2",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 6
+      },
+      "contextWindow": 163840
+    },
+    "siliconflow::deepseek-r1": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方页未列缓存命中价，按输入价计；官方名 deepseek-ai/DeepSeek-R1",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 4,
+        "output": 16
+      },
+      "contextWindow": 65536
+    },
     "deepseek-flash": {
       "provider": "deepseek",
       "source": "deepseek 官方定价页；峰谷计价（高峰为北京时间周一至周五 9:00-12:00、14:00-18:00，空闲价为高峰一半）",
@@ -4387,18 +4760,6 @@
         }
       ]
     },
-    "openai/gpt-oss-120b": {
-      "provider": "groq",
-      "source": "groq 官方定价页；官方美元价 ×6.8 折算；官方名 GPT OSS 120B (openai/gpt-oss-120b)",
-      "sourceUrl": "https://console.groq.com/docs/models",
-      "updatedAt": "2026-09-12",
-      "flat": {
-        "inputMiss": 1.02,
-        "inputHit": 0.51,
-        "output": 4.08
-      },
-      "contextWindow": 131072
-    },
     "openai/gpt-oss-20b": {
       "provider": "groq",
       "source": "groq 官方定价页；官方美元价 ×6.8 折算；官方名 GPT OSS 20B (openai/gpt-oss-20b)",
@@ -5170,6 +5531,367 @@
         "output": 0
       },
       "contextWindow": 131072
+    },
+    "openai/gpt-5.6-sol": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 102
+      },
+      "contextWindow": 1050000,
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "output": 15
+        }
+      ]
+    },
+    "openai/gpt-5.6-terra": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 122.4
+      },
+      "contextWindow": 1050000,
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "output": 18
+        }
+      ]
+    },
+    "openai/gpt-5.6-luna": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 2.72,
+        "inputHit": 0.27,
+        "output": 12.24
+      },
+      "contextWindow": 1050000,
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 0.4,
+          "inputHit": 0.04,
+          "output": 1.8
+        }
+      ]
+    },
+    "openai/gpt-5.4": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 153
+      },
+      "tiers": [
+        {
+          "minPromptTokens": 272000,
+          "inputMiss": 5,
+          "inputHit": 0.5,
+          "output": 22.5
+        }
+      ]
+    },
+    "openai/gpt-5.2": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 11.9,
+        "inputHit": 1.19,
+        "output": 95.2
+      },
+      "contextWindow": 400000
+    },
+    "openai/gpt-5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 8.5,
+        "inputHit": 0.85,
+        "output": 68
+      },
+      "contextWindow": 400000
+    },
+    "openai/gpt-4o": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 17,
+        "inputHit": 8.5,
+        "output": 68
+      },
+      "contextWindow": 128000
+    },
+    "anthropic/claude-opus-5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "contextWindow": 1000000
+    },
+    "anthropic/claude-sonnet-4.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 40.8,
+        "inputHit": 4.08,
+        "output": 153
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "minPromptTokens": 200000,
+          "inputMiss": 6,
+          "inputHit": 0.6,
+          "output": 22.5
+        }
+      ]
+    },
+    "anthropic/claude-opus-4.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "contextWindow": 200000
+    },
+    "google/gemini-2.5-pro": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 17,
+        "inputHit": 1.7,
+        "output": 102
+      },
+      "contextWindow": 1048576,
+      "tiers": [
+        {
+          "minPromptTokens": 200000,
+          "inputMiss": 2.5,
+          "inputHit": 0.25,
+          "output": 15
+        }
+      ]
+    },
+    "google/gemini-2.5-flash": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.2,
+        "output": 17
+      },
+      "contextWindow": 1048576
+    },
+    "deepseek/deepseek-chat": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.75,
+        "inputHit": 1.75,
+        "output": 7
+      },
+      "contextWindow": 131072
+    },
+    "deepseek/deepseek-v3.2": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.83,
+        "inputHit": 0.91,
+        "output": 2.72
+      },
+      "contextWindow": 131072
+    },
+    "z-ai/glm-5.3": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 9.52,
+        "inputHit": 1.77,
+        "output": 29.92
+      },
+      "contextWindow": 1048576
+    },
+    "z-ai/glm-5.3-flash": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 0.51,
+        "inputHit": 0.1,
+        "output": 1.7
+      },
+      "contextWindow": 1048576
+    },
+    "z-ai/glm-4.7": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 2.72,
+        "inputHit": 0.54,
+        "output": 11.9
+      },
+      "contextWindow": 202752
+    },
+    "moonshotai/kimi-k2.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 3.06,
+        "inputHit": 0.48,
+        "output": 15.3
+      },
+      "contextWindow": 262144
+    },
+    "qwen/qwen3.5-397b-a17b": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 3.74,
+        "inputHit": 1.53,
+        "output": 23.8
+      },
+      "contextWindow": 256000
+    },
+    "minimax/minimax-m2.5": {
+      "provider": "openrouter",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://openrouter.ai/api/v1/models",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.84,
+        "inputHit": 0.18,
+        "output": 7.34
+      },
+      "contextWindow": 204800
+    },
+    "Qwen/Qwen3-235B-A22B-Instruct-2507-tput": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计；官方名 Qwen3 235B A22B Instruct 2507 FP8 Throughput",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.36,
+        "inputHit": 1.36,
+        "output": 4.08
+      },
+      "contextWindow": 262144
+    },
+    "meta-llama/Llama-3.3-70B-Instruct-Turbo": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 7.07,
+        "inputHit": 7.07,
+        "output": 7.07
+      },
+      "contextWindow": 131072
+    },
+    "gpt-oss-120b": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 accounts/fireworks/models/gpt-oss-120b",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.1,
+        "output": 4.08
+      },
+      "contextWindow": 131072,
+      "tiers": [
+        {
+          "tier": "standard",
+          "inputMiss": 0.15,
+          "inputHit": 0.015,
+          "output": 0.6
+        },
+        {
+          "tier": "priority",
+          "inputMiss": 0.18,
+          "inputHit": 0.018,
+          "output": 0.72
+        }
+      ]
+    },
+    "deepseek-v3.2": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方名 deepseek-ai/DeepSeek-V3.2",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 6
+      },
+      "contextWindow": 163840
+    },
+    "deepseek-r1": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方页未列缓存命中价，按输入价计；官方名 deepseek-ai/DeepSeek-R1",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-09-12",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 4,
+        "output": 16
+      },
+      "contextWindow": 65536
     }
   }
 }
