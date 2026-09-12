@@ -20,7 +20,7 @@ let ledgerCache = { at: 0, totalCost: 0, perProvider: {}, perModel: {} };
 // 单条 ledger entry 的费用（输入按未命中/命中拆分，缓存窗口值不重复计费；峰谷模型按 startedAt 选档）
 function calcEntryCost(e) {
   const model = e?.model?.modelId;
-  const p = priceFor(model, e?.startedAt);
+  const p = priceFor(model, e?.startedAt, e?.model?.provider);
   if (!p) return null;
   const u = e.usage || {};
   const inputTotal = u.input?.totalTokens ?? u.input?.uncachedTokens ?? 0;
@@ -1491,9 +1491,17 @@ app.get("/api/balance", async (c) => {
   app.get("/api/pricing", async (c) => {
     await loadPricingDb();
     const rows = [];
-    for (const [model, cfg] of Object.entries(PRICING)) {
-      const provider = PROVIDER_OF_MODEL[model] || null;
-      const srcNote = SOURCE_NOTE[model] || "";
+    // 价格键可能是「<provider>::<model>」限定键，也可能是裸模型名。
+    // 有裸键的模型只呈现一次（走裸键那行）；只有跨厂商同名的才单独按限定键列出。
+    const bareModels = new Set();
+    for (const k of Object.keys(PRICING)) if (!k.includes("::")) bareModels.add(k);
+    for (const [key, cfg] of Object.entries(PRICING)) {
+      const sep = key.indexOf("::");
+      const scopedProvider = sep > 0 ? key.slice(0, sep) : null;
+      const model = sep > 0 ? key.slice(sep + 2) : key;
+      if (scopedProvider && bareModels.has(model)) continue;
+      const provider = scopedProvider || PROVIDER_OF_MODEL[key] || null;
+      const srcNote = SOURCE_NOTE[key] || SOURCE_NOTE[model] || "";
       if (cfg && cfg.peak) {
         rows.push({ model, provider, tier: "peak", miss: cfg.peak.inputMiss, hit: cfg.peak.inputHit, out: cfg.peak.output, note: srcNote, status: "listed" });
         rows.push({ model, provider, tier: "offPeak", miss: cfg.offPeak.inputMiss, hit: cfg.offPeak.inputHit, out: cfg.offPeak.output, note: srcNote, status: "listed" });
@@ -1526,7 +1534,8 @@ app.get("/api/balance", async (c) => {
     return c.json({
       ok: true,
       pricing: { source: db.source, ok: db.ok, error: db.error, snapshotAt: db.snapshotAt, fetchedAt: db.at || null },
-      models: Object.keys(PRICING).length,
+      models: Object.keys(PRICING).filter((k) => !k.includes("::")).length,
+      scopedModels: Object.keys(PRICING).filter((k) => k.includes("::")).length,
       configuredProviders: configuredCount,
     });
   };
