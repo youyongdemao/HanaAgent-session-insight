@@ -735,25 +735,25 @@ let pricingDbState = { at: 0, ok: false, source: "builtin", snapshotAt: PRICING_
 async function loadPricingDb(force = false) {
   const now = Date.now();
   if (!force && pricingDbState.at && now - pricingDbState.at < PRICING_DB_TTL) return pricingDbState;
-  let lastError = null;
-  for (const url of PRICING_DB_URLS) {
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": "Session-Insight-Pricing" }, signal: AbortSignal.timeout(10000) });
-      if (!res.ok) { lastError = `HTTP ${res.status}`; continue; }
-      const json = await res.json();
-      if (setPricingConfig(json)) {
-        pricingDbState = { at: now, ok: true, source: url, snapshotAt: json.snapshotAt || PRICING_SNAPSHOT_AT, error: null };
-        dbg("pricing-db: loaded from " + url);
-        return pricingDbState;
-      }
-      lastError = "配置校验失败";
-    } catch (e) {
-      lastError = String(e?.message || e);
-    }
+  // 多源并行竞速：谁先拿到有效配置用谁，最坏耗时 = 单源超时，而不是各源相加
+  const attempt = async (url) => {
+    const res = await fetch(url, { headers: { "User-Agent": "Session-Insight-Pricing" }, signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (!setPricingConfig(json)) throw new Error("配置校验失败");
+    return { url, json };
+  };
+  try {
+    const hit = await Promise.any(PRICING_DB_URLS.map(attempt));
+    pricingDbState = { at: now, ok: true, source: hit.url, snapshotAt: hit.json.snapshotAt || PRICING_SNAPSHOT_AT, error: null };
+    dbg("pricing-db: loaded from " + hit.url);
+    return pricingDbState;
+  } catch (e) {
+    const lastError = String(e?.errors?.[0]?.message || e?.message || e);
+    pricingDbState = { at: now, ok: false, source: "builtin", snapshotAt: PRICING_SNAPSHOT_AT, error: lastError };
+    dbg("pricing-db: fallback to builtin, " + lastError);
+    return pricingDbState;
   }
-  pricingDbState = { at: now, ok: false, source: "builtin", snapshotAt: PRICING_SNAPSHOT_AT, error: lastError };
-  dbg("pricing-db: fallback to builtin, " + lastError);
-  return pricingDbState;
 }
 
 // 宿主供应商/模型配置变化感知：只比 mtime + size，不做全文 hash
@@ -1348,7 +1348,7 @@ app.get("/api/balance", async (c) => {
           try {
             const resp = await fetchFn(url, {
               headers: { Authorization: `Bearer ${p.api_key}` },
-              signal: AbortSignal.timeout(8000),
+              signal: AbortSignal.timeout(5000),
             });
             const text = await resp.text();
             dbg(`balance ${provider}: http ${resp.status}, body=${text.slice(0, 120)}`);
