@@ -1495,12 +1495,16 @@ app.get("/api/balance", async (c) => {
     // 有裸键的模型只呈现一次（走裸键那行）；只有跨厂商同名的才单独按限定键列出。
     const bareModels = new Set();
     for (const k of Object.keys(PRICING)) if (!k.includes("::")) bareModels.add(k);
+    // 只展示宿主里真正配置/登录过的供应商（价格库是全量收录，界面要按配置过滤）
+    const configured = computeActiveProviders(ctx).providers || [];
+    const configuredSet = new Set(configured.map((p) => p.id));
     for (const [key, cfg] of Object.entries(PRICING)) {
       const sep = key.indexOf("::");
       const scopedProvider = sep > 0 ? key.slice(0, sep) : null;
       const model = sep > 0 ? key.slice(sep + 2) : key;
       if (scopedProvider && bareModels.has(model)) continue;
       const provider = scopedProvider || PROVIDER_OF_MODEL[key] || null;
+      if (!provider || !configuredSet.has(provider)) continue;
       const srcNote = SOURCE_NOTE[key] || SOURCE_NOTE[model] || "";
       if (cfg && cfg.peak) {
         rows.push({ model, provider, tier: "peak", miss: cfg.peak.inputMiss, hit: cfg.peak.inputHit, out: cfg.peak.output, note: srcNote, status: "listed" });
@@ -1510,7 +1514,6 @@ app.get("/api/balance", async (c) => {
       }
     }
     // 以当前已配置供应商的模型全集为骨架；没有可靠价格时也必须列出并明确标记。
-    const configured = computeActiveProviders(ctx).providers || [];
     const listed = new Set(rows.map((r) => r.provider + "\u0000" + r.model));
     for (const p of configured) {
       for (const model of p.models || []) {
