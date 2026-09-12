@@ -840,7 +840,7 @@ async function latestRelease(ctx, force) {
   const asset = Array.isArray(release.assets)
     ? release.assets.find((item) => /session-insight.*\.zip$/i.test(item?.name || ""))
     : null;
-  const out = { version, tag: release.tag_name || `v${version}`, asset };
+  const out = { version, tag: release.tag_name || `v${version}`, asset, notes: String(release.body || "") };
   releaseCache = { at: now, data: out };
   return out;
 }
@@ -1197,6 +1197,7 @@ export default function registerPluginApiRoutes(app, ctx) {
         latestVersion: release.version,
         updateAvailable: compareVersions(release.version, currentVersion) > 0,
         hasInstallAsset: Boolean(release.asset?.browser_download_url),
+        notes: release.notes || "",
       });
     } catch (error) {
       dbg("check-update ERROR: " + String(error?.message || error));

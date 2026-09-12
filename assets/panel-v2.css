@@ -297,6 +297,76 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
   line-height: 1.65;
 }
 
+/* 弹窗高度受限时可滚动 */
+.si-update-dialog {
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+/* 更新日志：只留内容，符号（# / - / SHA256）全部交给样式表达 */
+.si-update-notes {
+  margin: -8px 0 18px;
+  max-height: 138px;
+  overflow-y: auto;
+  text-align: left;
+  display: grid;
+  gap: 7px;
+}
+
+.si-note-group {
+  margin-top: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--accent, #537d96);
+}
+
+.si-note-group:first-child {
+  margin-top: 0;
+}
+
+.si-note-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.si-note-list li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-muted, #8e9196);
+}
+
+.si-note-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: .62em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent, #537d96) 52%, transparent);
+}
+
+.si-note-line {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-muted, #8e9196);
+}
+
+.si-note-meta {
+  margin: 2px 0 0;
+  font: 400 10px/1.5 var(--font-mono);
+  color: var(--text-muted, #8e9196);
+  opacity: .72;
+  word-break: break-all;
+}
+
 .si-update-actions {
   display: flex;
   gap: 10px;
