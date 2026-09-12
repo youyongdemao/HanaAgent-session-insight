@@ -9,6 +9,7 @@
   "activationEvents": [
     "onStartup"
   ],
+  "entry": "index.js",
   "ui": {
     "hostCapabilities": [
       "external.open"

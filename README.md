@@ -106,6 +106,7 @@
 ```
 session-insight/
 ├── manifest.json          # 插件清单
+├── index.js               # 宿主端入口（manifestVersion 2 的 entry）
 ├── pricing.json           # 计费数据库（价格 / 峰谷 / 模型归属 / 上下文窗口）
 ├── assets/
 │   ├── panel-v2.js        # 前端逻辑（v2）
