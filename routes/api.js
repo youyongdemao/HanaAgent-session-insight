@@ -815,7 +815,11 @@ function readGitHubToken(ctx) {
   }
 }
 
-async function latestRelease(ctx) {
+let releaseCache = { at: 0, data: null };
+async function latestRelease(ctx, force) {
+  const now = Date.now();
+  // 自动检查会频繁调用，加 5 分钟缓存，避免打爆 GitHub 速率限制
+  if (!force && releaseCache.data && now - releaseCache.at < 5 * 60 * 1000) return releaseCache.data;
   const token = readGitHubToken(ctx);
   const headers = {
     Accept: "application/vnd.github+json",
@@ -836,7 +840,9 @@ async function latestRelease(ctx) {
   const asset = Array.isArray(release.assets)
     ? release.assets.find((item) => /session-insight.*\.zip$/i.test(item?.name || ""))
     : null;
-  return { version, tag: release.tag_name || `v${version}`, asset };
+  const out = { version, tag: release.tag_name || `v${version}`, asset };
+  releaseCache = { at: now, data: out };
+  return out;
 }
 
 function findWinRAR() {
@@ -1202,7 +1208,7 @@ export default function registerPluginApiRoutes(app, ctx) {
   app.post("/api/apply-update", async (c) => {
     try {
       const requested = await c.req.json().catch(() => ({}));
-      const release = await latestRelease(ctx);
+      const release = await latestRelease(ctx, true);
       const currentVersion = currentPluginVersion(ctx);
       if (requested.version && normalizeVersion(requested.version) !== normalizeVersion(release.version)) {
         return c.json({ ok: false, error: "Latest Release 已变化，请重新检查更新" }, 409);

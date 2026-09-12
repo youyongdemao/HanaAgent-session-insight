@@ -297,6 +297,19 @@ button.ghost:hover { background: color-mix(in srgb, var(--accent, #537d96) 22%, 
   line-height: 1.65;
 }
 
+.si-update-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.si-update-actions .si-update-confirm { background: color-mix(in srgb, var(--accent, #537d96) 18%, transparent); border-color: color-mix(in srgb, var(--accent, #537d96) 46%, transparent); color: var(--accent, #537d96); }
+.si-update-actions button {
+  min-width: 96px;
+  justify-content: center;
+}
+
 .si-update-confirm {
   min-width: 112px;
   justify-content: center;
