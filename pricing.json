@@ -509,9 +509,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 8.5,
+        "inputHit": 0.85,
+        "output": 68
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -579,9 +579,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 2.04,
+        "inputHit": 0.2,
+        "output": 17
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -913,7 +913,7 @@
     },
     "dashscope::qwen3.8-max": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -932,7 +932,7 @@
     },
     "dashscope::qwen3.8-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -951,7 +951,7 @@
     },
     "dashscope::qwen3.6-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -975,7 +975,7 @@
     },
     "dashscope::qwen3.6-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -999,7 +999,7 @@
     },
     "dashscope::qwen3.6-max-preview": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1023,7 +1023,7 @@
     },
     "dashscope::qwen3.5-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1052,7 +1052,7 @@
     },
     "dashscope::qwen3.5-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1081,7 +1081,7 @@
     },
     "dashscope::qwen3-max": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1122,7 +1122,7 @@
     },
     "dashscope::qwen-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1172,7 +1172,7 @@
     },
     "dashscope::qwen-turbo": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1208,7 +1208,7 @@
     },
     "dashscope::qwen-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1237,7 +1237,7 @@
     },
     "dashscope::qwen3-coder-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1271,7 +1271,7 @@
     },
     "dashscope::qwen3-coder-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1305,7 +1305,7 @@
     },
     "dashscope::qwen3-vl-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -1410,9 +1410,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 25.5
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -1480,9 +1480,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 25.5
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -1550,9 +1550,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 27.2,
-        "inputHit": 2.72,
-        "output": 122.4
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 81.6
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -1613,9 +1613,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 1.7,
+        "inputHit": 0.17,
+        "output": 10.2
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -1683,9 +1683,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 3.4,
+        "inputHit": 0.34,
+        "output": 20.4
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -1753,9 +1753,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 0.68,
+        "inputHit": 0.07,
+        "output": 2.72
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -2607,9 +2607,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 27.2,
-        "inputHit": 2.72,
-        "output": 102
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 68
       },
       "contextWindow": 1050000,
       "tiers": [
@@ -2627,9 +2627,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 27.2,
-        "inputHit": 2.72,
-        "output": 122.4
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 81.6
       },
       "contextWindow": 1050000,
       "tiers": [
@@ -2647,9 +2647,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 2.72,
-        "inputHit": 0.27,
-        "output": 12.24
+        "inputMiss": 1.36,
+        "inputHit": 0.14,
+        "output": 8.16
       },
       "contextWindow": 1050000,
       "tiers": [
@@ -2667,9 +2667,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 34,
-        "inputHit": 3.4,
-        "output": 153
+        "inputMiss": 17,
+        "inputHit": 1.7,
+        "output": 102
       },
       "tiers": [
         {
@@ -2734,9 +2734,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 40.8,
-        "inputHit": 4.08,
-        "output": 153
+        "inputMiss": 20.4,
+        "inputHit": 2.04,
+        "output": 102
       },
       "contextWindow": 1000000,
       "tiers": [
@@ -2766,9 +2766,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 17,
-        "inputHit": 1.7,
-        "output": 102
+        "inputMiss": 8.5,
+        "inputHit": 0.85,
+        "output": 68
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -3452,9 +3452,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 8.5,
+        "inputHit": 0.85,
+        "output": 68
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -3522,9 +3522,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 2.04,
+        "inputHit": 0.2,
+        "output": 17
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -3856,7 +3856,7 @@
     },
     "qwen3.8-max": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -3875,7 +3875,7 @@
     },
     "qwen3.8-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -3894,7 +3894,7 @@
     },
     "qwen3.6-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -3918,7 +3918,7 @@
     },
     "qwen3.6-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -3942,7 +3942,7 @@
     },
     "qwen3.6-max-preview": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -3966,7 +3966,7 @@
     },
     "qwen3.5-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -3995,7 +3995,7 @@
     },
     "qwen3.5-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4024,7 +4024,7 @@
     },
     "qwen3-max": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4065,7 +4065,7 @@
     },
     "qwen-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4115,7 +4115,7 @@
     },
     "qwen-turbo": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4151,7 +4151,7 @@
     },
     "qwen-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4180,7 +4180,7 @@
     },
     "qwen3-coder-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4214,7 +4214,7 @@
     },
     "qwen3-coder-flash": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4248,7 +4248,7 @@
     },
     "qwen3-vl-plus": {
       "provider": "dashscope",
-      "source": "dashscope 官方定价页；分段计价，此处为主档，完整分档见 tiers",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -4353,9 +4353,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 25.5
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -4423,9 +4423,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 25.5
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -4493,9 +4493,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 27.2,
-        "inputHit": 2.72,
-        "output": 122.4
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 81.6
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -4556,9 +4556,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 1.7,
+        "inputHit": 0.17,
+        "output": 10.2
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -4626,9 +4626,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 3.4,
+        "inputHit": 0.34,
+        "output": 20.4
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -4696,9 +4696,9 @@
       "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 0,
-        "inputHit": 0,
-        "output": 0
+        "inputMiss": 0.68,
+        "inputHit": 0.07,
+        "output": 2.72
       },
       "contextWindow": 1048576,
       "tiers": [
@@ -5538,9 +5538,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 27.2,
-        "inputHit": 2.72,
-        "output": 102
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 68
       },
       "contextWindow": 1050000,
       "tiers": [
@@ -5558,9 +5558,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 27.2,
-        "inputHit": 2.72,
-        "output": 122.4
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 81.6
       },
       "contextWindow": 1050000,
       "tiers": [
@@ -5578,9 +5578,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 2.72,
-        "inputHit": 0.27,
-        "output": 12.24
+        "inputMiss": 1.36,
+        "inputHit": 0.14,
+        "output": 8.16
       },
       "contextWindow": 1050000,
       "tiers": [
@@ -5598,9 +5598,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 34,
-        "inputHit": 3.4,
-        "output": 153
+        "inputMiss": 17,
+        "inputHit": 1.7,
+        "output": 102
       },
       "tiers": [
         {
@@ -5665,9 +5665,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 40.8,
-        "inputHit": 4.08,
-        "output": 153
+        "inputMiss": 20.4,
+        "inputHit": 2.04,
+        "output": 102
       },
       "contextWindow": 1000000,
       "tiers": [
@@ -5697,9 +5697,9 @@
       "sourceUrl": "https://openrouter.ai/api/v1/models",
       "updatedAt": "2026-09-12",
       "flat": {
-        "inputMiss": 17,
-        "inputHit": 1.7,
-        "output": 102
+        "inputMiss": 8.5,
+        "inputHit": 0.85,
+        "output": 68
       },
       "contextWindow": 1048576,
       "tiers": [
