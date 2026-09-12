@@ -1220,7 +1220,7 @@ body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-leg
 /* ── 侧边栏状态栏：卡片最小宽度收窄，宽度不够时自动换行而非挤压 ── */
 body[data-surface="widget"] .ring-state{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
 body[data-surface="widget"] .w-turn-grid{grid-template-columns:repeat(auto-fit,minmax(84px,1fr))}
-body[data-surface="widget"] .w-context-side{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+body[data-surface="widget"] .w-context-side{grid-template-columns:repeat(2,minmax(0,1fr))} body[data-surface="widget"] .w-context-side>div{padding-left:8px;padding-right:8px} body[data-surface="widget"] .w-context-side>div:first-child{padding-left:0}
 body[data-surface="widget"] .w-comp-stats{grid-template-columns:repeat(auto-fit,minmax(56px,1fr))}
 body[data-surface="widget"] .w-share-body{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
 body[data-surface="widget"] .widget{grid-template-columns:minmax(0,1fr);min-width:240px}
