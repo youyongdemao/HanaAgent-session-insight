@@ -1,3 +1,15 @@
+import { statSync } from "node:fs";
+import { join } from "node:path";
+
+// 资源指纹：用文件 mtime 拼缓存标记，改完前端资源立刻换 URL，避免 iframe 一直吃旧缓存
+function assetStamp(ctx, name) {
+  try {
+    return String(Math.floor(statSync(join(ctx.pluginDir, "assets", name)).mtimeMs));
+  } catch {
+    return "0";
+  }
+}
+
 export default function registerPluginUiRoutes(app, ctx) {
   app.get("/page", (c) => c.html(renderShell(c, ctx, "page")));
   app.get("/widget", (c) => c.html(renderShell(c, ctx, "widget")));
@@ -12,10 +24,11 @@ function renderShell(c, ctx, surface) {
   const base = `/api/plugins/${encodeURIComponent(ctx.pluginId)}`;
   const title = "会话用量";
   const v2 = c.req.query("v") !== "1";
+  const stamp = `${assetStamp(ctx, v2 ? "panel-v2.css" : "panel.css")}-${assetStamp(ctx, v2 ? "panel-v2.js" : "panel.js")}`;
   const withToken = (url) => {
     let u = url;
     if (token) u += `${u.includes("?") ? "&" : "?"}${new URLSearchParams({ token })}`;
-    u += `${u.includes("?") ? "&" : "?"}si_v=v2-today-hitrate-daylevel-20260909k&${new URLSearchParams({ hot })}`;
+    u += `${u.includes("?") ? "&" : "?"}si_v=${stamp}&${new URLSearchParams({ hot })}`;
     return u;
   };
   const panelCss = withToken(`${base}/assets/${v2 ? "panel-v2.css" : "panel.css"}`);

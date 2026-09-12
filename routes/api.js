@@ -20,7 +20,7 @@ let ledgerCache = { at: 0, totalCost: 0, perProvider: {}, perModel: {} };
 // 单条 ledger entry 的费用（输入按未命中/命中拆分，缓存窗口值不重复计费；峰谷模型按 startedAt 选档）
 function calcEntryCost(e) {
   const model = e?.model?.modelId;
-  const p = priceFor(model, e?.startedAt);
+  const p = priceFor(model, e?.startedAt, e?.model?.provider);
   if (!p) return null;
   const u = e.usage || {};
   const inputTotal = u.input?.totalTokens ?? u.input?.uncachedTokens ?? 0;
@@ -34,11 +34,10 @@ function calcEntryCost(e) {
 
 function computeTotalCost(ctx) {
   const now = Date.now();
-  if (now - ledgerCache.at < 30000) return ledgerCache;
+  if (now - ledgerCache.at < 10000) return ledgerCache;
   try {
-    const ledger = getLedgerPath(ctx);
-    if (!existsSync(ledger)) return { at: now, totalCost: null, perProvider: {}, perModel: {}, todayCost: 0, todayProvider: {}, todayModel: {} };
-    const data = JSON.parse(readFileSync(ledger, "utf8"));
+    const { entries: ledgerEntries } = readLedgerEntries(ctx);
+    if (!ledgerEntries.length) return { at: now, totalCost: null, perProvider: {}, perModel: {}, todayCost: 0, todayProvider: {}, todayModel: {} };
     let totalCost = 0;
     const perProvider = {};
     const perModel = {};
@@ -46,7 +45,7 @@ function computeTotalCost(ctx) {
     const todayModel = {};
     const todayStr = new Date().toDateString();
     let todayCost = 0;
-    for (const e of data.entries || []) {
+    for (const e of ledgerEntries) {
       const model = e.model?.modelId;
       const provider = e.model?.provider;
       const cost = calcEntryCost(e);
@@ -85,17 +84,16 @@ let ledgerStatsCache = { at: 0, provider: null };
 // provider 可选：传入则只统计该供应商的数据
 function computeLedgerStats(ctx, provider) {
   const now = Date.now();
-  if (now - ledgerStatsCache.at < 30000 && ledgerStatsCache.provider === provider) return ledgerStatsCache;
+  if (now - ledgerStatsCache.at < 10000 && ledgerStatsCache.provider === provider) return ledgerStatsCache;
   try {
-    const ledger = getLedgerPath(ctx);
-    if (!existsSync(ledger)) return { at: now, empty: true, provider };
-    const data = JSON.parse(readFileSync(ledger, "utf8"));
+    const { entries: ledgerEntries } = readLedgerEntries(ctx);
+    if (!ledgerEntries.length) return { at: now, empty: true, provider };
     const byAgent = {}, bySubsystem = {}, byDay = {}, byModel = {}, byProvider = {}, rangeProv = { hour: {}, day: {}, week: {} }, rangeModel = { hour: {}, day: {}, week: {} }, latBuckets = { lt1: 0, "1_3": 0, "3_10": 0, gt10: 0 }, byStatus = {}, bySession = {}, byHour = {};
     const latAll = [];
     const timeCosts = [];
     const timeCache = [];
     let callCount = 0, errCount = 0, tokInput = 0, tokOutput = 0, tokCacheHit = 0, tokCacheMiss = 0, tokTotal = 0;
-    for (const e of data.entries || []) {
+    for (const e of ledgerEntries) {
       if (provider && e.model?.provider !== provider) continue; // 按供应商过滤
       const cost = calcEntryCost(e);
       const cc = cost || 0;
@@ -292,6 +290,41 @@ function getDataRoot(ctx) {
 }
 function getLedgerPath(ctx) {
   return join(getDataRoot(ctx), "usage-ledger.json");
+}
+function getLedgerSqlitePath(ctx) {
+  return join(getDataRoot(ctx), "usage-ledger.sqlite");
+}
+// 账本条目：宿主自 2026-09-09 起把账本迁到 SQLite（usage-ledger.sqlite.usage_entries），旧 JSON 文件已停更。
+// 优先读 SQLite，读不到再回退 JSON；两边条目结构一致（entry_json 就是原来的 entry 对象）。
+let ledgerEntriesCache = { at: 0, entries: [], source: null };
+function readLedgerEntries(ctx) {
+  const now = Date.now();
+  if (now - ledgerEntriesCache.at < 5000) return ledgerEntriesCache;
+  const sqlitePath = getLedgerSqlitePath(ctx);
+  const jsonPath = getLedgerPath(ctx);
+  let entries = null, source = null;
+  if (existsSync(sqlitePath)) {
+    try {
+      const db = new DatabaseSync(sqlitePath, { readOnly: true });
+      try {
+        const rows = db.prepare("SELECT entry_json FROM usage_entries ORDER BY entry_order").all();
+        entries = [];
+        for (const r of rows) {
+          try { entries.push(JSON.parse(r.entry_json)); } catch {}
+        }
+        source = "sqlite";
+      } finally { db.close(); }
+    } catch (e) { dbg("ledger sqlite read failed: " + String(e?.message || e)); }
+  }
+  if (!entries && existsSync(jsonPath)) {
+    try {
+      const data = JSON.parse(readFileSync(jsonPath, "utf8"));
+      entries = data.entries || [];
+      source = "json";
+    } catch (e) { dbg("ledger json read failed: " + String(e?.message || e)); }
+  }
+  if (entries) ledgerEntriesCache = { at: now, entries, source };
+  return ledgerEntriesCache;
 }
 
 // 动态定位 provider-catalog.json：优先 config 配置，其次从 sessionsDir 推断数据根（sessions → agent → agents → 根），最后用动态数据根推导
@@ -702,25 +735,25 @@ let pricingDbState = { at: 0, ok: false, source: "builtin", snapshotAt: PRICING_
 async function loadPricingDb(force = false) {
   const now = Date.now();
   if (!force && pricingDbState.at && now - pricingDbState.at < PRICING_DB_TTL) return pricingDbState;
-  let lastError = null;
-  for (const url of PRICING_DB_URLS) {
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": "Session-Insight-Pricing" }, signal: AbortSignal.timeout(10000) });
-      if (!res.ok) { lastError = `HTTP ${res.status}`; continue; }
-      const json = await res.json();
-      if (setPricingConfig(json)) {
-        pricingDbState = { at: now, ok: true, source: url, snapshotAt: json.snapshotAt || PRICING_SNAPSHOT_AT, error: null };
-        dbg("pricing-db: loaded from " + url);
-        return pricingDbState;
-      }
-      lastError = "配置校验失败";
-    } catch (e) {
-      lastError = String(e?.message || e);
-    }
+  // 多源并行竞速：谁先拿到有效配置用谁，最坏耗时 = 单源超时，而不是各源相加
+  const attempt = async (url) => {
+    const res = await fetch(url, { headers: { "User-Agent": "Session-Insight-Pricing" }, signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (!setPricingConfig(json)) throw new Error("配置校验失败");
+    return { url, json };
+  };
+  try {
+    const hit = await Promise.any(PRICING_DB_URLS.map(attempt));
+    pricingDbState = { at: now, ok: true, source: hit.url, snapshotAt: hit.json.snapshotAt || PRICING_SNAPSHOT_AT, error: null };
+    dbg("pricing-db: loaded from " + hit.url);
+    return pricingDbState;
+  } catch (e) {
+    const lastError = String(e?.errors?.[0]?.message || e?.message || e);
+    pricingDbState = { at: now, ok: false, source: "builtin", snapshotAt: PRICING_SNAPSHOT_AT, error: lastError };
+    dbg("pricing-db: fallback to builtin, " + lastError);
+    return pricingDbState;
   }
-  pricingDbState = { at: now, ok: false, source: "builtin", snapshotAt: PRICING_SNAPSHOT_AT, error: lastError };
-  dbg("pricing-db: fallback to builtin, " + lastError);
-  return pricingDbState;
 }
 
 // 宿主供应商/模型配置变化感知：只比 mtime + size，不做全文 hash
@@ -782,7 +815,11 @@ function readGitHubToken(ctx) {
   }
 }
 
-async function latestRelease(ctx) {
+let releaseCache = { at: 0, data: null };
+async function latestRelease(ctx, force) {
+  const now = Date.now();
+  // 自动检查会频繁调用，加 5 分钟缓存，避免打爆 GitHub 速率限制
+  if (!force && releaseCache.data && now - releaseCache.at < 5 * 60 * 1000) return releaseCache.data;
   const token = readGitHubToken(ctx);
   const headers = {
     Accept: "application/vnd.github+json",
@@ -803,7 +840,9 @@ async function latestRelease(ctx) {
   const asset = Array.isArray(release.assets)
     ? release.assets.find((item) => /session-insight.*\.zip$/i.test(item?.name || ""))
     : null;
-  return { version, tag: release.tag_name || `v${version}`, asset };
+  const out = { version, tag: release.tag_name || `v${version}`, asset };
+  releaseCache = { at: now, data: out };
+  return out;
 }
 
 function findWinRAR() {
@@ -1169,7 +1208,7 @@ export default function registerPluginApiRoutes(app, ctx) {
   app.post("/api/apply-update", async (c) => {
     try {
       const requested = await c.req.json().catch(() => ({}));
-      const release = await latestRelease(ctx);
+      const release = await latestRelease(ctx, true);
       const currentVersion = currentPluginVersion(ctx);
       if (requested.version && normalizeVersion(requested.version) !== normalizeVersion(release.version)) {
         return c.json({ ok: false, error: "Latest Release 已变化，请重新检查更新" }, 409);
@@ -1315,7 +1354,7 @@ app.get("/api/balance", async (c) => {
           try {
             const resp = await fetchFn(url, {
               headers: { Authorization: `Bearer ${p.api_key}` },
-              signal: AbortSignal.timeout(8000),
+              signal: AbortSignal.timeout(5000),
             });
             const text = await resp.text();
             dbg(`balance ${provider}: http ${resp.status}, body=${text.slice(0, 120)}`);
@@ -1385,10 +1424,8 @@ app.get("/api/balance", async (c) => {
     const limit = Math.min(120, Math.max(1, Number(c.req.query("limit")) || 40));
     const provider = c.req.query("provider") || null;
     try {
-      const ledger = getLedgerPath(ctx);
-      if (!existsSync(ledger)) return c.json({ at: Date.now(), empty: true, entries: [] });
-      const data = JSON.parse(readFileSync(ledger, "utf8"));
-      const rows = (data.entries || []);
+      const rows = readLedgerEntries(ctx).entries;
+      if (!rows.length) return c.json({ at: Date.now(), empty: true, entries: [] });
       const filtered = provider ? rows.filter(e => e.model?.provider === provider) : rows;
       filtered.sort((a,b)=>Date.parse(b.startedAt||"0")-Date.parse(a.startedAt||"0"));
       const out = filtered.slice(0, limit).map(e => {
@@ -1460,9 +1497,34 @@ app.get("/api/balance", async (c) => {
   app.get("/api/pricing", async (c) => {
     await loadPricingDb();
     const rows = [];
-    for (const [model, cfg] of Object.entries(PRICING)) {
-      const provider = PROVIDER_OF_MODEL[model] || null;
-      const srcNote = SOURCE_NOTE[model] || "";
+    // 价格键可能是「<provider>::<model>」限定键，也可能是裸模型名。
+    // 有裸键的模型只呈现一次（走裸键那行）；只有跨厂商同名的才单独按限定键列出。
+    const bareModels = new Set();
+    for (const k of Object.keys(PRICING)) if (!k.includes("::")) bareModels.add(k);
+    // 只展示宿主里真正配置/登录过的供应商与模型（价格库是全量收录，界面要按配置过滤）
+    const configured = computeActiveProviders(ctx).providers || [];
+    const cfgByProvider = new Map();
+    const cfgModelSet = new Set();
+    for (const p of configured) {
+      const set = new Set(p.models || []);
+      cfgByProvider.set(p.id, set);
+      for (const m of set) cfgModelSet.add(m);
+    }
+    // 供应商 id 存在变体（xai-oauth / zhipu-coding 等），匹配不上时退回按模型名判断
+    const keepByConfig = (provider, model) => {
+      if (!provider) return false;
+      const set = cfgByProvider.get(provider);
+      if (set) return set.size === 0 || set.has(model);
+      return cfgModelSet.has(model);
+    };
+    for (const [key, cfg] of Object.entries(PRICING)) {
+      const sep = key.indexOf("::");
+      const scopedProvider = sep > 0 ? key.slice(0, sep) : null;
+      const model = sep > 0 ? key.slice(sep + 2) : key;
+      if (scopedProvider && bareModels.has(model)) continue;
+      const provider = scopedProvider || PROVIDER_OF_MODEL[key] || null;
+      if (!keepByConfig(provider, model)) continue;
+      const srcNote = SOURCE_NOTE[key] || SOURCE_NOTE[model] || "";
       if (cfg && cfg.peak) {
         rows.push({ model, provider, tier: "peak", miss: cfg.peak.inputMiss, hit: cfg.peak.inputHit, out: cfg.peak.output, note: srcNote, status: "listed" });
         rows.push({ model, provider, tier: "offPeak", miss: cfg.offPeak.inputMiss, hit: cfg.offPeak.inputHit, out: cfg.offPeak.output, note: srcNote, status: "listed" });
@@ -1471,14 +1533,12 @@ app.get("/api/balance", async (c) => {
       }
     }
     // 以当前已配置供应商的模型全集为骨架；没有可靠价格时也必须列出并明确标记。
-    const configured = computeActiveProviders(ctx).providers || [];
-    const listed = new Set(rows.map((r) => r.provider + "\u0000" + r.model));
+    const listedModels = new Set(rows.map((r) => r.model));
     for (const p of configured) {
       for (const model of p.models || []) {
-        const key = p.id + "\u0000" + model;
-        if (listed.has(key)) continue;
+        if (listedModels.has(model)) continue;
         rows.push({ model, provider: p.id, tier: "unknown", miss: null, hit: null, out: null, note: "官方价格未收录", status: "unlisted" });
-        listed.add(key);
+        listedModels.add(model);
       }
     }
     return c.json({ snapshotAt: PRICING_SNAPSHOT_AT, currency: "CNY", rows, completeForConfiguredModels: true, db: { source: pricingDbState.source, ok: pricingDbState.ok, error: pricingDbState.error, fetchedAt: pricingDbState.at || null } });
@@ -1495,7 +1555,8 @@ app.get("/api/balance", async (c) => {
     return c.json({
       ok: true,
       pricing: { source: db.source, ok: db.ok, error: db.error, snapshotAt: db.snapshotAt, fetchedAt: db.at || null },
-      models: Object.keys(PRICING).length,
+      models: Object.keys(PRICING).filter((k) => !k.includes("::")).length,
+      scopedModels: Object.keys(PRICING).filter((k) => k.includes("::")).length,
       configuredProviders: configuredCount,
     });
   };
