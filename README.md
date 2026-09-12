@@ -88,7 +88,7 @@
 
 两张卡片都是 `cardForm: "flush"` + `titlebar: "translucent"`，与 HanaAgent 的玻璃卡片语言一致。
 
-兼容期说明：manifest 里暂时同时保留 `contributes.page` / `contributes.widget` 两份 legacy 声明，让尚未支持 `cards[]` 的旧版宿主也能加载。新版宿主会记一条「legacy surface」警告，不影响功能。确认全部用户升级到支持 `cards[]` 的版本后，这两段会被删掉。
+清单只声明 `cards` 与 `configuration`。早期为了兼容尚未支持 `cards[]` 的宿主，曾同时保留 `contributes.page` / `contributes.widget` 两份 legacy 声明；新版宿主（`manifestVersion: 2`）已明确拒绝这两个键，安装时会直接报错，因此已移除。仍需要旧格式清单的宿主请停留在 v2.0.1。
 
 ## 更新通道
 

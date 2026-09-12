@@ -65,22 +65,6 @@
         "pageOf": "session-insight"
       }
     ],
-    "page": {
-      "title": {
-        "zh": "会话用量",
-        "en": "Session Insight"
-      },
-      "route": "/page",
-      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 5h16v14H4z\"/><path d=\"M7 15l3-4 2 2 3-5 2 3\"/></svg>"
-    },
-    "widget": {
-      "title": {
-        "zh": "用量状态栏",
-        "en": "Usage Bar"
-      },
-      "route": "/widget",
-      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 12h3l2-5 3 10 2-7 2 2h4\"/></svg>"
-    },
     "configuration": {
       "properties": {
         "sessionsDir": {
