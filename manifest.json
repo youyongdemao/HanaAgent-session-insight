@@ -57,7 +57,9 @@
         "en": "Usage Bar"
       },
       "route": "/widget",
-      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 12h3l2-5 3 10 2-7 2 2h4\"/></svg>"
+      "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M4 12h3l2-5 3 10 2-7 2 2h4\"/></svg>",
+      "cardForm": "flush",
+      "titlebar": "translucent"
     },
     "configuration": {
       "properties": {
