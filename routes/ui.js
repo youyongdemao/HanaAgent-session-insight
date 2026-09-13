@@ -10,10 +10,23 @@ function assetStamp(ctx, name) {
   }
 }
 
+// 卡片 HTML 一律不缓存：资源地址带 si_v 版本戳，但拿到缓存的旧 HTML 就等于拿到旧戳，
+// 之后无论改多少前端资源都不会刷新。
+const noStore = (c) => {
+  try {
+    c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+    c.header("Pragma", "no-cache");
+    c.header("Expires", "0");
+  } catch {
+    /* 宿主若换了响应 API，忽略即可 */
+  }
+  return c;
+};
+
 export default function registerPluginUiRoutes(app, ctx) {
-  app.get("/page", (c) => c.html(renderShell(c, ctx, "page")));
-  app.get("/widget", (c) => c.html(renderShell(c, ctx, "widget")));
-  app.get("/card", (c) => c.html(renderShell(c, ctx, "card")));
+  app.get("/page", (c) => noStore(c).html(renderShell(c, ctx, "page")));
+  app.get("/widget", (c) => noStore(c).html(renderShell(c, ctx, "widget")));
+  app.get("/card", (c) => noStore(c).html(renderShell(c, ctx, "card")));
 }
 
 function renderShell(c, ctx, surface) {
