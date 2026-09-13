@@ -1422,12 +1422,19 @@ app.get("/api/balance", async (c) => {
 
   // 实时调用事件流：最近若干条 ledger entry 摘要（事件时间线真实渲染）
   app.get("/api/events", (c) => {
-    const limit = Math.min(120, Math.max(1, Number(c.req.query("limit")) || 40));
+    const limit = Math.min(500, Math.max(1, Number(c.req.query("limit")) || 40));
+    // hours：按时间范围过滤（0 = 不限）
+    const hours = Math.min(24 * 30, Math.max(0, Number(c.req.query("hours")) || 0));
     const provider = c.req.query("provider") || null;
     try {
-      const rows = readLedgerEntries(ctx).entries;
+      let rows = readLedgerEntries(ctx).entries;
       if (!rows.length) return c.json({ at: Date.now(), empty: true, entries: [] });
+      if (hours > 0) {
+        const cut = Date.now() - hours * 3600e3;
+        rows = rows.filter(e => { const t = Date.parse(e.startedAt || ""); return Number.isFinite(t) && t >= cut; });
+      }
       const filtered = provider ? rows.filter(e => e.model?.provider === provider) : rows;
+      if (!filtered.length) return c.json({ at: Date.now(), entries: [], total: 0, hours });
       filtered.sort((a,b)=>Date.parse(b.startedAt||"0")-Date.parse(a.startedAt||"0"));
       const out = filtered.slice(0, limit).map(e => {
         const cost = calcEntryCost(e);
@@ -1451,7 +1458,7 @@ app.get("/api/balance", async (c) => {
           hitRatio: e.usage?.cache?.hitRatio != null ? e.usage.cache.hitRatio : null,
         };
       });
-      return c.json({ at: Date.now(), entries: out, total: filtered.length });
+      return c.json({ at: Date.now(), entries: out, total: filtered.length, hours });
     } catch (e) {
       return c.json({ at: Date.now(), error: String(e?.message||e), entries: [] });
     }
