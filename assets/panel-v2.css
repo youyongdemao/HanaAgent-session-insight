@@ -1336,3 +1336,13 @@ body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glo
 .lat-kpis>div:active{transform:scale(.97);transition-duration:.08s}
 .lat-kpis>div::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .22s;background:radial-gradient(180px circle at 50% 0%,color-mix(in srgb,var(--accent) 20%,transparent),transparent 70%)}
 .lat-kpis>div:hover::before{opacity:1}
+/* ── 数值刷新时的布局稳定性 ──
+   1) 数值一律不折行：滚动结构把数字拆成多个小盒子，临界宽度下容易折行、把卡片撑高；
+   2) 网格子项允许压缩：grid item 默认 min-width:auto 会被长数字撑开，导致列宽/行高跳动；
+   3) 静默刷新时只有真的变了的数值做一次轻量过渡，不播整页入场动画。 */
+.od,.od *{white-space:nowrap!important}
+.mini-card{min-width:0;overflow:hidden}
+.mini-card b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uh-mini>*,.uh-block>*,.uh-side>*,.uh-hit>*,.hero-metrics>*{min-width:0}
+@keyframes si-tick-fade{0%{opacity:.42;filter:brightness(1.32)}100%{opacity:1;filter:none}}
+.si-tick{animation:si-tick-fade .34s var(--ease) both}
