@@ -258,7 +258,10 @@ function odometer(el,target,feedback){el.style.whiteSpace='nowrap';const str=Str
 // 滚动数字会停在半途，屏幕上就留下一串“上下被切、只露中间”的残缺数字。
 // 恢复可见（或重新获得焦点）时，把所有没落到位的滚动条立即归位。
 function settleOdometers(){let n=0;document.querySelectorAll('.od-strip[data-od-to]').forEach(s=>{const to=Number(s.dataset.odTo);if(!Number.isFinite(to))return;const m=/translateY\((-?[\d.]+)em\)/.exec(s.style.transform||'');if(m&&Math.abs(parseFloat(m[1])+to)<0.01)return;s.style.transform='translateY('+(-to)+'em)';s.style.willChange='';n++;});return n;}
-function watchOdometers(){document.addEventListener('visibilitychange',()=>{if(!document.hidden)settleOdometers();});window.addEventListener('focus',()=>settleOdometers());window.addEventListener('pageshow',()=>settleOdometers());}
+function watchOdometers(){document.addEventListener('visibilitychange',()=>{if(!document.hidden)settleOdometers();});window.addEventListener('focus',()=>settleOdometers());window.addEventListener('pageshow',()=>settleOdometers());
+  // 失去焦点那一刻就要归位：窗口切走时 pending 的 rAF 会被丢弃，
+  // 等回到前台才收尾就晚了，屏幕上会一直留着一串残缺数字。blur 是同步事件，不依赖帧。
+  window.addEventListener('blur',()=>settleOdometers());}
 function isPlainNumber(t){if(!t||t.length>20)return false;if(!/[0-9]/.test(t))return false;if(/[\u4e00-\u9fff]/.test(t))return false;if(/[A-Za-z]/.test(t.replace(/[kKmMbB]/g,'')))return false;return true;}
 function animateNumbers(rootEl,feedback){if(!rootEl)return;rootEl.querySelectorAll('b,strong').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,feedback);});}
 let numEnter=true;
