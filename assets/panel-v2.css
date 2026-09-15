@@ -1346,3 +1346,9 @@ body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glo
 .uh-mini>*,.uh-block>*,.uh-side>*,.uh-hit>*,.hero-metrics>*{min-width:0}
 @keyframes si-tick-fade{0%{opacity:.42;filter:brightness(1.32)}100%{opacity:1;filter:none}}
 .si-tick{animation:si-tick-fade .34s var(--ease) both}
+/* ── hero 大数字：不允许被裁 ──
+   余额列宽由两列互相挤压决定，数字总是贴到列边界，面板稍窄就把末位数字切掉。
+   这里显式声明不裁切（宽度不够时宁可溢出到边界），并给字号留一点余量。 */
+.hero-pricing,.hero-pricing .api-hero,.hero-pricing .api-hero .ah-block{overflow:visible}
+.hero-pricing .api-hero .ah-num,.hero-pricing .api-hero .ah-token-num{overflow:visible}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(44px,5.8vw,74px)}
