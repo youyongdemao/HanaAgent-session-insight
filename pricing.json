@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "snapshotAt": "2026-09-12",
+  "snapshotAt": "2026-09-16",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
@@ -115,10 +115,10 @@
       "provider": "mimo",
       "source": "mimo 官方定价页",
       "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-16",
       "flat": {
         "inputMiss": 3,
-        "inputHit": 0.03,
+        "inputHit": 0.025,
         "output": 6
       },
       "contextWindow": 1048576
@@ -2832,11 +2832,11 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-16",
       "flat": {
-        "inputMiss": 0.51,
-        "inputHit": 0.1,
-        "output": 1.7
+        "inputMiss": 0.68,
+        "inputHit": 0.14,
+        "output": 2.27
       },
       "contextWindow": 1048576
     },
@@ -3058,10 +3058,10 @@
       "provider": "mimo",
       "source": "mimo 官方定价页",
       "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-16",
       "flat": {
         "inputMiss": 3,
-        "inputHit": 0.03,
+        "inputHit": 0.025,
         "output": 6
       },
       "contextWindow": 1048576
@@ -5763,11 +5763,11 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-16",
       "flat": {
-        "inputMiss": 0.51,
-        "inputHit": 0.1,
-        "output": 1.7
+        "inputMiss": 0.68,
+        "inputHit": 0.14,
+        "output": 2.27
       },
       "contextWindow": 1048576
     },
