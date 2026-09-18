@@ -270,13 +270,11 @@ function watchOdometers(){document.addEventListener('visibilitychange',()=>{if(!
 // 都只在特定字体下成立），所以只能实测：把盒子先归零，量出“盒内当前数字的字形底部”
 // 与“同字体同字号真实文本底部”的差，再按差补偿。
 function odVisibleDigit(od){try{const ob=od.getBoundingClientRect();for(const d of od.querySelectorAll('.od-d')){const r=d.getBoundingClientRect();if(r.bottom>ob.top+0.5&&r.top<ob.bottom-0.5)return d;}}catch(e){}return null;}
-// 对齐需要知道“字体 descent”（基线到内容区底的距离），也就是数字比单位高出多少。
-// 不能用 Range 比同行两个元素：Range 返回的是行框，同行 bottom 天生相等，比出来的差值混了行高。
-// 可靠量法：行内临时放两个同字体元素——
-//   T1 普通文本（line-height:1em）  → 底 = 基线 + descent
-//   T2 overflow:hidden 的行内块（height:1em）→ 底正好落在基线上
-// 两者相减就是精确的 descent，不依赖 canvas 字体度量接口，也不靠经验值。
-function odDescentPx(el){try{const cs=getComputedStyle(el);const base='font-family:'+cs.fontFamily+';font-size:'+cs.fontSize+';font-weight:'+cs.fontWeight+';font-style:'+cs.fontStyle+';';const t1=document.createElement('span');t1.textContent='0';t1.style.cssText=base+'line-height:1em;visibility:hidden;';const t2=document.createElement('span');t2.textContent='0';t2.style.cssText=base+'display:inline-block;overflow:hidden;height:1em;line-height:1em;visibility:hidden;';el.appendChild(t1);el.appendChild(t2);const r1=document.createRange();r1.selectNodeContents(t1);const b1=r1.getBoundingClientRect().bottom;const b2=t2.getBoundingClientRect().bottom;t1.remove();t2.remove();const fs=parseFloat(cs.fontSize)||16;const d=b1-b2;return isFinite(d)&&d>-1&&d<fs*0.6?d:0;}catch(e){return 0;}}
+// 对齐需要知道“od 盒底相对其内部数字字形底高出多少”，即 1em 行框内“基线到框底”的距离。
+// 该值 = halfLeading + descent，其中 halfLeading = (1em - (ascent+descent)) / 2。
+// 优先用 canvas 直接读字体的 ascent/descent；拿不到再退回行内双元素实测。
+function odDescentPx(el){try{const cs=getComputedStyle(el);const fs=parseFloat(cs.fontSize)||16;const ctx=odDescentPx._c||(odDescentPx._c=document.createElement('canvas').getContext('2d'));ctx.font=(cs.fontStyle||'normal')+' '+(cs.fontWeight||'400')+' '+(cs.fontSize||'16px')+' '+(cs.fontFamily||'monospace');const m=ctx.measureText('0');const a=m.fontBoundingBoxAscent,d=m.fontBoundingBoxDescent;if(typeof a==='number'&&typeof d==='number'&&a>0&&d>0){const v=(fs-(a+d))/2+d;if(v>0&&v<fs*0.4)return v;}}catch(e){}
+  try{const cs=getComputedStyle(el);const base='font-family:'+cs.fontFamily+';font-size:'+cs.fontSize+';font-weight:'+cs.fontWeight+';font-style:'+cs.fontStyle+';';const t1=document.createElement('span');t1.textContent='0';t1.style.cssText=base+'line-height:1em;visibility:hidden;';const t2=document.createElement('span');t2.textContent='0';t2.style.cssText=base+'display:inline-block;overflow:hidden;height:1em;line-height:1em;visibility:hidden;';el.appendChild(t1);el.appendChild(t2);const r1=document.createRange();r1.selectNodeContents(t1);const b1=r1.getBoundingClientRect().bottom;const b2=t2.getBoundingClientRect().bottom;t1.remove();t2.remove();const fs=parseFloat(cs.fontSize)||16;const d=b1-b2;return isFinite(d)&&d>-1&&d<fs*0.4?d:0;}catch(e){return 0;}}
 // 注意：不能用 vertical-align 补偿。od 是行内最高的元素，下移它会把行框基线一起拖下去，
 // 旁边的文本跟着移动，补偿全被抵消（实测残差 42px 而补偿 19px，完全抵消）。
 // transform 不参与布局计算，行框不动，平移量才是精确的。
