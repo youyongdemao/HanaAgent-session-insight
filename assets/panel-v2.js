@@ -119,20 +119,21 @@ function renderUsageDistribution(){
   const lh=$("#latHist");if(lh){const lmx=Math.max(...lats,1);const lnames=["<1s","1–3s","3–10s",">10s"];const fmtN=v=>String(Math.round(v));lh.innerHTML=bars(lats,{w:520,h:170,format:fmtN,xLabels:i=>lnames[i],xticks:4,yMax:lmx*1.15,fill:"rgba(141,187,210,.58)"});}
   const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};set("#dP50",lg?.latency?.p50?fmtPct((lg.latency.p50/1000).toFixed(1)):"–");set("#dP95",lg?.latency?.p95?fmtPct((lg.latency.p95/1000).toFixed(1)):"–");
 }
+const NAME_CN={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱","zhipu-coding":"智谱 Coding",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI",ollama:"Ollama",freetoken:"FreeToken"};
 function renderApiOverview(){
   const bal=state.balance?.balances||[],unsup=state.balance?.unsupported||[],tc=state.totalCost||{};
   const $=document.querySelector.bind(document);const list=$("#providerList .provider-list");if(!list)return;
-  // 发行化：以 /api/providers 自动发现的全集为骨架，任何新配置的供应商都会自动出现
-  const discovered=(state.providers?.providers||[]).map(p=>({provider:p.id,name:p.id,status:"no_key",label:"自动发现"}));
+  // 配置即唯一真相源：卡片集合严格等于 HanaAgent 里真正启用的供应商（/api/providers）。
+  // 余额适配器和「无官方接口」说明只用来补状态，不再单独产生卡片，避免删了配置还留幽灵卡。
+  const cfgList=state.providers?.providers||[];
+  const cfgName={};for(const p of cfgList){if(p.name)cfgName[p.id]=p.name;}
   const balMap=new Map(bal.map(b=>[b.provider,b]));
   const unsupMap=new Map(unsup.map(u=>[u.provider,u]));
-  const full=[...bal];
-  for(const d of discovered){if(balMap.has(d.provider)||unsupMap.has(d.provider))continue;full.push(d);}
-  for(const u of unsup){if(!balMap.has(u.provider))full.push({provider:u.provider,name:u.provider,status:"unsupported",note:u.note,label:"说明",kind:"none"});}
+  const full=cfgList.map(p=>{const id=p.id,b=balMap.get(id);if(b)return Object.assign({},b,{name:b.name||cfgName[id]||NAME_CN[id]||id});const u=unsupMap.get(id);if(u)return {provider:id,name:cfgName[id]||NAME_CN[id]||id,status:"unsupported",note:u.note,kind:"none",label:"说明"};return {provider:id,name:cfgName[id]||NAME_CN[id]||id,status:"no_adapter",kind:"none",label:"已配置"};});
   const okCount=full.filter(x=>x.status==="ok").length;
   const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};
-  set("#aProv",String(bal.length+unsup.length));set("#aOk",String(okCount));
-  set("#aErr",String(bal.length-okCount+unsup.length));
+  set("#aProv",String(full.length));set("#aOk",String(okCount));
+  set("#aErr",String(full.length-okCount));
   // 总体预览：总消耗 = 全部费用累计；总余额 = 同币种预付余额求和（不同币种不硬加，列在副行）
   set("#tCost",tc.totalCost!=null?fmtCost(tc.totalCost):"–");
   const totalTokens=Object.values(state.ledger?.days||{}).reduce((n,d)=>n+Number(d?.tokens||0),0);set("#tCostSub",totalTokens>0?fmtTokens(totalTokens):"–");
@@ -158,20 +159,21 @@ function renderApiOverview(){
   Object.entries(rl).forEach(([pid,r])=>{if(!r||!r.enabled)return;const b=bal.find(x=>x.provider===pid);if(!b||b.status!=="ok")return;const isBalance=b.kind==="balance";const current=isBalance?Number(b.total):Number(b.remainingPercent);const limit=isBalance?Number(r.amount??5):Number(r.pct??20);if(!Number.isFinite(current)||!Number.isFinite(limit))return;if(current<=limit&&!state.notifiedSet.has(pid)){state.notifiedSet.add(pid);const value=isBalance?((b.currency==="USD"?"$":"¥")+current.toFixed(2)):current.toFixed(0)+"%";const threshold=isBalance?((b.currency==="USD"?"$":"¥")+limit.toFixed(2)):limit.toFixed(0)+"%";hana.toast.show({message:(b.name||pid)+" 余额仅剩 "+value+"（阈值 "+threshold+"）"}).catch(()=>{});}});
   if(state.balance!==state.alertBalanceRef){state.alertBalanceRef=state.balance;state.failureCounts=state.failureCounts||{};state.failureNotified=state.failureNotified||new Set();Object.entries(rl).forEach(([pid,r])=>{if(!r||!r.enabled)return;const b=bal.find(x=>x.provider===pid);if(!b)return;const failed=b.status&&b.status!=="ok"&&b.status!=="no_key"&&b.status!=="unsupported";if(failed){state.failureCounts[pid]=(state.failureCounts[pid]||0)+1;if(state.failureCounts[pid]>=Number(r.fail||3)&&!state.failureNotified.has(pid)){state.failureNotified.add(pid);hana.toast.show({message:(b.name||pid)+" 连续更新失败 "+state.failureCounts[pid]+" 次"}).catch(()=>{});}}else{state.failureCounts[pid]=0;state.failureNotified.delete(pid);}});}
 
-  if(!bal.length){list.innerHTML='<div class="empty">暂无可用余额查询</div>';return;}
+  if(!full.length){list.innerHTML='<div class="empty">'+(state.providersErr?'供应商配置读取失败，稍后自动重试':'宿主里还没有启用任何供应商')+'</div>';return;}
   const refreshing=state.refreshingProviders||new Set();
   list.innerHTML=full.map(b=>{
     const ok=b.status==='ok';
     const unsup=b.status==='unsupported';
     const noKey=b.status==='no_key';
+    const noAdapter=b.status==='no_adapter';
     const pct=Number.isFinite(Number(b.remainingPercent))?Math.max(0,Math.min(100,Number(b.remainingPercent))):null;
-    const statTxt=ok?'正常':(noKey?'未配置':(unsup?'无官方接口':esc(String(b.status))));
-    const dotCls=ok?'ok':(unsup?'warn':(noKey?'muted':'err'));
+    const statTxt=ok?'正常':(noAdapter?'已配置':(unsup?'无官方接口':(noKey?'凭据缺失':esc(String(b.status)))));
+    const dotCls=ok?'ok':((unsup||noAdapter)?'warn':(noKey?'muted':'err'));
     const val=ok?esc(b.summary||'–'):'–';
-    const kindTxt=({balance:'预付余额',quota:'订阅配额',cost:'官方成本'})[b.kind]||(noKey?'未配置':'');
-    const stateDesc=ok?'可检测余额与连接状态':unsup?'无官方接口，无法按余额触发':noKey?'未配置可读取的连接':'连接异常，暂时无法读取';
+    const kindTxt=({balance:'预付余额',quota:'订阅配额',cost:'官方成本'})[b.kind]||(noAdapter?'已配置':'')||'';
+    const stateDesc=ok?'可检测余额与连接状态':noAdapter?'已配置，插件暂无该供应商的余额探测':(unsup?esc(b.note||'无官方余额接口'):(noKey?'凭证不完整，无法读取':'连接异常，暂时无法读取'));
     const busy=refreshing.has(b.provider);
-    const mainInfo=unsup||noKey?'':'<b>'+val+'</b>'+(pct!=null?'<div class="track" title="剩余 '+pct.toFixed(0)+'%"><i style="width:'+pct.toFixed(0)+'%"></i></div>':'');
+    const mainInfo=(unsup||noKey||noAdapter)?'':'<b>'+val+'</b>'+(pct!=null?'<div class="track" title="剩余 '+pct.toFixed(0)+'%"><i style="width:'+pct.toFixed(0)+'%"></i></div>':'');
     return '<div class="card provider-item" data-provider="'+esc(b.provider)+'" title="点击查看供应商详情">'
       +'<div class="pv-main"><div class="pv-name"><strong>'+esc(b.name||b.provider)+'</strong><small>'+kindTxt+'</small></div><span class="pv-state-desc">'+stateDesc+'</span></div>'
       +'<div class="pv-tail" data-refresh="'+esc(b.provider)+'" title="点击刷新该供应商连接">'+(busy?'<i class="pv-pending"></i>':'<i class="pv-dot '+dotCls+'" title="'+statTxt+'"></i>')+'</div>'
@@ -228,9 +230,9 @@ function setVal(id,v){const e=document.querySelector(id);if(e)e.textContent=v;}
 const QUICK_LINKS={deepseek:[["API Key","https://platform.deepseek.com"],["账单","https://platform.deepseek.com/usage"]],moonshot:[["API Key","https://platform.kimi.com"]],mimo:[["API Key","https://platform.xiaomimimo.com"]],zhipu:[["API Key","https://open.bigmodel.cn"],["控制台","https://open.bigmodel.cn/console"]],"openai-codex":[["控制台","https://chatgpt.com/codex"]],xai:[["控制台","https://console.x.ai"]],gemini:[["控制台","https://aistudio.google.com"]]};
 function renderProviderModelRank(){const box=$("#providerModelRank");if(!box)return;const ledger=state.providerLedger?.provider===state.provider?state.providerLedger:null;if(!ledger){box.innerHTML='<div class="empty">正在读取该供应商用量…</div>';return;}const rows=Object.entries(ledger.models||{}).map(([model,v])=>({model,cost:Number(v?.cost)||0,calls:Number(v?.calls)||0})).sort((a,b)=>b.cost-a.cost||b.calls-a.calls);if(!rows.length){box.innerHTML='<div class="empty">暂无模型费用记录</div>';return;}const max=Math.max(...rows.map(x=>x.cost),1e-9);box.innerHTML=rows.map((x,i)=>'<div class="model-rank-row"><span class="model-rank-no">'+(i+1)+'</span><div class="model-rank-main"><strong title="'+esc(x.model)+'">'+esc(x.model)+'</strong><div class="track"><i style="width:'+(x.cost/max*100).toFixed(0)+'%"></i></div></div><b>'+fmtCost(x.cost)+'</b></div>').join('');}
 function renderApiDetail(){
-  const bal=state.balance?.balances||[],unsupported=state.balance?.unsupported||[];const hit=bal.find(b=>b.provider===state.provider)||unsupported.find(b=>b.provider===state.provider)||bal[0]||unsupported[0];
+  const bal=state.balance?.balances||[],unsupported=state.balance?.unsupported||[];const cfg=((state.providers?.providers)||[]).find(p=>p.id===state.provider)||null;const hit=bal.find(b=>b.provider===state.provider)||unsupported.find(b=>b.provider===state.provider)||(cfg?{provider:cfg.id,name:cfg.name||NAME_CN[cfg.id]||cfg.id,status:"no_adapter",kind:"none"}:null)||bal[0]||unsupported[0];
   const nm=hit?.name||state.provider,val=hit?.summary||"–",k=hit?.kind||(hit?.status==="unsupported"?"unsupported":"balance");
-  const stat=hit?(hit.status==="ok"?"正常":hit.status==="no_key"?"未配置":hit.status==="unsupported"?"无官方接口":hit.note||"不可查询"):"不可查询";
+  const stat=hit?(hit.status==="ok"?"正常":hit.status==="no_key"?"凭据缺失":hit.status==="unsupported"?"无官方接口":hit.status==="no_adapter"?"已配置":hit.note||"不可查询"):"不可查询";
   setVal("#pdTitle",(nm||"供应商")+" 详情");
   const providerLedger=state.providerLedger?.provider===state.provider?state.providerLedger:null;renderProviderModelRank();const providerTokens=providerLedger?Object.values(providerLedger.days||{}).reduce((n,d)=>n+Number(d?.tokens||0),0):0;const balanceLabel=hit?.label||"可用余额";const statsEl=$("#pdStats");if(statsEl)statsEl.innerHTML='<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b>'+esc(okStatText())+'</b></div>'+(providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':'');
   function okStatText(){return hit?(hit.status==="ok"?(hit.summary||"正常"):stat):"不可查询";}
@@ -320,7 +322,7 @@ async function loadPage(force){
   // 会话页有自己的数据源：用户在下拉里手选过会话就锁定那个会话，绝不能被默认的“最新会话”覆盖
   const sessPick=state.userSelectedFile||null;
   const fast=[fetchJson("/api/stats").then(r=>state.stats=r).catch(()=>state.stats=null),
-    (sessPick?fetchJson("/api/stats?file="+encodeURIComponent(sessPick)).then(r=>{if(r&&!r.error)state.sessionStats=r;}).catch(()=>{}):Promise.resolve()).then(()=>{if(!sessPick)state.sessionStats=null;}),fetchJson("/api/ledger-stats"+q).then(r=>state.ledger=r).catch(()=>state.ledger=null),fetchJson("/api/sessions").then(r=>state.sessions=r).catch(()=>state.sessions=null),fetchJson("/api/total-cost").then(r=>state.totalCost=r).catch(()=>state.totalCost=null),fetchJson("/api/rules").then(r=>state.rules=r).catch(()=>state.rules={}),fetchJson("/api/providers").then(r=>state.providers=r).catch(()=>state.providers={providers:[]}),fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300").then(r=>state.events=r).catch(()=>state.events=null)];
+    (sessPick?fetchJson("/api/stats?file="+encodeURIComponent(sessPick)).then(r=>{if(r&&!r.error)state.sessionStats=r;}).catch(()=>{}):Promise.resolve()).then(()=>{if(!sessPick)state.sessionStats=null;}),fetchJson("/api/ledger-stats"+q).then(r=>state.ledger=r).catch(()=>state.ledger=null),fetchJson("/api/sessions").then(r=>state.sessions=r).catch(()=>state.sessions=null),fetchJson("/api/total-cost").then(r=>state.totalCost=r).catch(()=>state.totalCost=null),fetchJson("/api/rules").then(r=>state.rules=r).catch(()=>state.rules={}),fetchJson("/api/providers").then(r=>{state.providers=r;state.providersErr=false;pageProvSig=provSigOf(r);}).catch(()=>{state.providersErr=true;}),fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300").then(r=>state.events=r).catch(()=>state.events=null)];
   try{
     await Promise.all(fast);
     const quiet=!force&&pageBooted;
@@ -398,5 +400,22 @@ initPageEvents();
 window.addEventListener('resize',positionSessionMenu);document.addEventListener('scroll',positionSessionMenu,true);
 document.addEventListener('mousemove',e=>{glowMx=e.clientX;glowMy=e.clientY;if(!glowRaf)glowRaf=requestAnimationFrame(updateGlow);const ctrl=e.target.closest('.seg,.nav');if(ctrl){const r=ctrl.getBoundingClientRect();ctrl.style.setProperty('--mx',(e.clientX-r.left)+'px');ctrl.style.setProperty('--my',(e.clientY-r.top)+'px');}});
 
-async function start(){hana.ready();if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();setTimeout(()=>autoUpdateCheck(false),4000);const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));setTimeout(()=>autoUpdateCheck(false),4000);const rt=setInterval(()=>loadPage(false),10000);window.addEventListener('beforeunload',()=>clearInterval(rt),{once:true});}}
+let pageProvSig=null;
+const provSigOf=j=>(Array.isArray(j?.providers)?j.providers:[]).map(p=>p.id+"["+(p.models||[]).join(",")+"]").sort().join("|");
+// 供应商配置哨兵：只轮询 /api/providers（纯本地读盘，开销极小）。
+// 宿主里增删供应商或改模型清单后，最多 4 秒卡片就跟着增删，不用等整页 10 秒轮询。
+async function watchProviders(){
+  if(document.hidden)return;
+  let j=null;try{j=await fetchJson("/api/providers");}catch{return;}
+  const list=Array.isArray(j?.providers)?j.providers:null;if(!list)return;
+  const sig=provSigOf(j);
+  if(pageProvSig===null){pageProvSig=sig;return;}
+  if(sig===pageProvSig)return;
+  pageProvSig=sig;
+  state.providers=j;
+  const r=await fetchJson("/api/balance").catch(()=>null);
+  if(r&&Array.isArray(r.balances))state.balance=r;
+  renderApiOverview();renderApiDetail();
+}
+async function start(){hana.ready();if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();setTimeout(()=>autoUpdateCheck(false),4000);const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));setTimeout(()=>autoUpdateCheck(false),4000);const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);},{once:true});}}
 start().catch(()=>{if(surface==='widget')renderWidget();else renderPageAll();});

@@ -762,6 +762,8 @@ function hostConfigChanged(ctx) {
   const paths = [];
   try { paths.push(getProviderCatalogPath(ctx)); } catch {}
   try { paths.push(join(getDataRoot(ctx), "models.json")); } catch {}
+  // OAuth 登录/退出也属于供应商配置变化（auth.json 不在 provider-catalog 里）
+  try { paths.push(join(getDataRoot(ctx), "auth.json")); } catch {}
   const sig = paths.filter(Boolean).map((p) => {
     try { const s = statSync(p); return `${p}:${s.mtimeMs}:${s.size}`; } catch { return `${p}:none`; }
   }).join("|");
@@ -769,6 +771,12 @@ function hostConfigChanged(ctx) {
   if (sig !== hostConfigStamp) { hostConfigStamp = sig; dbg("host-config changed"); return true; }
   return false;
 }
+
+// 可失效缓存必须放在模块作用域：invalidateConfigCaches 是模块级函数，
+// 假如这两个 let 写在路由注册函数内部，它会够不到（ReferenceError 被 catch 吞掉），
+// 结果就是配置改了也清不掉缓存，只能干等 TTL 过期。
+let balanceCache = { at: 0, data: null };
+let providersCache = { at: 0, data: null };
 
 // 配置变化时清掉依赖它的缓存，下一次取数重新计算
 function invalidateConfigCaches() {
@@ -955,9 +963,9 @@ function cachedExternalStatus(key, ttlMs) {
 function storeExternalStatus(key, data) {
   externalStatusCache.set(key, { at: Date.now(), data });
   return data;
+}
 
 function flushExternalCaches(){ externalStatusCache.clear(); }
-}
 
 function configValue(ctx, key) {
   try {
@@ -1157,6 +1165,14 @@ async function queryCodexQuota(ctx, fetchFn) {
 }
 
 export default function registerPluginApiRoutes(app, ctx) {
+  // 宿主供应商/模型配置变化时，清掉依赖它的缓存，让本次请求就用新配置重算。
+  // Hono 的中间件只对它之后注册的 handler 生效，所以这一段必须放在所有 /api 路由之前，
+  // 否则 /api/providers、/api/balance 这些先注册的端点永远收不到失效通知，只能干等缓存过期。
+  app.use("/api/*", async (c, next) => {
+    if (hostConfigChanged(ctx)) invalidateConfigCaches();
+    await next();
+  });
+
   try {
     const logDir = ctx?.dataDir || join(getDataRoot(ctx), "plugin-data", "session-insight");
     mkdirSync(logDir, { recursive: true });
@@ -1280,11 +1296,8 @@ export default function registerPluginApiRoutes(app, ctx) {
     return c.json(result);
   });
 
-  // 多供应商余额（并行查询 + 60s 缓存，避免每次进入都全量查询）
-  let balanceCache = { at: 0, data: null };
-  // 动态供应商列表：从 HanaAgent provider-catalog 同步（只返回 id，绝不返回 api_key）
-let providersCache = { at: 0, data: null };
-function computeActiveProviders(ctx) {
+  // 多供应商余额与供应商列表缓存见模块作用域（invalidateConfigCaches 要能清到它们）
+  function computeActiveProviders(ctx) {
   const now = Date.now();
   if (now - providersCache.at < 30000 && providersCache.data) return providersCache.data;
   // models.json 是能力全集；真正启用集合必须由 API Key 配置或 OAuth 登录凭据证明
@@ -1315,6 +1328,8 @@ function computeActiveProviders(ctx) {
     .filter(([id]) => active.has(id))
     .map(([id, cfg]) => ({
       id,
+      name: cfg?.name || null,
+      baseUrl: cfg?.base_url || null,
       models: (cfg?.models || []).map((m) => (typeof m === "string" ? m : m?.id)).filter(Boolean),
     }));
   providersCache = { at: now, data: { providers: list } };
@@ -1326,7 +1341,7 @@ app.get("/api/balance", async (c) => {
     const now = Date.now();
     const forceBal = c.req.query("force") === "1";
     if (forceBal) { balanceCache = { at: 0, data: null }; flushExternalCaches(); }
-    if (!forceBal && now - balanceCache.at < 60000 && balanceCache.data) {
+    if (!forceBal && now - balanceCache.at < 30000 && balanceCache.data) {
       return c.json(balanceCache.data);
     }
     const catalog = readProviderCatalog(ctx);
@@ -1340,14 +1355,16 @@ app.get("/api/balance", async (c) => {
       typeof ctx.network?.fetch === "function"
         ? (url, opts) => ctx.network.fetch(url, opts)
         : (url, opts) => fetch(url, opts);
+    // 配置即唯一真相源：只有宿主里真正启用的供应商才会产生卡片。
+    // 有适配器但没启用的（models.json 里已删或没填 key）一律不出卡，避免幽灵供应商。
+    const activeIds = new Set(computeActiveProviders(ctx).providers.map((p) => p.id));
+    if (configValue(ctx, "xaiManagementKey") && configValue(ctx, "xaiTeamId")) activeIds.add("xai");
     // 并行查询所有供应商（避免顺序累加导致最慢的一家拖垮整体）
     const tasks = [];
     for (const [provider, adapter] of Object.entries(BALANCE_ADAPTERS)) {
+      if (!activeIds.has(provider)) continue;
       const p = catalog.providers[provider];
-      if (!p?.api_key || !p?.base_url) {
-        tasks.push(Promise.resolve({ provider, name: adapter.name, status: "no_key" }));
-        continue;
-      }
+      if (!p?.api_key || !p?.base_url) continue;
       const url = adapter.url(p.base_url);
       tasks.push(
         (async () => {
@@ -1395,8 +1412,6 @@ app.get("/api/balance", async (c) => {
     const balances = (await Promise.all(tasks)).filter(Boolean);
     const okProviders = new Set(balances.filter((item) => item.status === "ok").map((item) => item.provider));
     const unsupported = [];
-    const activeIds = new Set(computeActiveProviders(ctx).providers.map((p) => p.id));
-    if (configValue(ctx, "xaiManagementKey") && configValue(ctx, "xaiTeamId")) activeIds.add("xai");
     for (const [provider, defaultNote] of Object.entries(NO_BALANCE_API)) {
       if (!activeIds.has(provider) || okProviders.has(provider)) continue;
       let note = defaultNote;
@@ -1493,12 +1508,6 @@ app.get("/api/balance", async (c) => {
   app.get("/api/total-cost", (c) => {
     const r = computeTotalCost(ctx);
     return c.json(r);
-  });
-
-  // 宿主供应商/模型配置变化时，清掉依赖它的缓存，让下一次取数用新配置重算
-  app.use("/api/*", async (c, next) => {
-    if (hostConfigChanged(ctx)) invalidateConfigCaches();
-    await next();
   });
 
   // 每百万 Token 价格表：来自远程计费数据库（缓存 24h）或内置快照，标注更新时间与来源
