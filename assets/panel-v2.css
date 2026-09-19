@@ -1311,7 +1311,8 @@ body[data-surface="widget"] .widget>*{min-width:0}
 body[data-surface="widget"] .w-quota-meta span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── 数字转轮：强制继承宿主字号/字体/字重/颜色，并消除宿主 span 规则带来的 margin / 行高干扰 ── */
-.od,.od *{font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;color:inherit!important;margin:0!important;padding:0!important}
+.od *{font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;color:inherit!important;margin:0!important;padding:0!important}
+.od{font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;color:inherit!important;margin:0!important;padding:0 var(--od-pad-r,0px) 0 0!important;margin-right:calc(-1 * var(--od-pad-r,0px))!important}
 .od{display:inline-block!important;height:1em!important;line-height:1em!important}
 .od-d{display:block!important;height:1em!important;line-height:1em!important}
 .od-strip{display:block!important;line-height:0!important}
