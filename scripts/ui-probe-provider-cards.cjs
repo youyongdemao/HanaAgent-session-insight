@@ -19,19 +19,30 @@ const PANEL = path.join(REPO, "assets", "panel-v2.js");
 const ID = "session-insight";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// 宿主配置的三种状态：A 初始三家 / B 删掉 ollama / C 新增 freetoken
+// 宿主配置的四种状态：A 初始三家 / B 删掉 ollama / C 新增 freetoken / D 四色分诊（本地+错误+无接口混合）
 const CONFIG = {
   A: ["deepseek", "moonshot", "ollama"],
   B: ["deepseek", "moonshot"],
   C: ["deepseek", "moonshot", "freetoken"],
+  D: ["deepseek", "ollama", "zhipu", "openai", "freetoken"],
 };
 let mode = "A";
+
+const BASE_URL = {
+  deepseek: "https://api.deepseek.com",
+  moonshot: "https://api.moonshot.cn/v1",
+  ollama: "http://localhost:11434/v1",
+  freetoken: "http://127.0.0.1:1919/v1",
+  zhipu: "https://open.bigmodel.cn/api/paas/v4",
+  openai: "https://api.openai.com/v1",
+};
 
 const BALANCE = {
   deepseek: { provider: "deepseek", name: "DeepSeek", status: "ok", kind: "balance", label: "可用余额", summary: "¥42.50", total: 42.5, currency: "CNY" },
   moonshot: { provider: "moonshot", name: "Moonshot", status: "ok", kind: "balance", label: "可用余额", summary: "¥88.80", total: 88.8, currency: "CNY" },
+  zhipu: { provider: "zhipu", name: "智谱", status: "http_502", detail: "bad gateway" },
 };
-const UNSUPPORTED = { ollama: { provider: "ollama", note: "无官方余额接口" } };
+const UNSUPPORTED = { ollama: { provider: "ollama", note: "无官方余额接口" }, openai: { provider: "openai", note: "需配置 OpenAI Admin Key" } };
 
 const A = { file: "20260914-a.jsonl", title: "会话 A", model: "deepseek-flash", turns: 3, sessionTokens: 1000, sessionCostCny: 1, contextPercent: 10, sumInput: 700, sumOutput: 300, sumCacheRead: 200, sumReasoning: 0, series: [{ turn: 1, total: 1000, cost: 0.01, input: 700, output: 300, cacheHit: 200, cacheMiss: 100, reasoning: 0, hitRate: 0.6, latencyMs: 900 }], providers: [{ provider: "deepseek", tokens: 1000 }] };
 
@@ -53,7 +64,7 @@ function startServer(port, jsPath) {
     if (p === `${base}/assets/panel-v2.js`) return send("text/javascript", fs.readFileSync(jsPath));
 
     // 配置集合：等价于宿主的 provider-catalog + models.json + auth.json 求交后的结果
-    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: null, models: [] })) });
+    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, models: [] })) });
     // 余额：只有插件写了适配器的供应商才有真实状态，其余靠前端标「已配置」
     if (p === `${base}/api/balance`) return json({
       balances: cur().filter((id) => BALANCE[id]).map((id) => BALANCE[id]),
@@ -109,9 +120,13 @@ const SCENARIO = `(async()=>{
   const ctlC=await setMode('C');
   await sleep(5200);
   const snapC=cards();
+  const ctlD=await setMode('D');
+  await sleep(5200);
+  const snapD=cards();
   return {A:{config:ctlA.config,count:snapA.length,cards:snapA},
           B:{before:ctlB.config,count:snapB.length,cards:snapB},
-          C:{after:ctlC.config,count:snapC.length,cards:snapC}};
+          C:{after:ctlC.config,count:snapC.length,cards:snapC},
+          D:{config:ctlD.config,count:snapD.length,cards:snapD}};
 })()`;
 
 (async () => {
@@ -145,6 +160,7 @@ const SCENARIO = `(async()=>{
       say("场景A 初始", out.A);
       say("场景B 删掉 ollama 后 5.2s", out.B);
       say("场景C 新增 freetoken 后 5.2s", out.C);
+      if (out.D) say("场景D 四色分诊与排序", out.D);
       const names = (o) => o.cards.map((x) => x.name).sort().join(",");
       const expectA = "DeepSeek,Moonshot,Ollama";
       const expectB = "DeepSeek,Moonshot";
@@ -153,6 +169,13 @@ const SCENARIO = `(async()=>{
       console.log("  A 卡片集合 ==" + expectA + " ? " + (names(out.A) === expectA));
       console.log("  B 卡片集合 ==" + expectB + " ? " + (names(out.B) === expectB));
       console.log("  C 卡片集合 ==" + expectC + " ? " + (names(out.C) === expectC));
+      if (out.D) {
+        const seq = out.D.cards.map((x) => x.name + ":" + x.dot).join(" → ");
+        const expectD = "DeepSeek:ok → Ollama:local → FreeToken:local → 智谱:err → OpenAI:muted";
+        console.log("  D 灯色与顺序 = " + seq);
+        console.log("  D 期望顺序   = " + expectD);
+        console.log("  D 判定 ? " + (seq === expectD));
+      }
     }
   } catch (e) {
     console.error("PROBE ERROR:", (e && e.stack) || e);

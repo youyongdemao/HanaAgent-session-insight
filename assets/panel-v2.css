@@ -1355,3 +1355,13 @@ body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glo
 .hero-pricing,.hero-pricing .api-hero,.hero-pricing .api-hero .ah-block{overflow:visible}
 .hero-pricing .api-hero .ah-num,.hero-pricing .api-hero .ah-token-num{overflow:visible}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(44px,5.8vw,74px)}
+/* provider lamp semantics: green=readable, pink=local model, bright red=has API but read failed, gray=no balance API */
+:root{--si-pink:#ff4fd8;--si-pink-glow:color-mix(in srgb,#ff4fd8 72%,transparent);--si-red-bright:#ff3b30}
+.pv-dot.local{background:var(--si-pink);box-shadow:0 0 9px var(--si-pink-glow)}
+.pv-dot.err{background:var(--si-red-bright);box-shadow:0 0 10px color-mix(in srgb,var(--si-red-bright) 80%,transparent)}
+.pv-dot.muted{background:var(--si-muted);box-shadow:0 0 5px color-mix(in srgb,var(--si-muted) 30%,transparent)}
+.provider-list .pv-dot{width:13px;height:13px}
+.provider-list .pv-dot.ok{box-shadow:0 0 12px color-mix(in srgb,var(--si-green) 82%,transparent)}
+.provider-list .pv-dot.local{box-shadow:0 0 13px color-mix(in srgb,var(--si-pink) 88%,transparent)}
+.provider-list .pv-dot.err{box-shadow:0 0 13px color-mix(in srgb,var(--si-red-bright) 88%,transparent)}
+.provider-list .pv-dot.muted{box-shadow:0 0 7px color-mix(in srgb,var(--si-muted) 38%,transparent)}

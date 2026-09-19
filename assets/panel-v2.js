@@ -127,10 +127,18 @@ function renderApiOverview(){
   // 余额适配器和「无官方接口」说明只用来补状态，不再单独产生卡片，避免删了配置还留幽灵卡。
   const cfgList=state.providers?.providers||[];
   const cfgName={};for(const p of cfgList){if(p.name)cfgName[p.id]=p.name;}
+  // 本地部署的供应商（base_url 指向本机）单独一类：它们没有余额概念，灯用亮粉
+  const isLocalUrl=u=>/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(String(u||""));
+  const localIds=new Set(cfgList.filter(p=>isLocalUrl(p.baseUrl)).map(p=>p.id));
   const balMap=new Map(bal.map(b=>[b.provider,b]));
   const unsupMap=new Map(unsup.map(u=>[u.provider,u]));
   const full=cfgList.map(p=>{const id=p.id,b=balMap.get(id);if(b)return Object.assign({},b,{name:b.name||cfgName[id]||NAME_CN[id]||id});const u=unsupMap.get(id);if(u)return {provider:id,name:cfgName[id]||NAME_CN[id]||id,status:"unsupported",note:u.note,kind:"none",label:"说明"};return {provider:id,name:cfgName[id]||NAME_CN[id]||id,status:"no_adapter",kind:"none",label:"已配置"};});
-  const okCount=full.filter(x=>x.status==="ok").length;
+  // 灯色分诊：绿=可正常读取，粉=本地部署，亮红=有接口但没读到，灰=暂无余额接口
+  const toneOf=b=>b.status==="ok"?"ok":(localIds.has(b.provider)?"local":((String(b.status).startsWith("http_")||b.status==="error"||b.status==="parse_failed"||b.status==="no_key")?"err":"muted"));
+  // 排序：绿 → 粉 → 红 → 灰，同色内部保持宿主配置顺序
+  const toneOrder={ok:0,local:1,err:2,muted:3};
+  full.sort((a,b)=>toneOrder[toneOf(a)]-toneOrder[toneOf(b)]);
+  const okCount=full.filter(x=>toneOf(x)==="ok").length;
   const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};
   set("#aProv",String(full.length));set("#aOk",String(okCount));
   set("#aErr",String(full.length-okCount));
@@ -166,14 +174,17 @@ function renderApiOverview(){
     const unsup=b.status==='unsupported';
     const noKey=b.status==='no_key';
     const noAdapter=b.status==='no_adapter';
+    const tone=toneOf(b);
+    const local=tone==='local';
+    const bad=tone==='err';
     const pct=Number.isFinite(Number(b.remainingPercent))?Math.max(0,Math.min(100,Number(b.remainingPercent))):null;
-    const statTxt=ok?'正常':(noAdapter?'已配置':(unsup?'无官方接口':(noKey?'凭据缺失':esc(String(b.status)))));
-    const dotCls=ok?'ok':((unsup||noAdapter)?'warn':(noKey?'muted':'err'));
+    const statTxt=ok?'正常':local?'本地部署':bad?'读取失败':(unsup?'无官方接口':(noAdapter?'无探测接口':(noKey?'凭据缺失':esc(String(b.status)))));
+    const dotCls=tone;
     const val=ok?esc(b.summary||'–'):'–';
-    const kindTxt=({balance:'预付余额',quota:'订阅配额',cost:'官方成本'})[b.kind]||(noAdapter?'已配置':'')||'';
-    const stateDesc=ok?'可检测余额与连接状态':noAdapter?'已配置，插件暂无该供应商的余额探测':(unsup?esc(b.note||'无官方余额接口'):(noKey?'凭证不完整，无法读取':'连接异常，暂时无法读取'));
+    const kindTxt=({balance:'预付余额',quota:'订阅配额',cost:'官方成本'})[b.kind]||(local?'本地模型':(noAdapter?'已配置':''))||'';
+    const stateDesc=ok?'可检测余额与连接状态':local?'本地部署，没有可读取的余额接口':bad?'有余额接口，但本次读取失败':(unsup?esc(b.note||'无官方余额接口'):(noAdapter?'已配置，插件暂无该供应商的余额探测':(noKey?'凭证不完整，无法读取':'连接异常，暂时无法读取')));
     const busy=refreshing.has(b.provider);
-    const mainInfo=(unsup||noKey||noAdapter)?'':'<b>'+val+'</b>'+(pct!=null?'<div class="track" title="剩余 '+pct.toFixed(0)+'%"><i style="width:'+pct.toFixed(0)+'%"></i></div>':'');
+    const mainInfo=ok?'<b>'+val+'</b>'+(pct!=null?'<div class="track" title="剩余 '+pct.toFixed(0)+'%"><i style="width:'+pct.toFixed(0)+'%"></i></div>':''):'';
     return '<div class="card provider-item" data-provider="'+esc(b.provider)+'" title="点击查看供应商详情">'
       +'<div class="pv-main"><div class="pv-name"><strong>'+esc(b.name||b.provider)+'</strong><small>'+kindTxt+'</small></div><span class="pv-state-desc">'+stateDesc+'</span></div>'
       +'<div class="pv-tail" data-refresh="'+esc(b.provider)+'" title="点击刷新该供应商连接">'+(busy?'<i class="pv-pending"></i>':'<i class="pv-dot '+dotCls+'" title="'+statTxt+'"></i>')+'</div>'
