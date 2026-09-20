@@ -991,19 +991,14 @@ async function requestJson(fetchFn, url, init = {}, timeoutMs = 10000) {
   return { ok: response.ok, status: response.status, data };
 }
 
-async function queryZhipuQuota(ctx, fetchFn, catalog) {
-  const provider = catalog?.providers?.zhipu;
-  if (!provider?.api_key) return null;
-  const endpoints = [
-    "https://api.z.ai/api/monitor/usage/quota/limit",
-    "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
-  ];
+// 智谱系配额单家查询：zhipu（bigmodel）与 zhipu-coding（z.ai）走同一套 monitor 接口，key 各自独立
+async function queryZhipuQuotaOne(fetchFn, apiKey, providerId, displayName, endpoints) {
   for (const url of endpoints) {
     try {
       const result = await requestJson(fetchFn, url, {
-        headers: { Authorization: provider.api_key, Accept: "application/json" },
+        headers: { Authorization: apiKey, Accept: "application/json" },
       });
-      dbg("zhipu quota raw: " + JSON.stringify(result.data).slice(0, 2000));
+      dbg(`${providerId} quota raw: ` + JSON.stringify(result.data).slice(0, 2000));
       const payload = result.data?.data;
       const limits = Array.isArray(payload?.limits) ? payload.limits : [];
       if (!result.ok || result.data?.success === false || !limits.length) continue;
@@ -1032,8 +1027,8 @@ async function queryZhipuQuota(ctx, fetchFn, catalog) {
       });
       const primary = windows.find((item) => item.type === "TOKENS_LIMIT") || windows[0];
       return {
-        provider: "zhipu",
-        name: "智谱 Coding Plan",
+        provider: providerId,
+        name: displayName,
         status: "ok",
         kind: "quota",
         label: "套餐剩余",
@@ -1046,6 +1041,20 @@ async function queryZhipuQuota(ctx, fetchFn, catalog) {
     } catch {}
   }
   return null;
+}
+
+// 返回数组：智谱两家各自可能命中，所以调用处要 flat 一次
+async function queryZhipuQuota(ctx, fetchFn, catalog) {
+  const endpoints = [
+    "https://api.z.ai/api/monitor/usage/quota/limit",
+    "https://open.bigmodel.cn/api/monitor/usage/quota/limit",
+  ];
+  const targets = [
+    { id: "zhipu", name: "智谱 Coding Plan", key: catalog?.providers?.zhipu?.api_key },
+    { id: "zhipu-coding", name: PROVIDER_DIRECTORY["zhipu-coding"]?.name || "智谱 Coding", key: catalog?.providers?.["zhipu-coding"]?.api_key },
+  ].filter((t) => t.key);
+  const hits = await Promise.all(targets.map((t) => queryZhipuQuotaOne(fetchFn, t.key, t.id, t.name, endpoints)));
+  return hits.filter(Boolean);
 }
 
 async function queryOpenAICosts(ctx, fetchFn) {
@@ -1429,7 +1438,7 @@ app.get("/api/balance", async (c) => {
     tasks.push(queryXaiBalance(ctx, fetchFn));
     tasks.push(queryCodexQuota(ctx, fetchFn));
 
-    const balances = (await Promise.all(tasks)).filter(Boolean);
+    const balances = (await Promise.all(tasks)).flat().filter(Boolean);
     const okProviders = new Set(balances.filter((item) => item.status === "ok").map((item) => item.provider));
     const unsupported = [];
     // 未查到的供应商按目录分两类（判据是 query.reachable，不靠文案猜）：

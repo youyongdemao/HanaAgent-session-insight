@@ -17,11 +17,15 @@ if (!honoPath) throw new Error("找不到 hono，可用 HONO_PATH 指定 hono/di
 const { Hono } = await import("file:///" + honoPath.replace(/\\/g, "/"));
 
 const HANA_HOME = process.env.HANA_HOME || "D:/AI/Hanako";
+// --verify：真打一次各家接口，看余额/配额门路是否还有效（不加这个参数只读配置，不触网）
+const VERIFY = process.argv.includes("--verify");
 const ctx = {
   pluginDir: join(HANA_HOME, "plugins", "session-insight"),
   dataDir: join(HANA_HOME, "plugin-data", "session-insight"),
   config: { get: () => null },
-  network: { fetch: async () => new Response("{}", { status: 200 }) }, // 不触网，只验配置解析
+  network: VERIFY
+    ? { fetch: (url, opts) => fetch(url, opts) }
+    : { fetch: async () => new Response("{}", { status: 200 }) },
   sessionId: null,
   sessionPath: null,
 };
@@ -54,4 +58,20 @@ console.log("拒绝非本地供应商：");
 for (const bad of ["deepseek", "not-exist", "../../windows/system32/cmd"]) {
   const r = await (await app.request(`/api/open-app?provider=${encodeURIComponent(bad)}&dry=1`)).json();
   console.log(`  ${String(bad).padEnd(28)} ${JSON.stringify(r)}`);
+}
+
+if (VERIFY) {
+  console.log("");
+  console.log("真实探测 /api/balance（会打各家接口，force=1）：");
+  try {
+    const bal = await (await app.request("/api/balance?force=1")).json();
+    for (const b of bal.balances || []) {
+      console.log(`  查到    ${String(b.provider).padEnd(14)} ${String(b.status).padEnd(10)} ${b.summary || b.detail || ""}`);
+    }
+    for (const u of bal.unsupported || []) {
+      console.log(`  未查到  ${String(u.provider).padEnd(14)} reachable=${u.reachable}  ${u.note}`);
+    }
+  } catch (e) {
+    console.log("  探测失败：" + (e?.message || e));
+  }
 }
