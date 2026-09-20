@@ -271,7 +271,12 @@ function renderApiDetail(){
   const nm=hit?.name||state.provider,val=hit?.summary||"–",k=hit?.kind||(hit?.status==="unsupported"?"unsupported":"balance");
   const stat=hit?(hit.status==="ok"?"正常":hit.status==="no_key"?"凭据缺失":hit.status==="unsupported"?"无官方接口":hit.status==="no_adapter"?"已配置":hit.note||"不可查询"):"不可查询";
   setVal("#pdTitle",(nm||"供应商")+" 详情");
-  const providerLedger=state.providerLedger?.provider===state.provider?state.providerLedger:null;renderProviderModelRank();const providerTokens=providerLedger?Object.values(providerLedger.days||{}).reduce((n,d)=>n+Number(d?.tokens||0),0):0;const balanceLabel=hit?.label||"可用余额";const statText=okStatText();const statIsNote=!(hit&&hit.status==="ok");const statsEl=$("#pdStats");if(statsEl)statsEl.innerHTML='<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b'+(statIsNote?' class="balance-note"':'')+'>'+esc(statText)+'</b></div>'+(providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':'');
+  const providerLedger=state.providerLedger?.provider===state.provider?state.providerLedger:null;renderProviderModelRank();const providerTokens=providerLedger?Object.values(providerLedger.days||{}).reduce((n,d)=>n+Number(d?.tokens||0),0):0;// 本地部署的供应商没有余额可读，主位改看它的累计 Token（口径与供应商卡片那边一致）
+  const isLocalCfg=!!(cfg&&(cfg.local===true||/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(String(cfg.baseUrl||""))));
+  const statIsNote=!isLocalCfg&&!(hit&&hit.status==="ok");
+  const balanceLabel=isLocalCfg?"累计 Token":(hit?.label||"可用余额");
+  const statText=isLocalCfg?(providerTokens>0?fmtTokens(providerTokens):"–"):okStatText();
+  const statsEl=$("#pdStats");if(statsEl)statsEl.innerHTML='<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b'+(statIsNote?' class="balance-note"':'')+'>'+esc(statText)+'</b></div>'+(!isLocalCfg&&providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':'');
   function okStatText(){return hit?(hit.status==="ok"?(hit.summary||"正常"):stat):"不可查询";}
   const thR=(state.rules||{})[state.provider]||{};const isBalance=hit?.kind==="balance";const canThreshold=hit?.status==="ok"&&(isBalance?Number.isFinite(Number(hit.total)):Number.isFinite(Number(hit.remainingPercent)));
   const thE=$("#thEnabled"),thP=$("#thPct"),thF=$("#thFail"),thS=$("#thresholdSaveStatus"),thL=$("#thresholdLabel"),thU=$("#thresholdUnit");
