@@ -70,6 +70,9 @@ const SCRIPT = `(async()=>{
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const t0=performance.now();
   const root=document.querySelector('#root')||document.body;
+  const gfx=()=>{const line=document.querySelector('.si-line'),area=document.querySelector('.si-area'),bar=document.querySelector('.si-bar');
+    return {line:line?getComputedStyle(line).strokeDashoffset:'-', area:area?getComputedStyle(area).opacity:'-',
+      bar:bar?getComputedStyle(bar).transform.replace(/\s+/g,' ').slice(0,28):'-', nLine:document.querySelectorAll('.si-line').length};};
   const samples=[];
   for(let i=0;i<150;i++){
     const anims=document.getAnimations().filter(a=>a.playState==='running').map(a=>{
@@ -81,6 +84,7 @@ const SCRIPT = `(async()=>{
       quiet:root.classList.contains('si-quiet'),
       rootCls:root.className,
       running:anims.length, names:[...new Set(anims)].slice(0,6),
+      gfx:gfx(),
       bodyOpacity:getComputedStyle(document.body).opacity,
       shellOpacity:(()=>{const s=document.querySelector('.shell');return s?getComputedStyle(s).opacity:'-';})()});
     await sleep(160);
@@ -88,7 +92,7 @@ const SCRIPT = `(async()=>{
   // 只保留「有动画」或「si-quiet/shell 透明度变化」的采样点
   const out=[];let prev=null;
   for(const s of samples){
-    const k=JSON.stringify([s.running,s.names,s.quiet,s.shellOpacity,s.bodyOpacity]);
+    const k=JSON.stringify([s.running,s.names,s.quiet,s.shellOpacity,s.bodyOpacity,s.gfx]);
     if(k!==prev){out.push(s);prev=k;}
   }
   return {total:samples.length, points:out, maxRunning:Math.max(...samples.map(s=>s.running)),
@@ -125,6 +129,6 @@ const SCRIPT = `(async()=>{
   console.log("采样点:", r.total, " 同时运行动画峰值:", r.maxRunning, " si-quiet 帧数:", r.quietFrames);
   console.log("--- 变化点 ---");
   for (const p of r.points) {
-    console.log(`t=${String(p.t).padStart(5)}ms  running=${p.running}  quiet=${p.quiet}  shellOpacity=${p.shellOpacity}  names=${JSON.stringify(p.names)}`);
+    console.log(`t=${String(p.t).padStart(5)}ms  running=${p.running}  quiet=${p.quiet}  gfx=${JSON.stringify(p.gfx)}  names=${JSON.stringify(p.names)}`);
   }
 })();

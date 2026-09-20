@@ -1322,9 +1322,13 @@ body[data-surface="widget"] .w-quota-meta span{min-width:0;overflow:hidden;text-
 .od-strip{display:block!important;line-height:0!important}
 /* 切换会话时的静默重渲染：动画瞬时完成，避免整页重播 */
 .si-quiet *{animation-duration:.001s!important;animation-delay:0s!important;transition-duration:.001s!important}
-/* 静默渲染新插入的节点永久保持静态。只压 animation-duration 是不够的：si-quiet 一摘掉
-   时长就恢复原值，浏览器会把刚播完的动画重新开跑，看起来就是整页闪一下。 */
-.si-instant,.si-instant *{animation:none!important;transition:none!important}
+/* 静默渲染新插入的节点永久保持静态：把动画压成 0s 并锁住 fill-mode:forwards，
+   让它「瞬间落到终态」，而不是「被取消」。
+   .si-line / .si-area / .si-bar / .si-sect 的基础样式本身就是不可见态
+   （stroke-dashoffset:1 / opacity:0 / scaleY(0)），靠动画走到终态才显形，
+   直接 animation:none 会把它们永久停在不可见那一帧，整块图形就消失了。
+   另外只压 animation-duration 也不够：class 一摘掉时长恢复原值，刚播完的动画会被重新开跑，整页闪一下。 */
+.si-instant,.si-instant *{animation-duration:0s!important;animation-delay:0s!important;animation-iteration-count:1!important;animation-fill-mode:forwards!important;transition-duration:0s!important}
 
 /* ── 会话选择器：与卡片同一套悬停放大 / 按压 / 松开 / 光标光斑 ── */
 body:not([data-surface="widget"]) #usage-session .session-trigger{position:relative;isolation:isolate;transform-origin:center;transform:translateZ(0) scale(1);will-change:transform,box-shadow,filter;transition:transform .3s cubic-bezier(.2,.72,.22,1),border-color .24s ease,box-shadow .34s ease,background .32s ease,filter .32s ease}
