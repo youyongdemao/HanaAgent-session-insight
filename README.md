@@ -80,9 +80,9 @@ v2 相比 v1.2 是一次整体重做：界面与页面层级换新，计费规�
 - 检查接口：`https://api.github.com/repos/youyongdemao/HanaAgent-session-insight/releases/latest`
 - 安装包：Release 附件中形如 `session-insight-*.zip` 的资产
 - 安装方式：校验 SHA256 → 备份当前插件目录 → 整体替换；失败自动回滚
-- 版本要求：`minAppVersion` 为 `0.159.0`，与 v1.2.x 相同
+- 版本要求：以清单里的 `minAppVersion` 为准（`v2.0.4` 起为 `0.450.0`，`v2.0.0`–`v2.0.3` 为 `0.159.0`）
 
-因此 **v1.2.x / v2.0.x 的老版本可以直接通过「检查更新」一键升级到最新版**，无需手动重装。
+因此 **宿主版本满足清单要求时，v1.2.x / v2.0.x 的老版本可以直接通过「检查更新」一键升级到最新版**，无需手动重装。
 
 ## 目录结构
 
