@@ -286,7 +286,7 @@ function renderApiDetail(){
   if(costHead)costHead.textContent=tokenView?"Token 消耗":"费用概览";
   const pdLinks=((cfgEntry&&Array.isArray(cfgEntry.links)&&cfgEntry.links.length)?cfgEntry.links:(QUICK_LINKS[state.provider]||[])).map(l=>Array.isArray(l)?{label:l[0],url:l[1]}:(l||{}));
   const pdLaunch=cfgEntry?.launch||null;
-  const PD_POWER='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3.5v8.5"/><path d="M6.6 6.6a8 8 0 1 0 10.8 0"/></svg>';
+  const PD_POWER='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3.5v8.5"/><path d="M6.6 6.6a8 8 0 1 0 10.8 0"/></svg>';
   const quickHost=$("#pdQuick");
   if(quickHost)quickHost.innerHTML=(pdLaunch?'<button type="button" data-launch="'+esc(state.provider)+'" title="'+esc(pdLaunch.label||('启动 '+nm))+'">'+PD_POWER+'</button>':'')+(pdLinks.length?'<button type="button" data-open="'+esc(pdLinks[0].url)+'" title="打开 '+esc(pdLinks[0].label||'官网')+'">↗</button>':'<button type="button" disabled title="暂无入口">↗</button>');
   renderProviderCostPanels();
