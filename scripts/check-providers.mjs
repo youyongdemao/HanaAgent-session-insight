@@ -37,8 +37,21 @@ const r = await (await app.request("/api/providers")).json();
 const list = r.providers || [];
 console.log(`插件认定已启用供应商：${list.length} 家   (hono=${honoPath})`);
 for (const p of list) {
-  console.log(`  ${p.local ? "[本地]" : "[云端]"} ${String(p.id).padEnd(14)} baseUrl=${p.baseUrl || "(无)"}  models=${(p.models || []).join(", ")}`);
+  const extra = [p.links?.length ? `链接=${p.links.map((l) => l.label).join("/")}` : "", p.launch ? `可启动=${p.launch.label}` : ""].filter(Boolean).join("  ");
+  console.log(`  ${p.local ? "[本地]" : "[云端]"} ${String(p.id).padEnd(14)} baseUrl=${p.baseUrl || "(无)"}  models=${(p.models || []).join(", ")}${extra ? "  " + extra : ""}`);
 }
 const local = list.filter((p) => p.local).map((p) => p.id);
 console.log("");
 console.log("会显示粉色灯（本地部署）：" + (local.join(", ") || "(无)"));
+
+console.log("");
+console.log("本地应用启动目标（dry=1，只看命令，不实际启动）：");
+for (const id of local) {
+  const r = await (await app.request(`/api/open-app?provider=${encodeURIComponent(id)}&dry=1`)).json();
+  console.log(`  ${id.padEnd(12)} ${JSON.stringify(r)}`);
+}
+console.log("拒绝非本地供应商：");
+for (const bad of ["deepseek", "not-exist", "../../windows/system32/cmd"]) {
+  const r = await (await app.request(`/api/open-app?provider=${encodeURIComponent(bad)}&dry=1`)).json();
+  console.log(`  ${String(bad).padEnd(28)} ${JSON.stringify(r)}`);
+}

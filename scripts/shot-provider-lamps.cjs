@@ -26,10 +26,11 @@ const BALANCE = {
   zhipu: { provider: "zhipu", name: "智谱", status: "http_502", detail: "bad gateway" },
 };
 const UNSUPPORTED = {
-  ollama: { provider: "ollama", note: "无官方余额接口" },
-  openai: { provider: "openai", note: "需配置 OpenAI Admin Key" },
-  gemini: { provider: "gemini", note: "暂无余额接口" },
+  ollama: { provider: "ollama", note: "无官方余额接口", reachable: false },
+  openai: { provider: "openai", note: "需配置 OpenAI Admin Key", reachable: true },
+  gemini: { provider: "gemini", note: "暂无余额接口", reachable: false },
 };
+const LOCAL_IDS = new Set(["ollama", "freetoken"]);
 const STATS = { file: "20260919-a.jsonl", title: "会话", model: "deepseek-flash", turns: 2, sessionTokens: 1000, sessionCostCny: 1, contextPercent: 10, sumInput: 700, sumOutput: 300, sumCacheRead: 200, sumReasoning: 0, series: [{ turn: 1, total: 1000, cost: 0.01, input: 700, output: 300, cacheHit: 200, cacheMiss: 100, reasoning: 0, hitRate: 0.6, latencyMs: 900 }], providers: [{ provider: "deepseek", tokens: 1000 }] };
 const HTML = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/api/plugins/${ID}/assets/panel-v2.css"></head><body data-hana-theme="dark" data-surface="page"><div id="root" data-surface="page"></div><script type="module" src="/api/plugins/${ID}/assets/panel-v2.js"></script></body></html>`;
 
@@ -43,7 +44,7 @@ function startServer(port) {
     if (p === `${base}/page`) return send("text/html; charset=utf-8", HTML);
     if (p === `${base}/assets/panel-v2.css`) return send("text/css", fs.readFileSync(CSS));
     if (p === `${base}/assets/panel-v2.js`) return send("text/javascript", fs.readFileSync(PANEL));
-    if (p === `${base}/api/providers`) return json({ providers: CONFIG.map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, models: [] })) });
+    if (p === `${base}/api/providers`) return json({ providers: CONFIG.map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, local: LOCAL_IDS.has(id), models: [] })) });
     if (p === `${base}/api/balance`) return json({
       balances: CONFIG.filter((id) => BALANCE[id]).map((id) => BALANCE[id]),
       unsupported: CONFIG.filter((id) => UNSUPPORTED[id]).map((id) => UNSUPPORTED[id]),

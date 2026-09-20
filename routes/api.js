@@ -1,10 +1,12 @@
 // routes/api.js — 会话统计 / 会话列表 / 多供应商余额
 import { readFileSync, readdirSync, statSync, existsSync, appendFileSync, writeFileSync, mkdirSync, cpSync, rmSync, renameSync, openSync, readSync, closeSync } from "node:fs";
-import { exec, execFile } from "node:child_process";
+import { exec, execFile, spawn } from "node:child_process";
+import { createConnection } from "node:net";
 import { DatabaseSync } from "node:sqlite";
 import { join, dirname, basename } from "node:path";
 import { createHash } from "node:crypto";
 import { parseSession, PROVIDER_OF_MODEL, PRICING, priceFor, SOURCE_NOTE, PRICING_SNAPSHOT_AT, setPricingConfig } from "../lib/usage-parser.js";
+import { PROVIDER_DIRECTORY, resolveLaunchTarget, expandEnvPath, allowedLinkHosts } from "../lib/provider-directory.js";
 
 let debugLogPath = null;
 function dbg(msg) {
@@ -386,16 +388,8 @@ const BALANCE_ADAPTERS = {
   },
 };
 
-// 无公开余额接口的供应商说明
-const NO_BALANCE_API = {
-  mimo: "暂无余额接口",
-  zhipu: "暂无余额接口",
-  agnes: "全模态免费",
-  openai: "需配置 OpenAI Admin Key",
-  gemini: "暂无余额接口",
-  "openai-codex": "实验性配额未启用",
-  "xai-oauth": "Grok 订阅无公开接口",
-};
+// 未查到的供应商说明统一由 lib/provider-directory.js 生成（reachable 判据也在那里），
+// 这里只保留需要按插件配置动态改写的几条 note，避免两处定义漂移。
 
 // 从数据根的 agents/ 下枚举所有子代理的 sessions 目录（不硬编码具体 agent 名）
 function listAgentSessionDirs(root) {
@@ -967,6 +961,19 @@ function storeExternalStatus(key, data) {
 
 function flushExternalCaches(){ externalStatusCache.clear(); }
 
+// 本地应用探活：端口已在监听就说明应用已经起来了，不必重复拉起
+function isPortListening(port, host = "127.0.0.1", timeoutMs = 600) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (v) => { if (settled) return; settled = true; try { socket.destroy(); } catch {} resolve(v); };
+    const socket = createConnection({ port, host });
+    socket.setTimeout(timeoutMs);
+    socket.once("connect", () => done(true));
+    socket.once("timeout", () => done(false));
+    socket.once("error", () => done(false));
+  });
+}
+
 function configValue(ctx, key) {
   try {
     const value = ctx.config?.get?.(key);
@@ -1331,12 +1338,15 @@ export default function registerPluginApiRoutes(app, ctx) {
     .filter(([id]) => active.has(id))
     .map(([id, cfg]) => {
       const catalogCfg = catalog?.providers?.[id] || {};
+      const dir = PROVIDER_DIRECTORY[id] || {};
       const baseUrl = catalogCfg.base_url || cfg?.base_url || null;
       return {
         id,
-        name: cfg?.name || catalogCfg.name || null,
+        name: cfg?.name || catalogCfg.name || dir.name || null,
         baseUrl,
-        local: isLocalEndpoint(baseUrl),
+        local: dir.local === true || isLocalEndpoint(baseUrl),
+        links: dir.links || [],
+        launch: dir.launch ? { label: dir.launch.label || dir.name, port: dir.launch.probePort || null } : null,
         models: (cfg?.models || []).map((m) => (typeof m === "string" ? m : m?.id)).filter(Boolean),
       };
     });
@@ -1420,16 +1430,17 @@ app.get("/api/balance", async (c) => {
     const balances = (await Promise.all(tasks)).filter(Boolean);
     const okProviders = new Set(balances.filter((item) => item.status === "ok").map((item) => item.provider));
     const unsupported = [];
-    for (const [provider, defaultNote] of Object.entries(NO_BALANCE_API)) {
+    // 未查到的供应商按目录分两类（判据是 query.reachable，不靠文案猜）：
+    //   true  官方有余额/配额/用量接口，只是这次没走到 → 亮红
+    //   false 官方没有可查接口，或本来就是免费/本地 → 灰灯（本地另按 local 标粉）
+    for (const [provider, dir] of Object.entries(PROVIDER_DIRECTORY)) {
       if (!activeIds.has(provider) || okProviders.has(provider)) continue;
-      let note = defaultNote;
-      if (provider === "zhipu") note = "当前账户非 Coding Plan 或配额不可用";
+      if (provider in BALANCE_ADAPTERS) continue; // 有适配器的供应商由余额查询结果决定状态
+      const q = dir.query || {};
+      let note = q.note || "暂无余额接口";
       if (provider === "openai" && configValue(ctx, "openaiAdminKey")) note = "Admin Costs 查询失败";
       if (provider === "openai-codex" && readAuthConfig(ctx)?.["openai-codex"]?.access) note = "Codex 配额接口暂不可用";
-      unsupported.push({ provider, note });
-    }
-    if (activeIds.has("xai") && !okProviders.has("xai")) {
-      unsupported.push({ provider: "xai", note: "Management Key 或 Team ID 无效" });
+      unsupported.push({ provider, note, reachable: q.reachable === true });
     }
     balanceCache = { at: now, data: { balances, unsupported } };
     return c.json(balanceCache.data);
@@ -1592,23 +1603,10 @@ app.get("/api/balance", async (c) => {
   // 用系统默认程序打开链接（绕过 Electron 内置窗口）
   app.get("/api/open", (c) => {
     const url = String(c.req.query().url || "").trim();
-    const allowedHosts = [
-      "platform.deepseek.com",
-      "platform.kimi.com",
-      "platform.xiaomimimo.com",
-      "bigmodel.cn",
-      "open.bigmodel.cn",
-      "apihub.agnes-ai.com",
-      "platform.openai.com",
-      "aistudio.google.com",
-      "chatgpt.com",
-      "grok.com",
-      "console.x.ai",
-      "github.com",
-    ];
+    const allowedHosts = new Set([...allowedLinkHosts(), "github.com"]);
     try {
       const u = new URL(url);
-      if (!allowedHosts.includes(u.hostname)) {
+      if (!allowedHosts.has(u.hostname)) {
         return c.json({ error: "host not allowed", host: u.hostname });
       }
     } catch {
@@ -1630,10 +1628,10 @@ app.get("/api/balance", async (c) => {
   // 插件命名空间别名：走插件自身的鉴权链路，前端在根路由被拒时回退到这里
   app.get("/open", (c) => {
     const url = String(c.req.query().url || "").trim();
-    const hosts = ["platform.deepseek.com","platform.kimi.com","platform.xiaomimimo.com","bigmodel.cn","open.bigmodel.cn","apihub.agnes-ai.com","platform.openai.com","aistudio.google.com","chatgpt.com","grok.com","console.x.ai","github.com"];
+    const hosts = new Set([...allowedLinkHosts(), "github.com"]);
     let host = "";
     try { host = new URL(url).hostname; } catch {}
-    if (!hosts.includes(host)) return c.json({ error: "host not allowed", host });
+    if (!hosts.has(host)) return c.json({ error: "host not allowed", host });
     const cmd = process.platform === "win32"
       ? `start "" "${url}"`
       : process.platform === "darwin"
@@ -1641,5 +1639,32 @@ app.get("/api/balance", async (c) => {
         : `xdg-open "${url}"`;
     exec(cmd, { windowsHide: true }, () => {});
     return c.json({ ok: true });
+  });
+
+  // 拉起本地部署的应用（仅限目录里登记了 launch 的本地供应商，不接受任意路径参数）
+  // 调试：加 ?dry=1 只看将要执行的命令，不真的启动
+  app.get("/api/open-app", async (c) => {
+    const provider = String(c.req.query().provider || "").trim();
+    const dir = PROVIDER_DIRECTORY[provider];
+    if (!dir?.launch) return c.json({ ok: false, error: "not_a_local_provider", provider });
+    const target = resolveLaunchTarget(provider, existsSync);
+    if (!target) {
+      return c.json({ ok: false, error: "exe_not_found", provider, tried: (dir.launch.targets || []).map(expandEnvPath) });
+    }
+    if (c.req.query().dry === "1") {
+      return c.json({ ok: true, dry: true, provider, label: target.label, exe: target.exe, port: target.probePort });
+    }
+    if (target.probePort && (await isPortListening(target.probePort))) {
+      return c.json({ ok: true, already: true, provider, label: target.label, port: target.probePort });
+    }
+    try {
+      const child = spawn(target.exe, [], { detached: true, stdio: "ignore", windowsHide: false });
+      child.unref();
+    } catch (e) {
+      dbg("open-app error: " + String(e?.message || e));
+      return c.json({ ok: false, error: String(e?.message || e) }, 500);
+    }
+    dbg(`open-app: ${provider} -> ${target.exe}`);
+    return c.json({ ok: true, provider, label: target.label, exe: target.exe });
   });
 }

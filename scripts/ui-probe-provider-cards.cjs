@@ -19,12 +19,12 @@ const PANEL = path.join(REPO, "assets", "panel-v2.js");
 const ID = "session-insight";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// 宿主配置的四种状态：A 初始三家 / B 删掉 ollama / C 新增 freetoken / D 四色分诊（本地+错误+无接口混合）
+// 宿主配置的四种状态：A 初始三家 / B 删掉 ollama / C 新增 freetoken / D 四色分诊（本地+错误+无门路混合）
 const CONFIG = {
   A: ["deepseek", "moonshot", "ollama"],
   B: ["deepseek", "moonshot"],
   C: ["deepseek", "moonshot", "freetoken"],
-  D: ["deepseek", "ollama", "zhipu", "openai", "freetoken"],
+  D: ["deepseek", "ollama", "zhipu", "openai", "freetoken", "gemini"],
 };
 let mode = "A";
 
@@ -42,7 +42,13 @@ const BALANCE = {
   moonshot: { provider: "moonshot", name: "Moonshot", status: "ok", kind: "balance", label: "可用余额", summary: "¥88.80", total: 88.8, currency: "CNY" },
   zhipu: { provider: "zhipu", name: "智谱", status: "http_502", detail: "bad gateway" },
 };
-const UNSUPPORTED = { ollama: { provider: "ollama", note: "无官方余额接口" }, openai: { provider: "openai", note: "需配置 OpenAI Admin Key" } };
+const UNSUPPORTED = {
+  ollama: { provider: "ollama", note: "无官方余额接口", reachable: false },
+  openai: { provider: "openai", note: "需配置 OpenAI Admin Key", reachable: true },
+  gemini: { provider: "gemini", note: "暂无余额接口", reachable: false },
+};
+// 本地供应商的启动元数据（等价于后端目录里的 launch）
+const LAUNCH = { ollama: { label: "启动 Ollama", port: 11434 }, freetoken: { label: "启动 FreeToken", port: 1919 } };
 const LOCAL_IDS = new Set(["ollama", "freetoken"]);
 
 const A = { file: "20260914-a.jsonl", title: "会话 A", model: "deepseek-flash", turns: 3, sessionTokens: 1000, sessionCostCny: 1, contextPercent: 10, sumInput: 700, sumOutput: 300, sumCacheRead: 200, sumReasoning: 0, series: [{ turn: 1, total: 1000, cost: 0.01, input: 700, output: 300, cacheHit: 200, cacheMiss: 100, reasoning: 0, hitRate: 0.6, latencyMs: 900 }], providers: [{ provider: "deepseek", tokens: 1000 }] };
@@ -65,7 +71,7 @@ function startServer(port, jsPath) {
     if (p === `${base}/assets/panel-v2.js`) return send("text/javascript", fs.readFileSync(jsPath));
 
     // 配置集合：等价于宿主的 provider-catalog + models.json + auth.json 求交后的结果
-    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, local: LOCAL_IDS.has(id), models: [] })) });
+    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, local: LOCAL_IDS.has(id), links: [], launch: LAUNCH[id] || null, models: [] })) });
     // 余额：只有插件写了适配器的供应商才有真实状态，其余靠前端标「已配置」
     if (p === `${base}/api/balance`) return json({
       balances: cur().filter((id) => BALANCE[id]).map((id) => BALANCE[id]),
@@ -124,10 +130,19 @@ const SCENARIO = `(async()=>{
   const ctlD=await setMode('D');
   await sleep(5200);
   const snapD=cards();
+  // 场景 E：点开本地供应商详情，入口区应该有「启动」按钮
+  let localDetail={};
+  const ocard=[...document.querySelectorAll('#providerList .provider-item')].find(el=>el.dataset.provider==='ollama');
+  if(ocard){
+    ocard.click();
+    await sleep(800);
+    localDetail={hasLaunch:!!document.querySelector('#pdQuick [data-launch="ollama"]'),quick:(document.querySelector('#pdQuick')||{}).innerHTML||''};
+  }else localDetail={error:'找不到 ollama 卡片'};
   return {A:{config:ctlA.config,count:snapA.length,cards:snapA},
           B:{before:ctlB.config,count:snapB.length,cards:snapB},
           C:{after:ctlC.config,count:snapC.length,cards:snapC},
-          D:{config:ctlD.config,count:snapD.length,cards:snapD}};
+          D:{config:ctlD.config,count:snapD.length,cards:snapD},
+          E:localDetail};
 })()`;
 
 (async () => {
@@ -172,10 +187,14 @@ const SCENARIO = `(async()=>{
       console.log("  C 卡片集合 ==" + expectC + " ? " + (names(out.C) === expectC));
       if (out.D) {
         const seq = out.D.cards.map((x) => x.name + ":" + x.dot).join(" → ");
-        const expectD = "DeepSeek:ok → Ollama:local → FreeToken:local → 智谱:err → OpenAI:muted";
+        const expectD = "DeepSeek:ok → Ollama:local → FreeToken:local → 智谱:err → OpenAI:err → Gemini:muted";
+        console.log("  D 检查点：有门路但未查到（OpenAI）应为 err、无门路（Gemini）应为 muted");
         console.log("  D 灯色与顺序 = " + seq);
         console.log("  D 期望顺序   = " + expectD);
         console.log("  D 判定 ? " + (seq === expectD));
+      }
+      if (out.E) {
+        console.log("  E 本地详情页启动按钮 = " + (out.E.hasLaunch === true) + "   入口区=" + String(out.E.quick).replace(/\s+/g, " ").slice(0, 120));
       }
     }
   } catch (e) {
