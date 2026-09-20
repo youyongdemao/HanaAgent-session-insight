@@ -5,6 +5,16 @@ const PROTOCOL = "hana.plugin.ui";
 const VERSION = 1;
 let seq = 0;
 
+// 统一按北京时间（Asia/Shanghai，GMT+8）显示：会话时间标签与「今天/本周」分组都按此时区判定，
+// 不再依赖机器本地时区（否则换时区会整体偏移）。
+const CN_TZ = "Asia/Shanghai";
+const CN_DAY_FMT = new Intl.DateTimeFormat("en-CA", { timeZone: CN_TZ });
+const cnDay = (d) => CN_DAY_FMT.format(d);
+const CN_HM_FMT = new Intl.DateTimeFormat("en-GB", { timeZone: CN_TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const cnHM = (d) => CN_HM_FMT.format(d);
+const CN_PART_FMT = new Intl.DateTimeFormat("en-CA", { timeZone: CN_TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" });
+const cnPart = (d) => { const o = {}; for (const p of CN_PART_FMT.formatToParts(d)) o[p.type] = p.value; return o; };
+
 function targetOrigin() {
   const params = new URLSearchParams(window.location.search);
   const explicit = params.get("hana-host-origin");
@@ -1780,8 +1790,8 @@ async function renderPage() {
 
   function sessLabel(s) {
     const d = new Date(s.mtime);
-    const dd = String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    const hh = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    const dd = cnDay(d).slice(5);
+    const hh = cnHM(d);
     const t = s.title ? (s.title.length >= 30 ? s.title + "…" : s.title) : "";
     return t ? `${t} · ${dd} ${hh}` : `${dd} ${hh} · ${s.model || "未知模型"}`;
   }
@@ -1809,9 +1819,10 @@ async function renderPage() {
   function renderSelOptions() {
     if (!selPop) return;
     const now = new Date();
-    const today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const dow = now.getDay() || 7; // 周日视作 7
-    const week0 = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow + 1).getTime();
+    const p = cnPart(now);
+    const today0 = Date.UTC(+p.year, +p.month - 1, +p.day) - 8 * 3600e3; // 北京时间今天 00:00
+    const dow = new Date(Date.UTC(+p.year, +p.month - 1, +p.day)).getUTCDay() || 7; // 周日视作 7
+    const week0 = today0 - (dow - 1) * 86400e3; // 北京时间本周一 00:00
     const optHtml = (s) =>
       `<div class="sel-opt${s.name === selectedFile ? " sel-on" : ""}" data-file="${s.name}"><span class="so-tx">${esc(sessLabel(s))}</span></div>`;
     const groups = [
