@@ -1367,7 +1367,7 @@ body:not([data-surface="widget"]) #usage-session .session-trigger.si-release{ani
 body:not([data-surface="widget"]) #usage-session .session-trigger>.si-glow-spot{display:block!important;pointer-events:none;--gr:340px;background:radial-gradient(var(--gr) circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--accent) 32%,transparent) 0%,color-mix(in srgb,var(--accent) 18%,transparent) 36%,color-mix(in srgb,var(--accent) 8%,transparent) 64%,transparent 90%)}
 body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glow{display:block!important;pointer-events:none}
 /* 圆环中心等 flex 居中容器：不做基线补偿、不渐隐，避免被容器裁切 */
-.ring-core .od,.sprov-ring-core .od,.model-donut-main .od,.td-ring-main .od,.tc-ring-main .od,.w-donut-copy .od,.ring-state .od,.w-ring .od,.w-share-donut .od{vertical-align:0!important;-webkit-mask-image:none!important;mask-image:none!important}
+.ring-core .od,.sprov-ring-core .od,.model-donut-main .od,.td-ring-main .od,.tc-ring-main .od,.ring-state .od,.w-ring .od,.w-share-donut .od{vertical-align:0!important;-webkit-mask-image:none!important;mask-image:none!important}
 /* 圆环中心数字垂直居中：消除行盒 descent 造成的偏上 */
 .ring-core strong,.sprov-ring-core strong,.td-ring-main strong,.tc-ring-main strong,.model-donut-main strong,.w-donut-copy>b{display:flex;align-items:center;justify-content:center}
 /* ── 延迟统计 mini 卡片动效 ── */
