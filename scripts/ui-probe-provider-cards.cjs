@@ -49,6 +49,9 @@ const UNSUPPORTED = {
 };
 // 本地供应商的启动元数据（等价于后端目录里的 launch）
 const LAUNCH = { ollama: { label: "启动 Ollama", port: 11434 }, freetoken: { label: "启动 FreeToken", port: 1919 } };
+// 详情页看图模式：有余额/配额门路的看钱，没有的看 Token（等价于后端下发的 view 字段）
+const MONEY_VIEW = new Set(["deepseek", "moonshot", "zhipu", "openai"]);
+const BUCKETS = { hour: Array.from({ length: 100 }, (_, i) => i * 1200), day: Array.from({ length: 100 }, (_, i) => i * 3000), week: Array.from({ length: 100 }, (_, i) => i * 9000) };
 const LOCAL_IDS = new Set(["ollama", "freetoken"]);
 
 const A = { file: "20260914-a.jsonl", title: "会话 A", model: "deepseek-flash", turns: 3, sessionTokens: 1000, sessionCostCny: 1, contextPercent: 10, sumInput: 700, sumOutput: 300, sumCacheRead: 200, sumReasoning: 0, series: [{ turn: 1, total: 1000, cost: 0.01, input: 700, output: 300, cacheHit: 200, cacheMiss: 100, reasoning: 0, hitRate: 0.6, latencyMs: 900 }], providers: [{ provider: "deepseek", tokens: 1000 }] };
@@ -71,7 +74,7 @@ function startServer(port, jsPath) {
     if (p === `${base}/assets/panel-v2.js`) return send("text/javascript", fs.readFileSync(jsPath));
 
     // 配置集合：等价于宿主的 provider-catalog + models.json + auth.json 求交后的结果
-    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, local: LOCAL_IDS.has(id), links: [], launch: LAUNCH[id] || null, models: [] })) });
+    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, local: LOCAL_IDS.has(id), links: [], launch: LAUNCH[id] || null, view: MONEY_VIEW.has(id) ? "money" : "token", models: [] })) });
     // 余额：只有插件写了适配器的供应商才有真实状态，其余靠前端标「已配置」
     if (p === `${base}/api/balance`) return json({
       balances: cur().filter((id) => BALANCE[id]).map((id) => BALANCE[id]),
@@ -83,7 +86,7 @@ function startServer(port, jsPath) {
     if (p === `${base}/api/active`) return json({ dir: "mock", file: null });
     if (p === `${base}/api/resolve-entry`) return json({ file: null });
     if (p === `${base}/api/sessions`) return json({ dir: "mock", sessions: [{ name: A.file, title: A.title, model: A.model, size: 1, mtime: Date.now(), turns: A.turns }] });
-    if (p === `${base}/api/ledger-stats`) return json({ days: { "2026-09-14": { tokens: 1000, cost: 1 } }, calls: 3, errors: 0, tokens: { input: 700, output: 300, cacheHit: 200, cacheMiss: 100, hitRate: 0.6 } });
+    if (p === `${base}/api/ledger-stats`) return json({ days: { "2026-09-19": { tokens: 120000, cost: 3.2 } }, calls: 3, errors: 0, tokens: { input: 700, output: 300, cacheHit: 200, cacheMiss: 100, hitRate: 0.6 }, timeBuckets: { hour: BUCKETS.hour.map((v) => v / 1e6), day: BUCKETS.day.map((v) => v / 1e6), week: BUCKETS.week.map((v) => v / 1e6) }, tokenBuckets: { hour: BUCKETS.hour, day: BUCKETS.day, week: BUCKETS.week } });
     if (p === `${base}/api/total-cost`) return json({ totalCost: 1.23 });
     if (p === `${base}/api/rules`) return json({});
     if (p === `${base}/api/events`) return json({ events: [] });
@@ -130,19 +133,23 @@ const SCENARIO = `(async()=>{
   const ctlD=await setMode('D');
   await sleep(5200);
   const snapD=cards();
-  // 场景 E：点开本地供应商详情，入口区应该有「启动」按钮
-  let localDetail={};
-  const ocard=[...document.querySelectorAll('#providerList .provider-item')].find(el=>el.dataset.provider==='ollama');
-  if(ocard){
-    ocard.click();
-    await sleep(800);
-    localDetail={hasLaunch:!!document.querySelector('#pdQuick [data-launch="ollama"]'),quick:(document.querySelector('#pdQuick')||{}).innerHTML||''};
-  }else localDetail={error:'找不到 ollama 卡片'};
+  // 场景 E：详情页判定——本地看 Token 消耗、有接口的看费用，且本地才有启动按钮
+  let detail={};
+  const openCard=async(id)=>{const el=[...document.querySelectorAll('#providerList .provider-item')].find(x=>x.dataset.provider===id);if(!el)return false;el.click();await sleep(900);return true;};
+  if(await openCard('ollama')){
+    detail.ollama={hasLaunch:!!document.querySelector('#pdQuick [data-launch="ollama"]'),
+      head:((document.querySelector('.provider-cost-section .provider-cost-head h3')||{}).textContent||'').trim(),
+      tips:[...document.querySelectorAll('#providerCostHeat i')].slice(0,2).map(el=>el.getAttribute('title'))};
+  }else detail.error='找不到 ollama 卡片';
+  if(await openCard('deepseek')){
+    detail.deepseek={head:((document.querySelector('.provider-cost-section .provider-cost-head h3')||{}).textContent||'').trim(),
+      tips:[...document.querySelectorAll('#providerCostHeat i')].slice(0,2).map(el=>el.getAttribute('title'))};
+  }
   return {A:{config:ctlA.config,count:snapA.length,cards:snapA},
           B:{before:ctlB.config,count:snapB.length,cards:snapB},
           C:{after:ctlC.config,count:snapC.length,cards:snapC},
           D:{config:ctlD.config,count:snapD.length,cards:snapD},
-          E:localDetail};
+          E:detail};
 })()`;
 
 (async () => {
@@ -194,7 +201,12 @@ const SCENARIO = `(async()=>{
         console.log("  D 判定 ? " + (seq === expectD));
       }
       if (out.E) {
-        console.log("  E 本地详情页启动按钮 = " + (out.E.hasLaunch === true) + "   入口区=" + String(out.E.quick).replace(/\s+/g, " ").slice(0, 120));
+        const o = out.E.ollama || {}, d = out.E.deepseek || {};
+        const okToken = o.head === "Token 消耗" && !(o.tips || []).some((t) => String(t).includes("¥"));
+        const okMoney = d.head === "费用概览" && (d.tips || []).some((t) => String(t).includes("¥"));
+        console.log("  E 本地详情启动按钮 = " + (o.hasLaunch === true));
+        console.log("  E 本地看 Token 消耗 = " + okToken + "   (" + o.head + " | " + JSON.stringify(o.tips) + ")");
+        console.log("  E 有接口看费用 = " + okMoney + "   (" + d.head + " | " + JSON.stringify(d.tips) + ")");
       }
     }
   } catch (e) {

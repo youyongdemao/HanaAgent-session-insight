@@ -1347,6 +1347,8 @@ export default function registerPluginApiRoutes(app, ctx) {
         local: dir.local === true || isLocalEndpoint(baseUrl),
         links: dir.links || [],
         launch: dir.launch ? { label: dir.launch.label || dir.name, port: dir.launch.probePort || null } : null,
+        // 详情页看什么：有余额/配额查询门路的看钱，没有的（本地部署、官方无接口）看 Token 量
+        view: (id in BALANCE_ADAPTERS) || (dir.query && dir.query.kind && dir.query.kind !== "none") ? "money" : "token",
         models: (cfg?.models || []).map((m) => (typeof m === "string" ? m : m?.id)).filter(Boolean),
       };
     });
