@@ -16,6 +16,32 @@ function dbg(msg) {
   } catch {}
 }
 
+// 日界/小时界统一按北京时间（Asia/Shanghai）。
+// 此前直接用 startedAt 的 ISO 串前 10/13 个字符切分，等价于 UTC 日和 UTC 小时，
+// 会把北京时间 0:00-8:00 的调用归到前一天，与前端「今日」口径也会互相错位。
+const CN_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", hourCycle: "h23",
+});
+function cnParts(ts) {
+  const t = typeof ts === "number" ? ts : Date.parse(ts || "");
+  if (!Number.isFinite(t)) return null;
+  const out = {};
+  for (const part of CN_FMT.formatToParts(new Date(t))) out[part.type] = part.value;
+  return out.year && out.month && out.day ? out : null;
+}
+// YYYY-MM-DD（北京时间）
+function cnDay(ts) {
+  const p = cnParts(ts);
+  return p ? `${p.year}-${p.month}-${p.day}` : "";
+}
+// YYYY-MM-DDTHH（北京时间；键形状与旧的 UTC 小时键保持一致）
+function cnHour(ts) {
+  const p = cnParts(ts);
+  return p ? `${p.year}-${p.month}-${p.day}T${p.hour}` : "";
+}
+
 // 用量总账（总消费数据源）
 let ledgerCache = { at: 0, totalCost: 0, perProvider: {}, perModel: {} };
 
@@ -45,7 +71,7 @@ function computeTotalCost(ctx) {
     const perModel = {};
     const todayProvider = {};
     const todayModel = {};
-    const todayStr = new Date().toDateString();
+    const todayStr = cnDay(Date.now());
     let todayCost = 0;
     for (const e of ledgerEntries) {
       const model = e.model?.modelId;
@@ -56,7 +82,7 @@ function computeTotalCost(ctx) {
       if (provider) perProvider[provider] = (perProvider[provider] || 0) + cost;
       if (model) perModel[model] = (perModel[model] || 0) + cost;
       let isToday = false;
-      try { isToday = e.startedAt ? new Date(e.startedAt).toDateString() === todayStr : false; } catch {}
+      if (e.startedAt) isToday = cnDay(e.startedAt) === todayStr;
       if (isToday) {
         todayCost += cost;
         if (provider) todayProvider[provider] = (todayProvider[provider] || 0) + cost;
@@ -116,7 +142,7 @@ function computeLedgerStats(ctx, provider) {
       bySubsystem[sub].cost += cc;
       bySubsystem[sub].tokens += e.usage?.totalTokens || 0;
       // 日期
-      const d = String(e.startedAt || "").slice(0, 10);
+      const d = cnDay(e.startedAt);
       if (d) {
         byDay[d] = byDay[d] || { calls: 0, tokens: 0, cost: 0 };
         byDay[d].calls++;
@@ -180,7 +206,7 @@ function computeLedgerStats(ctx, provider) {
       bySession[sid].cost += cc;
       bySession[sid].tokens += u.totalTokens || (inTot + outT);
       // 按小时聚合（调用数 / 费用）
-      const hk = String(e.startedAt || "").slice(0, 13);
+      const hk = cnHour(e.startedAt);
       if (hk) { byHour[hk] = byHour[hk] || { calls: 0, cost: 0 }; byHour[hk].calls++; byHour[hk].cost += cc; }
       // 延迟
       const dur = e.durationMs;
