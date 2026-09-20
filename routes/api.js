@@ -16,30 +16,21 @@ function dbg(msg) {
   } catch {}
 }
 
-// 日界/小时界统一按北京时间（Asia/Shanghai）。
-// 此前直接用 startedAt 的 ISO 串前 10/13 个字符切分，等价于 UTC 日和 UTC 小时，
-// 会把北京时间 0:00-8:00 的调用归到前一天，与前端「今日」口径也会互相错位。
-const CN_FMT = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Shanghai",
-  year: "numeric", month: "2-digit", day: "2-digit",
-  hour: "2-digit", hourCycle: "h23",
-});
-function cnParts(ts) {
+// 日界/小时界跟随系统本地时区，与前端显示同源（用户看到的就是本机时间）。
+// 此前直接用 startedAt 的 ISO 串前 10/13 个字符切分，等价于 UTC 日，而前端「今日」用的是本地时区，
+// 两端不一致会让凌晨的调用归错天；现在两端统一按本地时区。
+function fmtDay(ts) {
   const t = typeof ts === "number" ? ts : Date.parse(ts || "");
-  if (!Number.isFinite(t)) return null;
-  const out = {};
-  for (const part of CN_FMT.formatToParts(new Date(t))) out[part.type] = part.value;
-  return out.year && out.month && out.day ? out : null;
+  if (!Number.isFinite(t)) return "";
+  const d = new Date(t);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-// YYYY-MM-DD（北京时间）
-function cnDay(ts) {
-  const p = cnParts(ts);
-  return p ? `${p.year}-${p.month}-${p.day}` : "";
-}
-// YYYY-MM-DDTHH（北京时间；键形状与旧的 UTC 小时键保持一致）
-function cnHour(ts) {
-  const p = cnParts(ts);
-  return p ? `${p.year}-${p.month}-${p.day}T${p.hour}` : "";
+// YYYY-MM-DDTHH（本地时区；键形状与旧的 UTC 小时键保持一致）
+function fmtHour(ts) {
+  const t = typeof ts === "number" ? ts : Date.parse(ts || "");
+  if (!Number.isFinite(t)) return "";
+  const d = new Date(t);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}`;
 }
 
 // 用量总账（总消费数据源）
@@ -71,7 +62,7 @@ function computeTotalCost(ctx) {
     const perModel = {};
     const todayProvider = {};
     const todayModel = {};
-    const todayStr = cnDay(Date.now());
+    const todayStr = fmtDay(Date.now());
     let todayCost = 0;
     for (const e of ledgerEntries) {
       const model = e.model?.modelId;
@@ -82,7 +73,7 @@ function computeTotalCost(ctx) {
       if (provider) perProvider[provider] = (perProvider[provider] || 0) + cost;
       if (model) perModel[model] = (perModel[model] || 0) + cost;
       let isToday = false;
-      if (e.startedAt) isToday = cnDay(e.startedAt) === todayStr;
+      if (e.startedAt) isToday = fmtDay(e.startedAt) === todayStr;
       if (isToday) {
         todayCost += cost;
         if (provider) todayProvider[provider] = (todayProvider[provider] || 0) + cost;
@@ -142,7 +133,7 @@ function computeLedgerStats(ctx, provider) {
       bySubsystem[sub].cost += cc;
       bySubsystem[sub].tokens += e.usage?.totalTokens || 0;
       // 日期
-      const d = cnDay(e.startedAt);
+      const d = fmtDay(e.startedAt);
       if (d) {
         byDay[d] = byDay[d] || { calls: 0, tokens: 0, cost: 0 };
         byDay[d].calls++;
@@ -206,7 +197,7 @@ function computeLedgerStats(ctx, provider) {
       bySession[sid].cost += cc;
       bySession[sid].tokens += u.totalTokens || (inTot + outT);
       // 按小时聚合（调用数 / 费用）
-      const hk = cnHour(e.startedAt);
+      const hk = fmtHour(e.startedAt);
       if (hk) { byHour[hk] = byHour[hk] || { calls: 0, cost: 0 }; byHour[hk].calls++; byHour[hk].cost += cc; }
       // 延迟
       const dur = e.durationMs;
