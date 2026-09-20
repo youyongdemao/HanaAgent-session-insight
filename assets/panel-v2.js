@@ -108,8 +108,12 @@ function renderUsageSession(){
   const inBar=$("#sInBar"),outBar=$("#sOutBar"),hitBar=$("#sHitBar"),missBar=$("#sMissBar");if(inBar)inBar.style.width=inputPct+"%";if(outBar)outBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";
   const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const used=Array.isArray(st.providers)&&st.providers.length?st.providers:[{provider:st.provider||"unknown",tokens:st.sessionTokens||0,turns:st.turns||0}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;const colors=["#537d96","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const pb=$("#sProviderBody");if(pb){pb.innerHTML=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;return `<div class="card w-detail-item si-rise"><div class="w-detail-item-head"><span>${esc(providerNames[p.provider]||p.provider)}</span><b>${pct.toFixed(1)}%</b></div><div class="w-detail-provider-bar"><i style="--pct:${Math.max(0,Math.min(100,pct))}%;--bar:${colors[i%colors.length]}"></i></div></div>`;}).join("")||`<div class="empty">暂无供应商</div>`;}
 }
+// 会话页要看哪个会话：用户在下拉里手选过就锁定那个；否则跟随当前会话（state.stats.file）；都没有则取最新一个。
+// 判定必须在「请求会话统计之前」完成，否则首屏会先渲染成无数据、下一轮轮询才补上，
+// 签名随之变化、白跳一次（滚动结构退回纯文本、卡片高度变化）。
+function resolveSessionPick(){const ss=state.sessions?.sessions||[];const cur=state.userSelectedFile||state.stats?.file||state.activeFile;return (cur&&ss.some(s=>s.name===cur))?cur:(ss[0]?.name||null);}
 function sessionMenuItems(ss){const cur=state.userSelectedFile||state.stats?.file||state.activeFile;return ss.map(s=>{const on=cur&&s.name===cur;return `<div class="session-item${on?" active":""}" data-file="${esc(s.name)}"><div class="session-item-title">${esc(s.title||s.name)}</div>${s.model?`<div class="session-item-model">${esc(s.model)}</div>`:""}${s.turns?`<div class="session-item-meta">第 ${s.turns} 轮</div>`:""}</div>`;}).join("")||`<div class="session-empty">暂无会话</div>`;}
-function renderUsageSessions(){const ss=state.sessions?.sessions||[];const menu=$("#sessionMenu"),lab=$("#sessionTriggerLabel");if(!menu)return;if(!ss.length){menu.innerHTML=`<div class="session-empty">暂无会话</div>`;if(lab)lab.textContent="暂无会话";return;}const cur=state.userSelectedFile||state.stats?.file||state.activeFile;const match=cur&&ss.some(s=>s.name===cur)?cur:ss[0]?.name;state.userSelectedFile=match;menu.innerHTML=sessionMenuItems(ss);const ms=ss.find(s=>s.name===match);if(lab)lab.textContent=ms?(ms.title||ms.name):(match||"检测中…");menu.querySelectorAll(".session-item").forEach(it=>it.addEventListener("click",()=>{pickSession(it.dataset.file);}));}
+function renderUsageSessions(){const ss=state.sessions?.sessions||[];const menu=$("#sessionMenu"),lab=$("#sessionTriggerLabel");if(!menu)return;if(!ss.length){menu.innerHTML=`<div class="session-empty">暂无会话</div>`;if(lab)lab.textContent="暂无会话";return;}const match=resolveSessionPick();state.userSelectedFile=match;menu.innerHTML=sessionMenuItems(ss);const ms=ss.find(s=>s.name===match);if(lab)lab.textContent=ms?(ms.title||ms.name):(match||"检测中…");menu.querySelectorAll(".session-item").forEach(it=>it.addEventListener("click",()=>{pickSession(it.dataset.file);}));}
 function positionSessionMenu(){const m=$("#sessionMenu"),t=$("#sessionTrigger");if(!m||!t||m.hidden)return;const r=t.getBoundingClientRect();const vw=window.innerWidth||document.documentElement.clientWidth||0;const desired=Math.max(r.width,560);const w=Math.min(desired,vw-24);m.style.left=Math.round(r.left)+"px";m.style.top=Math.round(r.bottom+6)+"px";m.style.width=Math.round(w)+"px";}
 function toggleSessionMenu(){const m=$("#sessionMenu"),drop=$("#sessionDrop"),t=$("#sessionTrigger");if(!m||!drop)return;if(!m.hidden){closeSessionMenu();return;}m.__siHome=drop;if(m.parentElement!==document.body)document.body.appendChild(m);m.hidden=false;requestAnimationFrame(()=>{positionSessionMenu();m.classList.add("open");if(t)t.classList.add("open");});}
 function closeSessionMenu(){const m=$("#sessionMenu"),t=$("#sessionTrigger");if(m&&!m.hidden){m.classList.remove("open");m.hidden=true;const home=m.__siHome||$("#sessionDrop");if(home&&m.parentElement!==home)home.appendChild(m);m.style.left="";m.style.top="";m.style.width="";}if(t)t.classList.remove("open");}
@@ -287,7 +291,7 @@ function renderApiDetail(){
   renderProviderCostPanels();
 }
 /* ── 数字转轮：纯数字文本逐位滚动到目标（与 v1.2 版同款效果） ── */
-function odometer(el,target,feedback,instant){el.style.whiteSpace='nowrap';const str=String(target),digits=[],frag=document.createDocumentFragment();const MASK='-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%)';const SHADOW='text-shadow:0 0 7px color-mix(in srgb,currentColor 28%,transparent)';const isD=ch=>ch>='0'&&ch<='9';
+function odometer(el,target,instant){el.style.whiteSpace='nowrap';const str=String(target),digits=[],frag=document.createDocumentFragment();const MASK='-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%)';const SHADOW='text-shadow:0 0 7px color-mix(in srgb,currentColor 28%,transparent)';const isD=ch=>ch>='0'&&ch<='9';
   // 父元素若有负字距，滚动盒的内容宽会比字符本身窄，数字右侧会被裁。
   // 用 padding 把宽度补回来，再用负 margin 抵消占位：水平间距和垂直位置都不变。
   const _lsPx=parseFloat(getComputedStyle(el).letterSpacing);const _lsFix=isFinite(_lsPx)&&_lsPx<0;
@@ -297,7 +301,7 @@ function odometer(el,target,feedback,instant){el.style.whiteSpace='nowrap';const
   // 再用同值负 margin 抵消布局影响（字距与水平位置不变）。
   const _fsPx=parseFloat(getComputedStyle(el).fontSize)||16;
   const padFix=(( _lsFix?-_lsPx:0)+Math.max(1.5,_fsPx*0.05)).toFixed(2)+'px';
-  const prevRaw=String(el.dataset.odValue||'');const prevNums=[...prevRaw].filter(isD);const tgtNums=[...str].filter(isD);let ni=0;for(const ch of str){if(isD(ch)){const to=parseInt(ch,10);const fromRight=tgtNums.length-1-ni;const pi=prevNums.length-1-fromRight;const from=pi>=0?parseInt(prevNums[pi],10):0;ni++;const od=document.createElement('span');od.className='od';od.dataset.odCh=ch;od.style.cssText='display:inline-block;position:relative;overflow:hidden;height:1em;line-height:1em;text-align:center;font-size:inherit;font-family:inherit;font-weight:inherit;color:inherit;--od-pad-r:'+padFix+';'+SHADOW+';'+MASK;const strip=document.createElement('span');strip.className='od-strip';strip.style.cssText='display:block;will-change:transform';const jig=to<9?1:-1;const hi=9;for(let i=0;i<=hi;i++){const c=document.createElement('span');c.className='od-d';c.style.cssText='display:block;height:1em;line-height:1em;text-align:center';c.textContent=String(i);strip.appendChild(c);}strip.style.transform='translateY('+(-from)+'em)';strip.dataset.odTo=String(to);od.appendChild(strip);digits.push({od,strip,from,to,jig});frag.appendChild(od);}else{frag.appendChild(document.createTextNode(ch));}}el.textContent='';el.appendChild(frag);el.dataset.odValue=str;if(!digits.length)return;const dur=1000;el.__odBusyUntil=performance.now()+dur+780;alignNumbers(el);setTimeout(()=>{alignNumbers(el);requestAnimationFrame(()=>alignNumbers(el));},dur+200);digits.forEach(({od,strip,from,to,jig})=>{if(instant){strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');return;}if(from===to){strip.style.transform='translateY('+(-to)+'em)';od.classList.add('od-done');if(feedback){const j0=performance.now(),jd=620,jf=now=>{const p=Math.min(1,(now-j0)/jd),k=Math.sin(p*Math.PI);strip.style.transform='translateY('+(-(to+jig*k)).toFixed(4)+'em)';if(p<1)requestAnimationFrame(jf);else{strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';}};requestAnimationFrame(jf);}else{strip.style.willChange='';}od.classList.add('od-done');setTimeout(()=>{strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');},dur+140);return;}let t0=null;const frame=now=>{if(t0===null)t0=now;const p=Math.min(1,(now-t0)/dur),ease=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,v=from+(to-from)*ease;strip.style.transform='translateY('+(-v).toFixed(4)+'em)';if(p<1)requestAnimationFrame(frame);else{strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';}};requestAnimationFrame(frame);od.classList.add('od-done');setTimeout(()=>{strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');},dur+140);});}
+  const prevRaw=String(el.dataset.odValue||'');const prevNums=[...prevRaw].filter(isD);const tgtNums=[...str].filter(isD);let ni=0;for(const ch of str){if(isD(ch)){const to=parseInt(ch,10);const fromRight=tgtNums.length-1-ni;const pi=prevNums.length-1-fromRight;const from=pi>=0?parseInt(prevNums[pi],10):0;ni++;const od=document.createElement('span');od.className='od';od.dataset.odCh=ch;od.style.cssText='display:inline-block;position:relative;overflow:hidden;height:1em;line-height:1em;text-align:center;font-size:inherit;font-family:inherit;font-weight:inherit;color:inherit;--od-pad-r:'+padFix+';'+SHADOW+';'+MASK;const strip=document.createElement('span');strip.className='od-strip';strip.style.cssText='display:block;will-change:transform';const hi=9;for(let i=0;i<=hi;i++){const c=document.createElement('span');c.className='od-d';c.style.cssText='display:block;height:1em;line-height:1em;text-align:center';c.textContent=String(i);strip.appendChild(c);}strip.style.transform='translateY('+(-from)+'em)';strip.dataset.odTo=String(to);od.appendChild(strip);digits.push({od,strip,from,to});frag.appendChild(od);}else{frag.appendChild(document.createTextNode(ch));}}el.textContent='';el.appendChild(frag);el.dataset.odValue=str;if(!digits.length)return;const dur=1000;el.__odBusyUntil=performance.now()+dur+780;alignNumbers(el);setTimeout(()=>{alignNumbers(el);requestAnimationFrame(()=>alignNumbers(el));},dur+200);digits.forEach(({od,strip,from,to})=>{if(instant){strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');return;}if(from===to){strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');setTimeout(()=>{strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');},dur+140);return;}let t0=null;const frame=now=>{if(t0===null)t0=now;const p=Math.min(1,(now-t0)/dur),ease=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2,v=from+(to-from)*ease;strip.style.transform='translateY('+(-v).toFixed(4)+'em)';if(p<1)requestAnimationFrame(frame);else{strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');}};requestAnimationFrame(frame);setTimeout(()=>{strip.style.transform='translateY('+(-to)+'em)';strip.style.willChange='';od.classList.add('od-done');},dur+140);});}
 // 页面被挂起（窗口失焦 / 后台）时 requestAnimationFrame 会被浏览器冻结，
 // 滚动数字会停在半途，屏幕上就留下一串“上下被切、只露中间”的残缺数字。
 // 恢复可见（或重新获得焦点）时，把所有没落到位的滚动条立即归位。
@@ -329,50 +333,59 @@ function odDescentPx(el){try{const cs=getComputedStyle(el);const fs=parseFloat(c
 // 旁边的文本跟着移动，补偿全被抵消（实测残差 42px 而补偿 19px，完全抵消）。
 // transform 不参与布局计算，行框不动，平移量才是精确的。
 function alignNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorAll('.od').forEach(od=>{const el=od.parentElement;if(!el)return;const d=odDescentPx(el);if(!(d>0))return;od.style.transform='translateY('+d.toFixed(2)+'px)';});}
-function normalizeNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorAll('b[id],strong[id]').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,false,true);});alignNumbers(R);}
+function normalizeNumbers(rootEl,animate){const R=rootEl||root;if(!R)return;R.querySelectorAll('b[id],strong[id]').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,!animate);});alignNumbers(R);}
 function isPlainNumber(t){if(!t||t.length>20)return false;if(!/[0-9]/.test(t))return false;if(/[\u4e00-\u9fff]/.test(t))return false;if(/[A-Za-z]/.test(t.replace(/[kKmMbB]/g,'')))return false;return true;}
-function animateNumbers(rootEl,feedback){if(!rootEl)return;rootEl.querySelectorAll('b,strong').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,feedback);});alignNumbers(rootEl);}
+function animateNumbers(rootEl){if(!rootEl)return;rootEl.querySelectorAll('b,strong').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t);});alignNumbers(rootEl);}
 let numEnter=true;
-function playNumbers(feedback){if(!numEnter)return;numEnter=false;requestAnimationFrame(()=>animateNumbers(root,feedback));}
-function renderPageAll(quiet){renderUsageOverview();renderTokenPanel();renderCachePanel();renderUsageSession();renderUsageSessions();renderUsageDistribution();renderApiOverview();renderApiDetail();if(!quiet)playNumbers();normalizeNumbers();};function renderAll(){if(surface==="widget")renderWidget();else renderPageAll();}
+function playNumbers(){if(!numEnter)return;numEnter=false;requestAnimationFrame(()=>animateNumbers(root));}
+function renderPageAll(quiet){renderUsageOverview();renderTokenPanel();renderCachePanel();renderUsageSession();renderUsageSessions();renderUsageDistribution();renderApiOverview();renderApiDetail();if(!quiet)playNumbers();normalizeNumbers(root,!quiet);};function renderAll(){if(surface==="widget")renderWidget();else renderPageAll();}
 let focusedFile=null;let activeSessionFile=null;let focusedEntryId=null;let focusedFileFailUntil=0;async function getFocusedSessionFile(){if(Date.now()<focusedFileFailUntil)return focusedFile;try{const r=await fetch(hostApiUrl("/api/sessions/messages?limit=5"),{credentials:"include",signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error("focus "+r.status);const d=await r.json();const msg=(Array.isArray(d?.messages)?[...d.messages].reverse():[]).find(x=>typeof x?.entryId==="string"&&x.entryId.trim());const entryId=msg?.entryId?.trim()||null;if(entryId&&entryId===focusedEntryId&&focusedFile)return focusedFile;if(entryId){const mapped=await fetchJson("/api/resolve-entry?entryId="+encodeURIComponent(entryId));if(typeof mapped?.file==="string"&&mapped.file.endsWith(".jsonl")){focusedEntryId=entryId;focusedFile=mapped.file;focusedFileFailUntil=0;return focusedFile;}}}catch{}try{const active=await fetchJson("/api/active");if(typeof active?.file==="string"&&active.file.endsWith(".jsonl")){focusedFile=active.file;focusedFileFailUntil=0;return focusedFile;}}catch{}focusedFileFailUntil=Date.now()+5000;return focusedFile;}
 let widgetRefreshSeq=0;async function loadWidget(){const thisRefresh=++widgetRefreshSeq;const requestedFile=activeSessionFile;const statsPath=requestedFile?"/api/stats?file="+encodeURIComponent(requestedFile):"/api/stats";const [stats,balance]=await Promise.all([fetchJson(statsPath).catch(()=>null),fetchJson("/api/balance").catch(()=>null)]);if(thisRefresh!==widgetRefreshSeq||requestedFile!==activeSessionFile)return;state.stats=stats;state.balance=balance;paintQuiet(()=>renderWidget(),widgetBooted);widgetBooted=true;}
 // ── 静默刷新机制 ──
 // 轮询重绘不应该重播整页入场动画：静默模式下临时挂 .si-quiet（把 animation/transition 压到 0.001s），
 // 数据完全没变时干脆不重绘；数值在没变时不会被重写，滚动结构得以保留，画面保持稳定。
-let pageBooted=false,widgetBooted=false,lastPageSig=null;
+let pageBooted=false,widgetBooted=false,lastFastSig=null,lastSlowSig=null;
 function paintQuiet(fn,quiet){
   if(!quiet){fn();return;}
   root.classList.add('si-quiet');
   try{fn();}catch(e){}
   requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.remove('si-quiet')));
 }
+// ── 数据签名（分快慢两组） ──
+// 快组：本地账本与会话数据，首屏就能定。慢组：要联网的余额与计费库。
+// 两组各记基准、各自判定。慢组数据落定时必须把基准补齐，否则下一轮算出的签名
+// 会与「缺慢数据的首屏基准」不同，白白触发一次全量重绘（滚动结构退回纯文本、卡片高度变化）。
+const SIG_DROP=/^(updatedAt|updated_at|checkedAt|fetchedAt|ts|time|at|now|elapsedMs|ageMs)$/;
+function stableJson(o){try{return JSON.stringify(o,(k,v)=>SIG_DROP.test(k)?undefined:v)||'';}catch{return '';}}
 function dataSig(){
-  const drop=(k,v)=>/^(updatedAt|updated_at|checkedAt|fetchedAt|ts|time|at|now|elapsedMs|ageMs)$/.test(k)?undefined:v;
-  const s=o=>{try{return JSON.stringify(o,drop)||'';}catch{return '';}};
-  return [s(state.ledger),s(state.stats),s(state.sessionStats),s(state.totalCost),s(state.sessions),s(state.events),s(state.balance)].join('|');
+  return [stableJson(state.ledger),stableJson(state.stats),stableJson(state.sessionStats),stableJson(state.totalCost),stableJson(state.sessions),stableJson(state.events)].join('|');
 }
+function slowSig(){return [stableJson(state.balance),stableJson(state.pricing)].join('|');}
 let pageLoading=false;
 async function loadPage(force){
   if(pageLoading)return;
   pageLoading=true;
   const q=force?"?force=1":"";
-  // 快组：本地账本 / 会话数据，先出数字
-  // 会话页有自己的数据源：用户在下拉里手选过会话就锁定那个会话，绝不能被默认的“最新会话”覆盖
-  const sessPick=state.userSelectedFile||null;
-  const fast=[fetchJson("/api/stats").then(r=>state.stats=r).catch(()=>state.stats=null),
-    (sessPick?fetchJson("/api/stats?file="+encodeURIComponent(sessPick)).then(r=>{if(r&&!r.error)state.sessionStats=r;}).catch(()=>{}):Promise.resolve()).then(()=>{if(!sessPick)state.sessionStats=null;}),fetchJson("/api/ledger-stats"+q).then(r=>state.ledger=r).catch(()=>state.ledger=null),fetchJson("/api/sessions").then(r=>state.sessions=r).catch(()=>state.sessions=null),fetchJson("/api/total-cost").then(r=>state.totalCost=r).catch(()=>state.totalCost=null),fetchJson("/api/rules").then(r=>state.rules=r).catch(()=>state.rules={}),fetchJson("/api/providers").then(r=>{state.providers=r;state.providersErr=false;pageProvSig=provSigOf(r);}).catch(()=>{state.providersErr=true;}),fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300").then(r=>state.events=r).catch(()=>state.events=null)];
+  // 快组：本地账本 / 会话数据，先出数字。
+  // 会话统计不在这里发：它取决于「看哪个会话」，而那个判定要用到本次拿到的会话列表，所以排在 await 之后。
+  const fast=[fetchJson("/api/stats").then(r=>state.stats=r).catch(()=>state.stats=null),fetchJson("/api/ledger-stats"+q).then(r=>state.ledger=r).catch(()=>state.ledger=null),fetchJson("/api/sessions").then(r=>state.sessions=r).catch(()=>state.sessions=null),fetchJson("/api/total-cost").then(r=>state.totalCost=r).catch(()=>state.totalCost=null),fetchJson("/api/rules").then(r=>state.rules=r).catch(()=>state.rules={}),fetchJson("/api/providers").then(r=>{state.providers=r;state.providersErr=false;pageProvSig=provSigOf(r);}).catch(()=>{state.providersErr=true;}),fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300").then(r=>state.events=r).catch(()=>state.events=null)];
   try{
     await Promise.all(fast);
+    // 先定下会话页的数据源再拉它：手选优先，否则跟随当前会话（见 resolveSessionPick）。
+    // 反过来「先拉后定」的话，首屏会先渲染成无逐轮数据、下一轮轮询才补上，签名因此变化、白跳一次。
+    const sessPick=resolveSessionPick();
+    if(sessPick){state.userSelectedFile=sessPick;try{const r=await fetchJson("/api/stats?file="+encodeURIComponent(sessPick));state.sessionStats=(r&&!r.error)?r:null;}catch{state.sessionStats=null;}}
+    else state.sessionStats=null;
     const quiet=!force&&pageBooted;
     const sig=dataSig();
     // 先落 pageBooted 再渲染：渲染里任何一处抱错，不能让本函数永远回到“首次渲染”分支。
     // 否则每次轮询都走非静默路径、在同一处再抱，后面的慢组（余额/计费库）永远排不上，
     // 供应商区块就卡在首帧那个空态里再也不更新。
     pageBooted=true;
-    if(!quiet||sig!==lastPageSig){lastPageSig=sig;paintQuiet(()=>renderPageAll(quiet),quiet);}
-    // 慢组：带外部网络的余额 / 计费库，回来后静默补一次，不挡首屏
-    Promise.all([fetchJson("/api/balance"+q).then(r=>state.balance=r).catch(()=>state.balance=null),fetchJson("/api/pricing").then(r=>state.pricing=r).catch(()=>state.pricing=null)]).then(()=>{paintQuiet(()=>{renderApiOverview();renderApiDetail();},quiet);}).catch(()=>{}).finally(()=>{pageLoading=false;});
+    if(!quiet||sig!==lastFastSig){lastFastSig=sig;paintQuiet(()=>renderPageAll(quiet),quiet);}
+    // 慢组：带外部网络的余额 / 计费库，回来后静默补一次，不挡首屏。
+    // 同样按签名判定，且无论渲不渲染都把基准补齐，避免下一轮出现一次多余的全量重绘。
+    Promise.all([fetchJson("/api/balance"+q).then(r=>state.balance=r).catch(()=>state.balance=null),fetchJson("/api/pricing").then(r=>state.pricing=r).catch(()=>state.pricing=null)]).then(()=>{const ss=slowSig();const dirty=!quiet||ss!==lastSlowSig;lastSlowSig=ss;if(dirty)paintQuiet(()=>{renderApiOverview();renderApiDetail();},quiet);}).catch(()=>{}).finally(()=>{pageLoading=false;});
   }catch(e){pageLoading=false;}
 }
 async function saveRules(provider,payload){try{const r=await pluginApiFetch("/api/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({provider},payload))});const j=await r.json().catch(()=>null);if(j&&j.ok&&state.rules){state.rules=Object.assign({},state.rules,{[provider]:j.saved});}return j;}catch(e){return null;}}
