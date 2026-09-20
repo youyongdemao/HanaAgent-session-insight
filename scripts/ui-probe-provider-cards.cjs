@@ -43,6 +43,7 @@ const BALANCE = {
   zhipu: { provider: "zhipu", name: "智谱", status: "http_502", detail: "bad gateway" },
 };
 const UNSUPPORTED = { ollama: { provider: "ollama", note: "无官方余额接口" }, openai: { provider: "openai", note: "需配置 OpenAI Admin Key" } };
+const LOCAL_IDS = new Set(["ollama", "freetoken"]);
 
 const A = { file: "20260914-a.jsonl", title: "会话 A", model: "deepseek-flash", turns: 3, sessionTokens: 1000, sessionCostCny: 1, contextPercent: 10, sumInput: 700, sumOutput: 300, sumCacheRead: 200, sumReasoning: 0, series: [{ turn: 1, total: 1000, cost: 0.01, input: 700, output: 300, cacheHit: 200, cacheMiss: 100, reasoning: 0, hitRate: 0.6, latencyMs: 900 }], providers: [{ provider: "deepseek", tokens: 1000 }] };
 
@@ -64,7 +65,7 @@ function startServer(port, jsPath) {
     if (p === `${base}/assets/panel-v2.js`) return send("text/javascript", fs.readFileSync(jsPath));
 
     // 配置集合：等价于宿主的 provider-catalog + models.json + auth.json 求交后的结果
-    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, models: [] })) });
+    if (p === `${base}/api/providers`) return json({ providers: cur().map((id) => ({ id, name: null, baseUrl: BASE_URL[id] || null, local: LOCAL_IDS.has(id), models: [] })) });
     // 余额：只有插件写了适配器的供应商才有真实状态，其余靠前端标「已配置」
     if (p === `${base}/api/balance`) return json({
       balances: cur().filter((id) => BALANCE[id]).map((id) => BALANCE[id]),

@@ -129,7 +129,7 @@ function renderApiOverview(){
   const cfgName={};for(const p of cfgList){if(p.name)cfgName[p.id]=p.name;}
   // 本地部署的供应商（base_url 指向本机）单独一类：它们没有余额概念，灯用亮粉
   const isLocalUrl=u=>/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(String(u||""));
-  const localIds=new Set(cfgList.filter(p=>isLocalUrl(p.baseUrl)).map(p=>p.id));
+  const localIds=new Set(cfgList.filter(p=>p.local===true||isLocalUrl(p.baseUrl)).map(p=>p.id));
   const balMap=new Map(bal.map(b=>[b.provider,b]));
   const unsupMap=new Map(unsup.map(u=>[u.provider,u]));
   const full=cfgList.map(p=>{const id=p.id,b=balMap.get(id);if(b)return Object.assign({},b,{name:b.name||cfgName[id]||NAME_CN[id]||id});const u=unsupMap.get(id);if(u)return {provider:id,name:cfgName[id]||NAME_CN[id]||id,status:"unsupported",note:u.note,kind:"none",label:"说明"};return {provider:id,name:cfgName[id]||NAME_CN[id]||id,status:"no_adapter",kind:"none",label:"已配置"};});

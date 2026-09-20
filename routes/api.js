@@ -1324,14 +1324,22 @@ export default function registerPluginApiRoutes(app, ctx) {
   }
 
   const source = Object.keys(modelProviders).length ? modelProviders : (catalog?.providers || {});
+  // base_url 只写在 provider-catalog.json 里，而 source 可能是 models.json（那里没有这个字段），
+  // 所以必须回 catalog 取；顺便把「本地端点」这个语义在后端一次判定，前端直接用 local 标记。
+  const isLocalEndpoint = (u) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(String(u || ""));
   const list = Object.entries(source)
     .filter(([id]) => active.has(id))
-    .map(([id, cfg]) => ({
-      id,
-      name: cfg?.name || null,
-      baseUrl: cfg?.base_url || null,
-      models: (cfg?.models || []).map((m) => (typeof m === "string" ? m : m?.id)).filter(Boolean),
-    }));
+    .map(([id, cfg]) => {
+      const catalogCfg = catalog?.providers?.[id] || {};
+      const baseUrl = catalogCfg.base_url || cfg?.base_url || null;
+      return {
+        id,
+        name: cfg?.name || catalogCfg.name || null,
+        baseUrl,
+        local: isLocalEndpoint(baseUrl),
+        models: (cfg?.models || []).map((m) => (typeof m === "string" ? m : m?.id)).filter(Boolean),
+      };
+    });
   providersCache = { at: now, data: { providers: list } };
   return providersCache.data;
 }
