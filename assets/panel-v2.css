@@ -510,17 +510,24 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 /* 全局 svg{width:100%} 会把按钮里的图标拉满整个 30px 按钮，必须显式限尺寸 */
 .provider-title .quick button svg{width:13px;height:13px}
 #api-detail .provider-detail-top{display:grid;grid-template-columns:minmax(340px,1fr) minmax(600px,2fr);gap:28px;align-items:stretch;margin-bottom:20px}
-#api-detail .provider-summary{display:flex;flex-direction:column;justify-content:center;gap:16px;min-height:170px;padding:20px 8px}
-#api-detail .provider-balance-main{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
-#api-detail .provider-balance-main span{font-size:11px;letter-spacing:.14em;color:var(--text-muted)}
-#api-detail .provider-balance-main b{font:700 clamp(46px,5vw,72px)/1 var(--font-mono);color:var(--accent);letter-spacing:-.04em;text-shadow:0 5px 30px var(--si-glow)}
+/* 这一块（标签 / 主值 / 累计 Token）整体按 1.2 倍放大：字号、间距、min-height 同步跟上 */
+#api-detail .provider-summary{display:flex;flex-direction:column;justify-content:center;gap:19px;min-height:204px;padding:24px 10px}
+#api-detail .provider-balance-main{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+#api-detail .provider-balance-main span{font-size:13px;letter-spacing:.14em;color:var(--text-muted)}
+#api-detail .provider-balance-main b{font:700 clamp(55px,6vw,86px)/1 var(--font-mono);color:var(--accent);letter-spacing:-.04em;text-shadow:0 5px 30px var(--si-glow)}
 /* 拿不到余额时这里放的是说明文案，按辅助文字降一档，最多两行，不抢卡片视觉 */
-#api-detail .provider-balance-main b.balance-note{font-weight:500;font-size:12px;line-height:1.55;font-family:var(--font-ui);color:var(--text-muted);letter-spacing:0;text-shadow:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:26em}
-#api-detail .provider-token-stat{display:flex;align-items:baseline;gap:12px;color:var(--text-muted);font-size:11px}
-#api-detail .provider-token-stat b{font:600 15px var(--font-mono);color:var(--text-light)}
+#api-detail .provider-balance-main b.balance-note{font-weight:500;font-size:14px;line-height:1.55;font-family:var(--font-ui);color:var(--text-muted);letter-spacing:0;text-shadow:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:26em}
+#api-detail .provider-token-stat{display:flex;align-items:baseline;gap:14px;color:var(--text-muted);font-size:13px}
+#api-detail .provider-token-stat b{font:600 18px var(--font-mono);color:var(--text-light)}
 #api-detail .provider-side-tools{display:grid;gap:12px;min-width:0}
 #api-detail .provider-threshold-card{margin:0;padding:14px}
 #api-detail .provider-threshold-card h3{margin-bottom:12px}
+/* 本地部署这类没有余额门路的供应商：阀值提醒换成 Token 结构卡 */
+.pd-data-rows{display:grid;gap:10px;padding:2px 0}
+.pd-data-row{display:flex;align-items:baseline;justify-content:space-between;gap:14px}
+.pd-data-row span{font-size:11px;color:var(--text-muted);letter-spacing:.02em}
+.pd-data-row b{font:600 14px var(--font-mono);color:var(--text-light)}
+#api-detail .provider-data-card h3{margin-bottom:12px}
 #api-detail .provider-threshold-card .threshold-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 #api-detail .provider-threshold-card .threshold-enable{grid-column:1/-1}
 @media(max-width:760px){#api-detail .provider-detail-top{grid-template-columns:1fr;gap:14px}#api-detail .provider-side-tools{grid-template-columns:1fr 1fr;align-items:start}}
