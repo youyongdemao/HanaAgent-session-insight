@@ -914,6 +914,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-overlay[hidden]{display:none}
 .w-detail-overlay .w-detail-card{overflow-x:hidden;overflow-y:auto;width:min(960px,calc(100vw - 24px));padding:35px 24px 26px;transform:scale(.95);transform-origin:center;transition:transform .24s var(--ease)}.w-detail-overlay .w-detail-card::-webkit-scrollbar{width:0;height:0;display:none}.w-detail-overlay .w-detail-card{scrollbar-width:none}
 .w-detail-overlay.open .w-detail-card{transform:none}
+/* ── 图表图例：堆叠图（每轮 Token 构成 / Token 构成）说明每个色块代表什么 ── */
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;margin:0 0 12px 2px;font:10px var(--font-mono);color:var(--text-muted)}
+.chart-legend .cl-item{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.chart-legend .cl-item i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
 .w-detail-overlay .w-detail-visual.card,.w-detail-overlay .w-detail-visual{overflow:visible!important;width:100%;min-width:0}
 .w-detail-overlay .w-detail-visual svg{width:100%!important;max-width:100%!important;height:auto;display:block;overflow:visible}
 .w-detail-overlay .w-detail-visual>div{min-width:0;width:100%;overflow:visible}
