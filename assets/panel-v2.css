@@ -526,9 +526,23 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 #api-detail .provider-threshold-card h3{margin-bottom:12px}
 /* 本地部署这类没有余额门路的供应商：阀值提醒换成 Token 结构卡 */
 .pd-data-rows{display:grid;gap:10px;padding:2px 0}
-.pd-data-row{display:flex;align-items:baseline;justify-content:space-between;gap:14px}
-.pd-data-row span{font-size:11px;color:var(--text-muted);letter-spacing:.02em}
-.pd-data-row b{font:600 14px var(--font-mono);color:var(--text-light)}
+/* Token 构成条 + 图例：三段颜色与用量页的 Token 构成保持一致（绿/粉/浅灰） */
+#api-detail .pd-tok{display:grid;gap:12px}
+#api-detail .pd-tok-track{display:flex;height:10px;border-radius:6px;overflow:hidden;background:color-mix(in srgb,var(--text) 7%,transparent);gap:2px;padding:1px}
+#api-detail .pd-tok-track i{height:100%;border-radius:4px;min-width:2px;transition:width .6s var(--ease)}
+#api-detail .pd-tok-track i.hit{background:var(--green)}
+#api-detail .pd-tok-track i.miss{background:var(--accent)}
+#api-detail .pd-tok-track i.out{background:var(--text-light)}
+#api-detail .pd-tok-legend{display:grid;gap:7px}
+#api-detail .pd-tok-legend span{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-muted)}
+#api-detail .pd-tok-legend span i{width:8px;height:8px;border-radius:3px;flex:none}
+#api-detail .pd-tok-legend span b{margin-left:auto;font:600 13px var(--font-mono);color:var(--text-light)}
+#api-detail .pd-tok-legend span.hit i{background:var(--green)}
+#api-detail .pd-tok-legend span.miss i{background:var(--accent)}
+#api-detail .pd-tok-legend span.out i{background:var(--text-light)}
+#api-detail .pd-tok-rate{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
+#api-detail .pd-tok-rate span{font-size:11px;color:var(--text-muted)}
+#api-detail .pd-tok-rate b{font:650 18px var(--font-mono);color:var(--text-light)}
 #api-detail .provider-data-card h3{margin-bottom:12px}
 #api-detail .provider-threshold-card .threshold-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 #api-detail .provider-threshold-card .threshold-enable{grid-column:1/-1}

@@ -306,9 +306,24 @@ function renderApiDetail(){
     dataCard.hidden=!tokenView;
     if(tokenView){
       const tk=(providerLedger&&providerLedger.tokens)||{};
-      const rows=[["缓存命中率",tk.hitRate!=null?fmtPct(tk.hitRate*100):"–"],["命中输入",tk.cacheHit?fmtTokens(tk.cacheHit):"–"],["未命中输入",tk.input?fmtTokens(tk.input):"–"],["输出",tk.output?fmtTokens(tk.output):"–"]];
+      const hi=Number(tk.cacheHit)||0,mi=Number(tk.input)||0,ou=Number(tk.output)||0,sum=hi+mi+ou;
       const box=$("#pdDataRows");
-      if(box)box.innerHTML=rows.map(r=>'<div class="pd-data-row"><span>'+esc(r[0])+'</span><b>'+esc(r[1])+'</b></div>').join('');
+      if(box){
+        if(!sum){box.innerHTML='<div class="empty">暂无 Token 记录</div>';}
+        else{
+          // 三段构成条：命中输入 / 未命中输入 / 输出。最小 3% 保证极小占比也看得见。
+          const w=v=>v>0?Math.max(3,Math.round(v/sum*1000)/10):0;
+          box.innerHTML='<div class="pd-tok">'
+            +'<div class="pd-tok-track"><i class="hit" style="width:'+w(hi)+'%"></i><i class="miss" style="width:'+w(mi)+'%"></i><i class="out" style="width:'+w(ou)+'%"></i></div>'
+            +'<div class="pd-tok-legend">'
+            +'<span class="hit"><i></i>命中输入<b>'+fmtTokens(hi)+'</b></span>'
+            +'<span class="miss"><i></i>未命中输入<b>'+fmtTokens(mi)+'</b></span>'
+            +'<span class="out"><i></i>输出<b>'+fmtTokens(ou)+'</b></span>'
+            +'</div>'
+            +'<div class="pd-tok-rate"><span>缓存命中率</span><b>'+(tk.hitRate!=null?fmtPct(tk.hitRate*100):'–')+'</b></div>'
+            +'</div>';
+        }
+      }
     }
   }
   renderProviderCostPanels();
