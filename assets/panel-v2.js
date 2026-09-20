@@ -50,10 +50,14 @@ function taskFanChart(rows,names={},animate=true){const raw=rows.filter(([,v])=>
 /* ── 渲染 ── */
 const state={view:"usage",page:"usage-overview",provider:"deepseek",stats:null,sessionStats:null,ledger:null,balance:null,sessions:null,totalCost:null,pricing:null,events:null};let usageHeatEnterPending=true,costHeatEnterPending=true,providerHeatEnterPending=true,tokHeatEnterPending=true,cacheHeatEnterPending=true,taskFanEnterPending=true;
 function rankRows(id,data){$(id).innerHTML=data.map(x=>`<div class="rank-row"${x.p?` data-provider="${x.p}"`:""}><span>${esc(x.n)}${x.sub?`<em>${esc(x.sub)}</em>`:""}</span><div class="track"><i style="width:${x.pct}%"></i></div><b>${esc(x.v)}</b></div>`).join("")||`<div class="empty">暂无数据</div>`;}
+// 上下文用量分级阀值（百分比）：超过 warn 转橘黄提醒，超过 crit 转红告警
+const CTX_WARN_PCT=47,CTX_CRIT_PCT=80;
 function renderWidget(){
   const st=state.stats;const bal=state.balance?.balances||[];
   const ctxPct=Math.max(0,Math.min(100,Number(st?.contextPercent)||0));
-  const ring=$("#wRing");if(ring)ring.style.setProperty("--pct",String(ctxPct));
+  const ring=$("#wRing");if(ring){ring.style.setProperty("--pct",String(ctxPct));
+    ring.classList.toggle("lv-warn",ctxPct>CTX_WARN_PCT&&ctxPct<=CTX_CRIT_PCT);
+    ring.classList.toggle("lv-crit",ctxPct>CTX_CRIT_PCT);}
   if(st){const s=$("#wTitle");if(s)s.textContent=st.title||"当前会话";const m=$("#wMeta");if(m)m.textContent=st.turns!=null?`第 ${st.turns} 轮`:"";}
   const ringV=$("#wRingVal");if(ringV)ringV.textContent=ctxPct.toFixed(0)+"%";
   const ringFill=$("#wRing .ring-progress");if(ringFill){ringFill.style.strokeDasharray=`${ctxPct.toFixed(1)} ${(100-ctxPct).toFixed(1)}`;ringFill.style.opacity=ctxPct>0?"1":"0";}
