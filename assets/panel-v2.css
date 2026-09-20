@@ -1380,7 +1380,9 @@ body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glo
    1) 数值一律不折行：滚动结构把数字拆成多个小盒子，临界宽度下容易折行、把卡片撑高；
    2) 网格子项允许压缩：grid item 默认 min-width:auto 会被长数字撑开，导致列宽/行高跳动；
    3) 静默刷新时只有真的变了的数值做一次轻量过渡，不播整页入场动画。 */
-.od,.od *{white-space:nowrap!important}
+/* 滚动盒内部一律继承父级字距：容器上那些给标签用的 letter-spacing（如 .14em）
+   会通过后代 span 选择器误伤 .od-strip / .od-d，把每个数字盒撑宽、字距拉散。 */
+.od,.od *{white-space:nowrap!important;letter-spacing:inherit!important}
 /* 滚动结束后摘掉滚动结构自带的发光与上下遮罩：静止的数字应与普通文字完全一致 */
 .od-done{text-shadow:none!important;-webkit-mask-image:none!important;mask-image:none!important}
 .mini-card{min-width:0}
