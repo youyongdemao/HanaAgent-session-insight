@@ -333,7 +333,13 @@ function odDescentPx(el){try{const cs=getComputedStyle(el);const fs=parseFloat(c
 // 注意：不能用 vertical-align 补偿。od 是行内最高的元素，下移它会把行框基线一起拖下去，
 // 旁边的文本跟着移动，补偿全被抵消（实测残差 42px 而补偿 19px，完全抵消）。
 // transform 不参与布局计算，行框不动，平移量才是精确的。
-function alignNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorAll('.od').forEach(od=>{const el=od.parentElement;if(!el)return;const d=odDescentPx(el);if(!(d>0))return;od.style.transform='translateY('+d.toFixed(2)+'px)';});}
+function alignNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorAll('.od').forEach(od=>{const el=od.parentElement;if(!el)return;
+  // 行内流里 od 是 overflow:hidden 的 inline-block，基线取的是底边，所以要往下补一个 descent。
+  // flex 容器里 od 只是个普通 flex item，由 align-items 居中，行内基线规则不参与，
+  // 再叠这层补偿就会把数字压低、旁边的单位符号看着浮到数字上面。
+  const dsp=getComputedStyle(el).display;
+  if(dsp==='flex'||dsp==='inline-flex'){if(od.style.transform)od.style.transform='';return;}
+  const d=odDescentPx(el);if(!(d>0))return;od.style.transform='translateY('+d.toFixed(2)+'px)';});}
 function normalizeNumbers(rootEl,animate){const R=rootEl||root;if(!R)return;R.querySelectorAll('b[id],strong[id]').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,!animate);});alignNumbers(R);}
 function isPlainNumber(t){if(!t||t.length>20)return false;if(!/[0-9]/.test(t))return false;if(/[\u4e00-\u9fff]/.test(t))return false;if(/[A-Za-z]/.test(t.replace(/[kKmMbB]/g,'')))return false;return true;}
 function animateNumbers(rootEl){if(!rootEl)return;rootEl.querySelectorAll('b,strong').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t);});alignNumbers(rootEl);}
@@ -348,8 +354,17 @@ let widgetRefreshSeq=0;async function loadWidget(){const thisRefresh=++widgetRef
 let pageBooted=false,widgetBooted=false,lastFastSig=null,lastSlowSig=null;
 function paintQuiet(fn,quiet){
   if(!quiet){fn();return;}
+  // 静默渲染：把这一次新插进来的节点标成静态，之后不再播入场动画。
+  // 注意 MutationObserver 的回调是异步微任务，fn() 同步返回时它还没跑，
+  // 必须用 takeRecords() 同步取回记录，否则收不到任何节点。
+  const mo=new MutationObserver(()=>{});
+  mo.observe(root,{childList:true,subtree:true});
   root.classList.add('si-quiet');
   try{fn();}catch(e){}
+  const added=[];
+  for(const m of mo.takeRecords())for(const n of m.addedNodes)if(n.nodeType===1)added.push(n);
+  mo.disconnect();
+  for(const el of added){try{el.classList.add('si-instant');}catch(e){}}
   requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.remove('si-quiet')));
 }
 // ── 数据签名（分快慢两组） ──
