@@ -14,7 +14,10 @@
     "app/provider.credentials.read",
     "app/input.status",
     "app/resources.read",
-    "app/models.read"
+    "app/models.read",
+    "app/runtime.execute",
+    "app/runtime.local-machine",
+    "app/runtime.network"
   ],
   "network": {
     "allowedHosts": [

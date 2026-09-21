@@ -288,6 +288,33 @@ async function readReduceCardButtons(sdk) {
 
 export default defineApp(async (sdk) => {
   await sdk.logger.info("session-insight-v2 loaded");
+
+  // —— 临时探针：验证 app/runtime.local-machine 是否已获授权 ——
+  // 只跑一条 echo，不读不写任何文件。结果写进日志，验证完即拆。
+  setTimeout(async () => {
+    try {
+      const rt = await sdk.runtime.start({
+        runtime: "command",
+        profile: "local-machine",
+        command: "cmd.exe",
+        args: ["/c", "echo", "si-runtime-probe-ok"],
+        network: "external",
+      });
+      await sdk.logger.info(
+        `[runtime-probe] OK runtimeId=${rt?.runtimeId ?? "?"} state=${rt?.state ?? "?"} profile=${rt?.profile ?? "?"} enforcement=${rt?.enforcement ?? "?"} backend=${rt?.backend ?? "?"}`
+      );
+      try {
+        await sdk.runtime.stop(rt.runtimeId);
+        await sdk.logger.info("[runtime-probe] stopped");
+      } catch (stopError) {
+        await sdk.logger.warn(`[runtime-probe] stop failed: ${stopError?.message ?? stopError}`);
+      }
+    } catch (error) {
+      await sdk.logger.warn(
+        `[runtime-probe] DENIED/FAILED code=${error?.code ?? "-"} message=${error?.message ?? error}`
+      );
+    }
+  }, 3000);
   const ctx = await makeCtx(sdk);
 
   await sdk.routes.register((app) => {
