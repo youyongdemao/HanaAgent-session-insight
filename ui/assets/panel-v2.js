@@ -714,7 +714,12 @@ function applyWidgetBlocks(on){
   const set=Array.isArray(on)?new Set(on):null;
   for(const id of WIDGET_BLOCK_IDS){
     const visible=!set||set.has(id);
-    document.querySelectorAll('[data-block="'+id+'"]').forEach(el=>{el.hidden=!visible;});
+    document.querySelectorAll('[data-block="'+id+'"]').forEach(el=>{
+      el.hidden=!visible;
+      // 这些块自身带 display（grid/flex），UA 的 [hidden]{display:none} 会被作者样式盖掉，
+      // 所以显隐同时落到内联样式上，优先级最高。
+      el.style.display=visible?'':'none';
+    });
   }
 }
 async function loadWidgetBlocks(){
