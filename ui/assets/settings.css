@@ -7,14 +7,7 @@ html, body {
   background: transparent;
 }
 
-/* 给经典滚动条预留位置：iframe 内部出现纵向滚动条时它是浮在内容上的，
-   不放位会把最右侧的卡片边缘盖住（表现为「被裁切」）。
-   overlay 滚动条样式下这条不生效，但不影响布局。 */
-html {
-  scrollbar-gutter: stable;
-}
-
-/* 全局 border-box：此前 .st-list 的 1px 边框会把容器顶宽 2px */
+/* 全局 border-box：已确保带边框的元素不会把容器顶宽 */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -50,14 +43,13 @@ body {
 }
 .st-desc strong { color: var(--text); font-weight: 600; }
 
-/* ── 设置行 ── */
+/* ── 设置行 ──
+   直接铺在面板上，不套外框：宿主设置页的原生形态就是这样，
+   加一层圆角盒子反而不融合，而且盒子右边容易顶到 iframe 边缘被裁。 */
 .st-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-  border-radius: 12px;
-  overflow: hidden;
 }
 
 .st-item {
@@ -67,14 +59,11 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
-  padding: 11px 14px;
-  transition: background .16s, opacity .16s;
+  padding: 10px 0;
+  transition: opacity .16s;
 }
 .st-item + .st-item {
-  border-top: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
-}
-.st-item:hover {
-  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
 }
 .st-item.off {
   opacity: .55;
