@@ -51,35 +51,38 @@ function markDirty() {
 function render() {
   listEl.innerHTML = "";
   for (const it of items) {
-    const li = document.createElement("li");
-    li.className = "st-row" + (onSet.has(it.id) ? "" : " off");
-    li.dataset.id = it.id;
-    li.title = it.desc || "";
+    const tr = document.createElement("tr");
+    tr.className = "st-trow" + (onSet.has(it.id) ? "" : " off");
+    tr.dataset.id = it.id;
 
-    const name = document.createElement("span");
-    name.className = "st-name";
+    const name = document.createElement("td");
+    name.className = "st-tname";
     name.textContent = it.label;
 
-    const group = document.createElement("span");
-    group.className = "st-group";
-    group.textContent = it.group || "";
+    const desc = document.createElement("td");
+    desc.className = "st-tdesc";
+    desc.textContent = it.desc || "";
 
+    const swCell = document.createElement("td");
+    swCell.className = "st-col-sw";
     const sw = document.createElement("label");
     sw.className = "st-sw";
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.checked = onSet.has(it.id);
+    cb.setAttribute("aria-label", it.label);
     cb.addEventListener("change", () => {
       if (cb.checked) onSet.add(it.id);
       else onSet.delete(it.id);
-      li.classList.toggle("off", !cb.checked);
+      tr.classList.toggle("off", !cb.checked);
       markDirty();
     });
     const track = document.createElement("i");
     sw.append(cb, track);
+    swCell.append(sw);
 
-    li.append(name, group, sw);
-    listEl.append(li);
+    tr.append(name, desc, swCell);
+    listEl.append(tr);
   }
 }
 

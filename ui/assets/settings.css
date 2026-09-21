@@ -1,5 +1,6 @@
 /* assets/settings.css — Session Insight 设置页
-   颜色变量由 HanaAgent 主题注入，这里只画结构。 */
+   颜色与字体变量由 HanaAgent 主题注入（页面在 head 里自行加载 hana-css）。
+   三块配置统一为同一套表格语言：分区标题 → 说明 → 表头 → 行 → 操作按钮。 */
 
 html, body {
   margin: 0;
@@ -17,7 +18,7 @@ body {
   padding: 0;
 }
 
-/* 两块之间留白：此前没有任何规则，第二块会直接顶到上一块的按钮行 */
+/* 分区之间留白 */
 .st-section + .st-section {
   margin-top: 30px;
 }
@@ -37,160 +38,7 @@ body {
 }
 .st-desc strong { color: var(--text); font-weight: 600; }
 
-.st-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 520px;
-}
-
-.st-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-  background: color-mix(in srgb, var(--bg-card) 55%, transparent);
-  cursor: default;
-  transition: border-color .16s, background .16s, box-shadow .16s, opacity .16s;
-}
-.st-row:hover {
-  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-}
-.st-row.dragging {
-  opacity: .45;
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-}
-.st-row.drop-target {
-  box-shadow: inset 0 2px 0 var(--accent);
-}
-.st-row.off {
-  opacity: .55;
-}
-
-.st-handle {
-  flex: 0 0 auto;
-  cursor: grab;
-  user-select: none;
-  font-size: 13px;
-  line-height: 1;
-  color: var(--text-muted);
-  letter-spacing: -1px;
-}
-.st-row:active .st-handle { cursor: grabbing; }
-
-.st-name {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 12.5px;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.st-group {
-  flex: 0 0 auto;
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  color: var(--text-muted);
-  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
-}
-
-/* 开关 */
-.st-sw {
-  flex: 0 0 auto;
-  position: relative;
-  width: 32px;
-  height: 18px;
-  display: inline-block;
-}
-.st-sw input {
-  position: absolute;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  cursor: pointer;
-}
-.st-sw i {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 16%, transparent);
-  transition: background .18s;
-  pointer-events: none;
-}
-.st-sw i::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--bg-card, #fff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .28);
-  transition: transform .18s var(--ease, cubic-bezier(.22,.75,.25,1));
-}
-.st-sw input:checked + i {
-  background: var(--accent);
-}
-.st-sw input:checked + i::after {
-  transform: translateX(14px);
-}
-.st-sw input:disabled { cursor: not-allowed; }
-
-.st-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 16px;
-  max-width: 520px;
-}
-
-.st-btn {
-  appearance: none;
-  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
-  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
-  color: var(--text-light);
-  font: 500 12px var(--font-ui, system-ui, sans-serif);
-  padding: 7px 16px;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: border-color .16s, background .16s, color .16s, transform .12s;
-}
-.st-btn:hover {
-  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
-  color: var(--text);
-}
-.st-btn:active { transform: scale(.97); }
-.st-btn:disabled { opacity: .5; cursor: not-allowed; }
-
-.st-btn-primary {
-  background: color-mix(in srgb, var(--accent) 82%, transparent);
-  border-color: transparent;
-  color: #fff;
-}
-.st-btn-primary:hover {
-  background: var(--accent);
-  color: #fff;
-}
-
-.st-status {
-  font-size: 11.5px;
-  color: var(--text-muted);
-}
-.st-status.ok { color: var(--si-green, #4a6b4a); }
-.st-status.err { color: var(--si-amber, #b58b4b); }
-
-/* ── 实时用量：区块开关表 ── */
+/* ── 表格 ── */
 .st-table-wrap {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
@@ -238,6 +86,7 @@ body {
 .st-tname {
   white-space: nowrap;
 }
+/* 分组下的子项：缩进加一道短线，层级不靠颜色也能读出来 */
 .st-tname.is-child {
   position: relative;
   padding-left: 30px;
@@ -253,6 +102,7 @@ body {
 }
 
 .st-tdesc {
+  width: 100%;
   color: var(--text-muted);
   line-height: 1.6;
 }
@@ -270,3 +120,90 @@ body {
   color: var(--text-muted);
   background: color-mix(in srgb, var(--text) 4%, transparent);
 }
+
+/* ── 开关 ── */
+.st-sw {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  vertical-align: middle;
+}
+.st-sw input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.st-sw i {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+  transition: background .18s;
+  pointer-events: none;
+}
+.st-sw i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-card, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .28);
+  transition: transform .18s var(--ease, cubic-bezier(.22,.75,.25,1));
+}
+.st-sw input:checked + i {
+  background: var(--accent);
+}
+.st-sw input:checked + i::after {
+  transform: translateX(14px);
+}
+.st-sw input:disabled { cursor: not-allowed; }
+
+/* ── 操作区与按钮 ── */
+.st-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.st-btn {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  color: var(--text-light);
+  font: 500 12px var(--font-ui, system-ui, sans-serif);
+  padding: 7px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color .16s, background .16s, color .16s, transform .12s;
+}
+.st-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  color: var(--text);
+}
+.st-btn:active { transform: scale(.97); }
+.st-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.st-btn-primary {
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+  border-color: transparent;
+  color: #fff;
+}
+.st-btn-primary:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.st-status {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.st-status.ok { color: var(--si-green, #4a6b4a); }
+.st-status.err { color: var(--si-amber, #b58b4b); }
