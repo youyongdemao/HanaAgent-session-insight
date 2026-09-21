@@ -276,7 +276,7 @@ async function checkUpdate() {
   setAboutStatus("检查中…");
   try {
     const info = await apiFetch("api/check-update");
-    if (aboutVersionEl && info?.currentVersion) aboutVersionEl.textContent = info.currentVersion;
+    if (aboutVersionEl && info?.currentVersion) aboutVersionEl.textContent = "v" + info.currentVersion;
     if (!info?.updateAvailable) {
       setAboutStatus("已是最新版本", "ok");
       window.setTimeout(() => {
