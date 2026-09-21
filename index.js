@@ -586,6 +586,9 @@ export default defineApp(async (sdk) => {
 
     // 标签常驻：数字没出来时用「—」占位，有数字再顶上去——不让整项忽隐忽现。
     const DASH = "—";
+    // 宿主给这组项的容器没任何间距（._input-status-items 无 gap），五项会直接贴在一起。
+    // 末尾补一个不可折叠的 en space：普通空格会被 HTML 空白折叠掉，这个不会。
+    const ITEM_GAP = "\u2002";
     const items = [
       {
         id: "hit",
@@ -631,7 +634,7 @@ export default defineApp(async (sdk) => {
         await sdk.inputStatus.set({
           sessionId,
           id: it.id,
-          text: it.text ?? "—",
+          text: (it.text ?? "—") + ITEM_GAP,
           tooltip: it.tooltip,
           // 显示与否由设置页的开关决定（默认五项全开）。
           // 没值不隐藏，留「—」占位，免得项数随数据有无增减。
