@@ -323,7 +323,9 @@ aboutUpdateEl?.addEventListener("click", () => {
   else checkUpdate();
 });
 
-aboutGithubEl?.addEventListener("click", () => {
+aboutGithubEl?.addEventListener("click", (ev) => {
+  // 拦下默认行为，改走宿主的外链能力：iframe 沙箱下直接新开标签可能被拦
+  ev.preventDefault();
   try {
     hana.external.open({ url: GITHUB_URL });
   } catch {

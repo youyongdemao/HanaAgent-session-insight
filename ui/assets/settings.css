@@ -208,3 +208,14 @@ body {
 }
 .st-status.ok { color: var(--si-green, #4a6b4a); }
 .st-status.err { color: var(--si-amber, #b58b4b); }
+
+/* 关于里的地址就是入口本身：用宿主的链接色，点击走外链能力 */
+.st-item-link {
+  display: inline-block;
+  color: var(--link, var(--accent));
+  text-decoration: none;
+  cursor: pointer;
+}
+.st-item-link:hover {
+  text-decoration: underline;
+}
