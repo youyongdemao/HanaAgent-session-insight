@@ -1481,3 +1481,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
 .si-tip.on{opacity:1;transform:translateY(0)}
 .si-tip .si-tip-t{color:var(--text);font-weight:600}
 .si-tip .si-tip-v{color:var(--accent);margin-left:8px}
+/* ── 为宿主悬浮的窗口按钮让位 ──
+   宿主关掉「窗口按钮独立置顶」时，最小化/最大化/关闭会浮在卡片右上角，
+   正好压住「实时」徽标。此时给顶部行右侧留出按钮宽度，让徽标退到按钮左侧；
+   开关打开（按钮独立置顶）时不加这个类，维持原样。 */
+.widget.avoid-host-buttons > .row {
+  padding-right: 120px;
+}

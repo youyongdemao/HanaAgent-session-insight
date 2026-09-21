@@ -271,6 +271,24 @@ async function makeCtx(sdk) {
   };
 }
 
+/**
+ * 宿主的「窗口按钮独立置顶」偏好（appearance.reduceCardButtons）。
+ * 关掉时那三个窗口按钮会悬浮到卡片内容上，压住卡片右上角；
+ * 这个偏好存在宿主的 preferences.json（与 App 共用同一数据根），所以 App 读得到。
+ * 返回 true = 按钮已独立置顶、卡片无需让位；false = 悬浮在卡片上、需让位；null = 读不到。
+ */
+async function readReduceCardButtons(sdk) {
+  try {
+    const root = dirname(dirname(sdk.dataDir));
+    const raw = await readFile(join(root, "user", "preferences.json"), "utf8");
+    const prefs = JSON.parse(raw);
+    const value = prefs?.appearance?.reduceCardButtons;
+    return typeof value === "boolean" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 export default defineApp(async (sdk) => {
   await sdk.logger.info("session-insight-v2 loaded");
   const ctx = await makeCtx(sdk);
@@ -490,6 +508,19 @@ export default defineApp(async (sdk) => {
         });
       } catch (error) {
         return c.json({ error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    // ── 宿主界面环境：卡片据此决定要不要为宿主控件让位 ──
+    app.get("/api/ui-env", async (c) => {
+      try {
+        const reduceCardButtons = await readReduceCardButtons(sdk);
+        return c.json({
+          // true 表示宿主窗口按钮悬浮在卡片上、会压住卡片右上角
+          overlappingWindowButtons: reduceCardButtons === false,
+        });
+      } catch (error) {
+        return c.json({ overlappingWindowButtons: false, error: String(error?.message ?? error) }, 500);
       }
     });
   });
