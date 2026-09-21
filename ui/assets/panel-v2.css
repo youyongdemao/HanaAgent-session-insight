@@ -81,7 +81,8 @@ body[data-surface="widget"] .card:hover{transform:scale(1.025);border-color:colo
 
 /* ── 模型列表行 ── */
 .w-detail-grid .m-list{display:grid;gap:5px;margin-top:8px}
-.m-list>code{font:500 10.5px/1.5 var(--font-mono);color:var(--text-light);background:color-mix(in srgb,var(--text) 5%,transparent);border-radius:8px;padding:6px 9px;display:block}.m-entry{display:grid;gap:5px;padding:7px 9px;border-radius:9px;background:color-mix(in srgb,var(--text) 5%,transparent)}.m-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.m-head code{font:500 10.5px/1.4 var(--font-mono);color:var(--text-light)}.m-head b{font:600 10px var(--font-mono);color:var(--accent);white-space:nowrap}.w-detail-card .card{transition:transform .26s cubic-bezier(.2,.72,.2,1),border-color .2s,box-shadow .2s}.w-detail-card .card:hover{transform:scale(1.025);border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 5px 20px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:5}.w-detail-card .card:active,.w-detail-card .card.si-press{transform:scale(.965)!important;opacity:1!important}.w-detail-card .card.si-release,.w-detail-card .card.si-dynamic-release{opacity:1!important}.w-detail-card .card.si-release{animation:detailGummyRelease .46s cubic-bezier(.16,.82,.24,1) both!important}@keyframes detailGummyRelease{0%{transform:scale(.965)}100%{transform:scale(1.025)}}
+.m-list>code{font:500 10.5px/1.5 var(--font-mono);color:var(--text-light);background:color-mix(in srgb,var(--text) 5%,transparent);border-radius:8px;padding:6px 9px;display:block}.m-entry{display:grid;gap:5px;padding:7px 9px;border-radius:9px;background:color-mix(in srgb,var(--text) 5%,transparent)}.m-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.m-head code{font:500 10.5px/1.4 var(--font-mono);color:var(--text-light)}.m-head b{font:600 10px var(--font-mono);color:var(--accent);white-space:nowrap}.w-detail-card .card{--ov-hover-scale:1.016;--ov-press-scale:.97;transform-origin:center;transform:translateZ(0) scale(1);animation:none;will-change:transform,box-shadow;transition:transform .3s cubic-bezier(.2,.72,.22,1),border-color .24s ease,box-shadow .34s ease,background .32s ease,filter .32s ease}.w-detail-card .card:hover{transform:translateZ(0) scale(var(--ov-hover-scale));border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 5px 20px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:5}.w-detail-card .card:active,.w-detail-card .card.si-press{transform:translateZ(0) scale(var(--ov-press-scale))!important;animation:none!important;opacity:1!important;transition:transform .11s cubic-bezier(.3,.05,.65,.2),filter .11s ease;filter:brightness(.985) saturate(.98)}.w-detail-card .card.si-release,.w-detail-card .card.si-dynamic-release{opacity:1!important}
+
 @media(max-width:1080px){.layout{grid-template-columns:1fr}.widget{position:static;min-height:0}.hero{grid-template-columns:1fr 1fr}.grid2,.grid3,.detail-grid{grid-template-columns:1fr}.provider-item{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}}
 
 /* ── 顶栏操作按钮 ── */
@@ -1341,12 +1342,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
 .widget.avoid-host-buttons > .row {
   padding-right: 120px;
 }
-/* ── 弹层卡片的回弹（与卡片区统一走关键帧）──
-   detailGummyRelease：按下后弹到 1.025（鼠标仍悬着）
-   detailGummyReleaseOut：鼠标已移开，落回 1
-   两者与 .si-press 配合，形成「按下缩、松手弹」的手感。 */
-@keyframes detailGummyReleaseOut{0%{transform:scale(.965)}100%{transform:scale(1)}}
-.w-detail-card .card.si-release.release-out{animation:detailGummyReleaseOut .46s cubic-bezier(.16,.82,.24,1) both!important}
+
+
 /* ── 弹层仪表盘卡片：照搬总览页 .panel 的整套动画 ──
    参照「每日费用趋势 / 消耗 Token 任务类别」两张卡（#usage-overview .panel）：
    静止不缩放，hover 1.016，按压 .97（.11s 快缩 + 轻微降亮），松开靠 .3s 非线性阻尼曲线回位。
