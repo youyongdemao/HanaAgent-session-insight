@@ -486,11 +486,11 @@ function renderApiDetail(){
       btn.type="button";btn.className="pd-launch";btn.dataset.launch=pid;
       btn.textContent=lp.program?("启动 "+lp.name):"指定程序";
       btn.dataset.base=btn.textContent;
-      btn.title=lp.program?lp.program:("还没指定 "+lp.name+" 的程序，点一下选择");
+      btn.title=lp.program?lp.program:("未指定 "+lp.name+" 的程序，点击选择");
       quickHost.append(btn);
       if(!lp.program)return;
       fetchJson("/api/launch-provider?dry=1&provider="+encodeURIComponent(pid)).then(s=>{
-        if(s&&s.running){btn.classList.add("running");btn.textContent="运行中";btn.title=(lp.name||pid)+" 已在运行，点一下可重新检测";}
+        if(s&&s.running){btn.classList.add("running");btn.textContent="运行中";btn.title=(lp.name||pid)+" 已在运行，点击可重新检测";}
       }).catch(()=>{});
     }).catch(()=>{});
   }
@@ -558,7 +558,7 @@ async function chooseLocalProgram(pid) {
     const ref = res && Array.isArray(res.resources) ? res.resources[0] : null;
     picked = (ref && (ref.path || ref.localPath)) || null;
   } catch (error) {
-    setLaunchHint(pid, "没能打开文件选择器：" + String(error?.message || error));
+    setLaunchHint(pid, "无法打开文件选择器：" + String(error?.message || error));
     return null;
   }
   if (!picked) return null; // 用户取消
@@ -570,7 +570,7 @@ async function chooseLocalProgram(pid) {
       signal: AbortSignal.timeout(15000),
     });
   } catch (error) {
-    setLaunchHint(pid, "程序路径没能保存：" + String(error?.message || error));
+    setLaunchHint(pid, "程序路径保存失败：" + String(error?.message || error));
     return null;
   }
   return picked;
@@ -596,7 +596,7 @@ async function runLocalLaunch(pid, btn, baseLabel) {
     payload = await res.json();
   } catch (error) {
     settle(baseLabel, false);
-    setLaunchHint(pid, "启动请求没成功：" + String(error?.message || error));
+    setLaunchHint(pid, "启动请求失败：" + String(error?.message || error));
     return;
   }
 
@@ -616,7 +616,7 @@ async function runLocalLaunch(pid, btn, baseLabel) {
   if (payload && payload.started) {
     settle(baseLabel, false, payload.exe || "");
     // 已拉起但服务没就绪：把原因和该去哪儿改留在页面上（面板会重绘，所以存在状态里）
-    setLaunchHint(pid, payload.hint || "已拉起 " + (payload.exe || "程序") + "，但服务还没就绪。");
+    setLaunchHint(pid, payload.hint || ("未能确认服务已就绪（已拉起 " + (payload.exe || "程序") + "）。请在设置中核对程序路径。"));
     return;
   }
   settle(baseLabel, false);

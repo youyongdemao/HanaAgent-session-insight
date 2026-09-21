@@ -275,7 +275,7 @@ function renderLocalProviders(providers) {
     const where = provider.source === "configured" ? "（你指定的）" : "";
     desc.textContent = provider.program
       ? provider.program + where
-      : "还没指定程序，启动时会先让你选一个";
+      : "未指定程序，启动时将提示选择";
     main.append(title, desc);
 
     const ctl = document.createElement("div");
@@ -320,7 +320,7 @@ async function pickLocalProgram(provider, btn) {
     const path = (ref && (ref.path || ref.localPath)) || null;
     if (path) await saveLocalProgram(provider.id, path);
   } catch (error) {
-    setLocalStatus("没能选择程序：" + String(error?.message || error), "err");
+    setLocalStatus("无法选择程序：" + String(error?.message || error), "err");
   } finally {
     btn.disabled = false;
   }
