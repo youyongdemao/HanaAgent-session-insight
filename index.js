@@ -18,9 +18,6 @@ import {
 
 export const name = "session-insight-v2";
 
-const CACHE_MS = 3000;
-let cache = { at: 0, key: "", value: null };
-
 function num(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -296,18 +293,6 @@ export default defineApp(async (sdk) => {
   await sdk.routes.register((app) => {
     // v1 遗留端点（账本聚合、供应商、余额、更新等）复用原实现，数据源已在内部换成宿主 API。
     registerLegacyRoutes(app, ctx);
-
-    app.get("/overview", async (c) => {
-      const sessionId = c.req.query("sessionId") ?? null;
-      const useCache = c.req.query("fresh") !== "1";
-      const key = sessionId ?? "";
-      if (useCache && cache.value && cache.key === key && Date.now() - cache.at < CACHE_MS) {
-        return c.json({ ...cache.value, cached: true });
-      }
-      const overview = await buildOverview(sdk, sessionId);
-      cache = { at: Date.now(), key, value: overview };
-      return c.json(overview);
-    });
 
     app.get("/health", (c) => c.json({ ok: true, app: "session-insight-v2" }));
 
