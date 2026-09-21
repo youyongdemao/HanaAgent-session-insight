@@ -138,12 +138,12 @@ body {
   align-items: center;
 }
 
-/* ── 开关 ── */
+/* ── 开关（与宿主设置页一致：深色凹槽 + 白色圆点）── */
 .st-sw {
   position: relative;
   display: inline-block;
-  width: 32px;
-  height: 18px;
+  width: 34px;
+  height: 20px;
   vertical-align: middle;
 }
 .st-sw input {
@@ -158,7 +158,8 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 16%, transparent);
+  /* 压暗而非提亮：看成一个坑。幅度参照宿主那套，比卡片底色略深一点就够 */
+  background: rgba(0, 0, 0, .2);
   transition: background .18s;
   pointer-events: none;
 }
@@ -167,11 +168,12 @@ body {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: var(--bg-card, #fff);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .28);
+  /* 白圆点：不取卡片色，这样在任何底色上都能看清 */
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3);
   transition: transform .18s var(--ease, cubic-bezier(.22,.75,.25,1));
 }
 .st-sw input:checked + i {
