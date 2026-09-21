@@ -68,27 +68,27 @@
         {
           "id": "hit",
           "title": "本轮缓存命中率",
-          "text": "命中 —"
+          "text": "命中\u2009—\u2003"
         },
         {
           "id": "tps",
           "title": "输出吞吐速度",
-          "text": "速度 —"
+          "text": "速度\u2009—\u2003"
         },
         {
           "id": "tokens",
           "title": "本轮 Token 用量",
-          "text": "用量 —"
+          "text": "用量\u2009—\u2003"
         },
         {
           "id": "cost",
           "title": "本轮费用",
-          "text": "费用 —"
+          "text": "费用\u2009—\u2003"
         },
         {
           "id": "duration",
           "title": "本轮耗时",
-          "text": "耗时 —"
+          "text": "耗时\u2009—\u2003"
         }
       ]
     },

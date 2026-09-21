@@ -586,13 +586,16 @@ export default defineApp(async (sdk) => {
 
     // 标签常驻：数字没出来时用「—」占位，有数字再顶上去——不让整项忽隐忽现。
     const DASH = "—";
-    // 宿主给这组项的容器没任何间距（._input-status-items 无 gap），五项会直接贴在一起。
-    // 末尾补一个不可折叠的 en space：普通空格会被 HTML 空白折叠掉，这个不会。
-    const ITEM_GAP = "\u2002";
+    // 间距分两级：
+    //   项与项之间 —— 宿主容器没有 gap（._input-status-items），用 em space（一个字符宽）做分界；
+    //   标签与数值之间 —— 用 thin space，比普通空格窄，让“命中 100%”读成一体的。
+    // 普通空格会被 HTML 空白折叠，这两种不可折叠。
+    const ITEM_GAP = "\u2003";
+    const LABEL_GAP = "\u2009";
     const items = [
       {
         id: "hit",
-        text: `命中 ${
+        text: `命中${LABEL_GAP}${
           t.hitRatio != null
             ? (t.hitRatio * 100).toFixed((t.hitRatio * 100) % 1 === 0 ? 0 : 1) + "%"
             : DASH
@@ -605,12 +608,12 @@ export default defineApp(async (sdk) => {
       },
       {
         id: "tps",
-        text: `速度 ${t.tps != null ? t.tps + "t/s" : DASH}`,
+        text: `速度${LABEL_GAP}${t.tps != null ? t.tps + "t/s" : DASH}`,
         tooltip: t.tps != null ? `输出速度 ${t.tps} tokens/秒` : undefined,
       },
       {
         id: "tokens",
-        text: `用量 ${t.totalTokens != null ? fmtCompactTokens(t.totalTokens) : DASH}`,
+        text: `用量${LABEL_GAP}${t.totalTokens != null ? fmtCompactTokens(t.totalTokens) : DASH}`,
         // 摊开输入与输出，正好是成本结构的两半
         tooltip:
           t.inputTokens != null || t.outputTokens != null
@@ -619,12 +622,12 @@ export default defineApp(async (sdk) => {
       },
       {
         id: "cost",
-        text: `费用 ${t.cost != null ? fmtCompactCost(t.cost) : DASH}`,
+        text: `费用${LABEL_GAP}${t.cost != null ? fmtCompactCost(t.cost) : DASH}`,
         tooltip: t.cost != null ? `本轮费用 ${fmtCompactCost(t.cost)}` : undefined,
       },
       {
         id: "duration",
-        text: `耗时 ${t.wallMs != null ? (t.wallMs / 1000).toFixed(1) + "s" : DASH}`,
+        text: `耗时${LABEL_GAP}${t.wallMs != null ? (t.wallMs / 1000).toFixed(1) + "s" : DASH}`,
         tooltip: t.wallMs != null ? `本轮墙钟耗时 ${(t.wallMs / 1000).toFixed(1)} 秒` : undefined,
       },
     ];
