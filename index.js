@@ -300,8 +300,8 @@ export default defineApp(async (sdk) => {
     // 检查更新：只查 GitHub 上最新的已发布版本，安装仍走「设置 → 扩展」
     registerUpdateRoutes(app, ctx);
 
-    // 本地供应商：拉起本机应用（要 app/process.spawn）
-    registerLaunchRoutes(app, ctx);
+    // 本地供应商：拉起本机应用（要 app/process.spawn）；程序路径可由用户在设置里指定
+    registerLaunchRoutes(app, ctx, { writeConfig: (key, value) => writeAppConfig(sdk, key, value) });
 
     app.get("/health", (c) => c.json({ ok: true, app: "session-insight-v2" }));
 

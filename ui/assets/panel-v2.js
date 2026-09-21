@@ -474,16 +474,25 @@ function renderApiDetail(){
   const pdLinks=((cfgEntry&&Array.isArray(cfgEntry.links)&&cfgEntry.links.length)?cfgEntry.links:(QUICK_LINKS[state.provider]||[])).map(l=>Array.isArray(l)?{label:l[0],url:l[1]}:(l||{}));
   const quickHost=$("#pdQuick");
   if(quickHost){
-    const launch=cfgEntry?.launch||null;
-    quickHost.innerHTML=(pdLinks.length?'<button type="button" data-open="'+esc(pdLinks[0].url)+'" title="打开 '+esc(pdLinks[0].label||'官网')+'">↗</button>':'<button type="button" disabled title="暂无入口">↗</button>')
-      +(launch?'<button type="button" class="pd-launch" data-launch="'+esc(state.provider)+'" title="'+esc(launch.label)+'">'+esc(launch.label)+'</button>':'');
-    if(launch){
-      // 已经在跑就把按钮置成「运行中」（探活走本地端口，清单里已放行）
-      const lb=quickHost.querySelector('.pd-launch');
-      fetchJson("/api/launch-provider?dry=1&provider="+encodeURIComponent(state.provider)).then(j=>{
-        if(j&&j.running){lb.classList.add("running");lb.textContent="运行中";lb.title=launch.label+" 已在运行，点一下可重新检测";}
+    const pid=state.provider;
+    quickHost.innerHTML=(pdLinks.length?'<button type="button" data-open="'+esc(pdLinks[0].url)+'" title="打开 '+esc(pdLinks[0].label||'官网')+'">↗</button>':'<button type="button" disabled title="暂无入口">↗</button>');
+    renderLaunchHint(pid);
+    // 是不是本地供应商、有没有可用的程序，由后端判（预设 → 用户指定），前端不猜
+    hana.api.fetch("/api/local-providers",{signal:AbortSignal.timeout(15000)}).then(r=>r.json()).then(j=>{
+      if(!j||!Array.isArray(j.providers))return;
+      const lp=j.providers.find(x=>x.id===pid);
+      if(!lp)return;
+      const btn=document.createElement("button");
+      btn.type="button";btn.className="pd-launch";btn.dataset.launch=pid;
+      btn.textContent=lp.program?("启动 "+lp.name):"指定程序";
+      btn.dataset.base=btn.textContent;
+      btn.title=lp.program?lp.program:("还没指定 "+lp.name+" 的程序，点一下选择");
+      quickHost.append(btn);
+      if(!lp.program)return;
+      fetchJson("/api/launch-provider?dry=1&provider="+encodeURIComponent(pid)).then(s=>{
+        if(s&&s.running){btn.classList.add("running");btn.textContent="运行中";btn.title=(lp.name||pid)+" 已在运行，点一下可重新检测";}
       }).catch(()=>{});
-    }
+    }).catch(()=>{});
   }
   // 阀值提醒只对有余额门路的供应商有意义；本地部署这类没有余额可读，那块位置改看这个供应商的 Token 结构
   const thCard=document.querySelector("#api-detail .provider-threshold-card");
@@ -515,6 +524,105 @@ function renderApiDetail(){
   }
   renderProviderCostPanels();
 }
+/* ── 本地供应商的启动按钮 ──
+   程序在哪由后端定（默认安装目录优先，其次用户在设置里指定的），这里只管按钮状态与引导。
+   面板会定时重绘，所以提示存在状态里、每次重绘按状态重新画，而不是只往 DOM 里塞一次。 */
+const launchHints = new Map();
+
+function renderLaunchHint(pid) {
+  const head = document.querySelector("#api-detail .d-head");
+  if (!head) return;
+  const el = head.parentElement.querySelector(".pd-launch-hint");
+  const text = launchHints.get(pid) || "";
+  if (!text) {
+    if (el) el.remove();
+    return;
+  }
+  const box = el || document.createElement("div");
+  box.className = "pd-launch-hint";
+  box.textContent = text;
+  if (!el) head.after(box);
+}
+
+function setLaunchHint(pid, text) {
+  if (text) launchHints.set(pid, text);
+  else launchHints.delete(pid);
+  renderLaunchHint(pid);
+}
+
+/** 弹系统文件选择器指定程序，存进 App 配置；取消或失败返回 null */
+async function chooseLocalProgram(pid) {
+  let picked = null;
+  try {
+    const res = await hanaV2.resources.pick({ mode: "file" });
+    const ref = res && Array.isArray(res.resources) ? res.resources[0] : null;
+    picked = (ref && (ref.path || ref.localPath)) || null;
+  } catch (error) {
+    setLaunchHint(pid, "没能打开文件选择器：" + String(error?.message || error));
+    return null;
+  }
+  if (!picked) return null; // 用户取消
+  try {
+    await hana.api.fetch("/api/local-program", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ provider: pid, path: picked }),
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (error) {
+    setLaunchHint(pid, "程序路径没能保存：" + String(error?.message || error));
+    return null;
+  }
+  return picked;
+}
+
+/** 点启动的完整流程：拉起 → 等端口 → 没起来就把原因和该去哪儿改摆出来 */
+async function runLocalLaunch(pid, btn, baseLabel) {
+  if (!btn || btn.classList.contains("loading")) return;
+  const settle = (text, running, title) => {
+    btn.classList.remove("loading");
+    btn.classList.toggle("running", !!running);
+    btn.textContent = text;
+    btn.title = title || "";
+  };
+  btn.classList.add("loading");
+  btn.textContent = "启动中…";
+
+  let payload = null;
+  try {
+    const res = await hana.api.fetch("/api/launch-provider?provider=" + encodeURIComponent(pid), {
+      signal: AbortSignal.timeout(30000),
+    });
+    payload = await res.json();
+  } catch (error) {
+    settle(baseLabel, false);
+    setLaunchHint(pid, "启动请求没成功：" + String(error?.message || error));
+    return;
+  }
+
+  // 还没指定程序：弹选择器，指完接着启动
+  if (payload && payload.code === "NOT_CONFIGURED") {
+    settle(baseLabel, false);
+    const picked = await chooseLocalProgram(pid);
+    if (picked) await runLocalLaunch(pid, btn, baseLabel);
+    return;
+  }
+
+  if (payload && payload.running) {
+    setLaunchHint(pid, "");
+    settle("运行中", true, baseLabel + " 正在运行");
+    return;
+  }
+  if (payload && payload.started) {
+    settle(baseLabel, false, payload.exe || "");
+    // 已拉起但服务没就绪：把原因和该去哪儿改留在页面上（面板会重绘，所以存在状态里）
+    setLaunchHint(pid, payload.hint || "已拉起 " + (payload.exe || "程序") + "，但服务还没就绪。");
+    return;
+  }
+  settle(baseLabel, false);
+  setLaunchHint(pid, (payload && (payload.message || payload.code)) || "启动失败");
+}
+
 /* ── 数字转轮：纯数字文本逐位滚动到目标（与 v1.2 版同款效果） ── */
 function odometer(el,target,instant){el.style.whiteSpace='nowrap';const str=String(target),digits=[],frag=document.createDocumentFragment();const MASK='-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%)';const SHADOW='text-shadow:0 0 7px color-mix(in srgb,currentColor 28%,transparent)';const isD=ch=>ch>='0'&&ch<='9';
   // 父元素若有负字距，滚动盒的内容宽会比字符本身窄，数字右侧会被裁。
@@ -680,7 +788,7 @@ function openModal(card){if(!card)return;const tp=(()=>{const h=card.querySelect
 
 function detailReleaseTo(c){c.classList.remove('si-press','si-release','si-dynamic-release','release-out');c.style.transform='';c.style.transition='';}
 
-function initPageEvents(){document.addEventListener('click',e=>{if(surface==='widget'){if(e.target.closest('[data-detail-close]')||e.target.id==='wDetail'){closeWidgetDetail();return;}const d=e.target.closest('.widget [data-detail]');if(d){openWidgetDetail(d.dataset.detail,d.dataset.provider);return;}return;}if(e.target.closest('[data-detail-close]')||e.target.id==='wDetail'){closeWidgetDetail();return;}const back=e.target.closest('#apiBack');if(back){nav('api','api-overview');return;}const opt=e.target.closest('.seg [data-v]');if(opt){const seg=opt.closest('.seg'),v=opt.dataset.v;if(seg.id==='providerCostUnitSeg'){PROVIDER_COST.unit=v;providerHeatEnterPending=true;renderProviderCostPanels();}else if(seg.id==='costUnitSeg'){COST.unit=v;costHeatEnterPending=true;renderCostPanel();}else if(seg.id==='costModeSeg'){COST.mode=v;if(v==='heat')costHeatEnterPending=true;renderCostPanel();}else if(seg.id==='tokUnitSeg'){TOK.unit=v;tokHeatEnterPending=true;renderTokenPanel();}else if(seg.id==='tokModeSeg'){TOK.mode=v;if(v==='heat')tokHeatEnterPending=true;renderTokenPanel();}else if(seg.id==='cacheUnitSeg'){CACHE.unit=v;cacheHeatEnterPending=true;renderCachePanel();}else if(seg.id==='cacheModeSeg'){CACHE.mode=v;if(v==='heat')cacheHeatEnterPending=true;renderCachePanel();}else if(seg.id==='provUnitSeg'){PROV.unit=v;renderUsageOverview();}else if(seg.id==='evRangeSeg'){EV.range=v;loadEvents().then(()=>renderUsageOverview());}numEnter=true;flashSeg(seg);requestAnimationFrame(()=>playNumbers());return;}const lb=e.target.closest('[data-launch]');if(lb){if(lb.classList.contains('loading'))return;const lbLabel=lb.textContent==='运行中'?lb.title.replace(/ 已在运行.*$/,''):lb.textContent;lb.classList.add('loading');lb.textContent='启动中…';hana.api.fetch('/api/launch-provider?provider='+encodeURIComponent(lb.dataset.launch),{signal:AbortSignal.timeout(20000)}).then(r=>r.json()).then(j=>{lb.classList.remove('loading');if(j&&(j.running||j.started)){lb.classList.add('running');lb.textContent='运行中';lb.title=lbLabel+' 已在运行，点一下可重新检测';}else{lb.textContent='启动失败';lb.title=(j&&(j.message||j.code))||'启动失败';setTimeout(()=>{if(lb.textContent==='启动失败')lb.textContent=lbLabel;},3000);}}).catch(()=>{lb.classList.remove('loading');lb.textContent='启动失败';setTimeout(()=>{if(lb.textContent==='启动失败')lb.textContent=lbLabel;},3000);});return;}const q=e.target.closest('[data-open]');if(q){openExternal(q.dataset.open);return;}const brief=e.target.closest('#costBrief');if(brief){nav('api','api-pricing');return;}const pback=e.target.closest('#pricingBack');if(pback){nav('api','api-overview');return;}const prel=e.target.closest('#pricingReload');if(prel){if(prel.classList.contains('loading'))return;const old=prel.textContent;prel.classList.remove('done','failed');prel.classList.add('loading');prel.textContent='↻ 加载中';pluginApiFetch('/api/reload-config').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(j=>{if(!j||!j.ok)throw new Error((j&&j.error)||'reload failed');return fetchJson('/api/pricing');}).then(r=>{state.pricing=r;renderApiOverview();renderPricingTable();prel.classList.remove('loading');prel.classList.add('done');prel.textContent='✓ 已更新';setTimeout(()=>{prel.classList.remove('done');prel.textContent=old;},1500);}).catch(err=>{prel.classList.remove('loading');prel.classList.add('failed');prel.textContent='⚠ '+String(err&&err.message||'失败').slice(0,20);setTimeout(()=>{prel.classList.remove('failed');prel.textContent=old;},2400);});return;}const step=e.target.closest('[data-th-step]');if(step){e.stopPropagation();const input=step.closest('.threshold-input')?.querySelector('input[type="number"]');if(input&&!input.disabled){const n=Number(input.value)||0,stepSize=Number(input.step)||1,min=Number(input.min),max=Number(input.max),next=step.dataset.thStep==='up'?n+stepSize:n-stepSize;input.value=String(Math.max(min,Math.min(max,next)));input.dispatchEvent(new Event('change',{bubbles:true}));}return;}const rtl=e.target.closest('.pv-tail[data-refresh]');if(rtl){e.stopPropagation();refreshOneProvider(rtl.dataset.refresh);return;}const pv=e.target.closest('.provider-item[data-provider]');if(pv){showProvider(pv.dataset.provider);return;}const tab=e.target.closest('.tab');if(tab){nav(tab.dataset.view,tab.dataset.view==='usage'?'usage-overview':'api-overview');return;}const sub=e.target.closest('.subtab');if(sub){const sc=sub.closest('.subnav')?.dataset.scope||sub.closest('.view')?.id.replace('view-','')||'usage';setPage(sub.dataset.page,sc);return;}const p=e.target.closest('.provider-item');if(p){showProvider(p.dataset.provider);nav('api','api-detail');return;}const row=e.target.closest('.session-row');if(row){nav('usage','usage-session');return;}const chart=e.target.closest('.chart-card[data-chart]:not(.no-modal)');if(chart){let nearSeg=false;const segs=chart.querySelectorAll('.seg');for(const s of segs){const r=s.getBoundingClientRect();const dx=Math.max(r.left-e.clientX,0,e.clientX-r.right);const dy=Math.max(r.top-e.clientY,0,e.clientY-r.bottom);if(Math.hypot(dx,dy)<15){nearSeg=true;break;}}if(!nearSeg){openModal(chart);return;}}});
+function initPageEvents(){document.addEventListener('click',e=>{if(surface==='widget'){if(e.target.closest('[data-detail-close]')||e.target.id==='wDetail'){closeWidgetDetail();return;}const d=e.target.closest('.widget [data-detail]');if(d){openWidgetDetail(d.dataset.detail,d.dataset.provider);return;}return;}if(e.target.closest('[data-detail-close]')||e.target.id==='wDetail'){closeWidgetDetail();return;}const back=e.target.closest('#apiBack');if(back){nav('api','api-overview');return;}const opt=e.target.closest('.seg [data-v]');if(opt){const seg=opt.closest('.seg'),v=opt.dataset.v;if(seg.id==='providerCostUnitSeg'){PROVIDER_COST.unit=v;providerHeatEnterPending=true;renderProviderCostPanels();}else if(seg.id==='costUnitSeg'){COST.unit=v;costHeatEnterPending=true;renderCostPanel();}else if(seg.id==='costModeSeg'){COST.mode=v;if(v==='heat')costHeatEnterPending=true;renderCostPanel();}else if(seg.id==='tokUnitSeg'){TOK.unit=v;tokHeatEnterPending=true;renderTokenPanel();}else if(seg.id==='tokModeSeg'){TOK.mode=v;if(v==='heat')tokHeatEnterPending=true;renderTokenPanel();}else if(seg.id==='cacheUnitSeg'){CACHE.unit=v;cacheHeatEnterPending=true;renderCachePanel();}else if(seg.id==='cacheModeSeg'){CACHE.mode=v;if(v==='heat')cacheHeatEnterPending=true;renderCachePanel();}else if(seg.id==='provUnitSeg'){PROV.unit=v;renderUsageOverview();}else if(seg.id==='evRangeSeg'){EV.range=v;loadEvents().then(()=>renderUsageOverview());}numEnter=true;flashSeg(seg);requestAnimationFrame(()=>playNumbers());return;}const lb=e.target.closest('[data-launch]');if(lb){runLocalLaunch(lb.dataset.launch,lb,lb.dataset.base||'启动');return;}const q=e.target.closest('[data-open]');if(q){openExternal(q.dataset.open);return;}const brief=e.target.closest('#costBrief');if(brief){nav('api','api-pricing');return;}const pback=e.target.closest('#pricingBack');if(pback){nav('api','api-overview');return;}const prel=e.target.closest('#pricingReload');if(prel){if(prel.classList.contains('loading'))return;const old=prel.textContent;prel.classList.remove('done','failed');prel.classList.add('loading');prel.textContent='↻ 加载中';pluginApiFetch('/api/reload-config').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}).then(j=>{if(!j||!j.ok)throw new Error((j&&j.error)||'reload failed');return fetchJson('/api/pricing');}).then(r=>{state.pricing=r;renderApiOverview();renderPricingTable();prel.classList.remove('loading');prel.classList.add('done');prel.textContent='✓ 已更新';setTimeout(()=>{prel.classList.remove('done');prel.textContent=old;},1500);}).catch(err=>{prel.classList.remove('loading');prel.classList.add('failed');prel.textContent='⚠ '+String(err&&err.message||'失败').slice(0,20);setTimeout(()=>{prel.classList.remove('failed');prel.textContent=old;},2400);});return;}const step=e.target.closest('[data-th-step]');if(step){e.stopPropagation();const input=step.closest('.threshold-input')?.querySelector('input[type="number"]');if(input&&!input.disabled){const n=Number(input.value)||0,stepSize=Number(input.step)||1,min=Number(input.min),max=Number(input.max),next=step.dataset.thStep==='up'?n+stepSize:n-stepSize;input.value=String(Math.max(min,Math.min(max,next)));input.dispatchEvent(new Event('change',{bubbles:true}));}return;}const rtl=e.target.closest('.pv-tail[data-refresh]');if(rtl){e.stopPropagation();refreshOneProvider(rtl.dataset.refresh);return;}const pv=e.target.closest('.provider-item[data-provider]');if(pv){showProvider(pv.dataset.provider);return;}const tab=e.target.closest('.tab');if(tab){nav(tab.dataset.view,tab.dataset.view==='usage'?'usage-overview':'api-overview');return;}const sub=e.target.closest('.subtab');if(sub){const sc=sub.closest('.subnav')?.dataset.scope||sub.closest('.view')?.id.replace('view-','')||'usage';setPage(sub.dataset.page,sc);return;}const p=e.target.closest('.provider-item');if(p){showProvider(p.dataset.provider);nav('api','api-detail');return;}const row=e.target.closest('.session-row');if(row){nav('usage','usage-session');return;}const chart=e.target.closest('.chart-card[data-chart]:not(.no-modal)');if(chart){let nearSeg=false;const segs=chart.querySelectorAll('.seg');for(const s of segs){const r=s.getBoundingClientRect();const dx=Math.max(r.left-e.clientX,0,e.clientX-r.right);const dy=Math.max(r.top-e.clientY,0,e.clientY-r.bottom);if(Math.hypot(dx,dy)<15){nearSeg=true;break;}}if(!nearSeg){openModal(chart);return;}}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeWidgetDetail();});document.addEventListener('input',e=>{if(!['thPct','thFail'].includes(e.target.id))return;e.target.value=e.target.value.replace(/[^0-9]/g,'');});document.addEventListener('click',e=>{if(!e.target.closest('.session-drop,#sessionMenu'))closeSessionMenu();const tr=e.target.closest('#sessionTrigger');if(tr){e.stopPropagation();toggleSessionMenu();return;}const it=e.target.closest('.session-item');if(it){e.stopPropagation();pickSession(it.dataset.file);return;}});document.addEventListener('change',e=>{if(!['thEnabled','thPct','thFail'].includes(e.target.id))return;const s=$('#thresholdSaveStatus');if(s)s.textContent='保存中…';const hit=(state.balance?.balances||[]).find(b=>b.provider===state.provider);const isBalance=hit?.kind==='balance';const value=Math.max(1,Math.round(Number($('#thPct')?.value)||(isBalance?5:20)));const fail=Math.max(1,Math.round(Number($('#thFail')?.value)||3));if($('#thPct'))$('#thPct').value=String(value);if($('#thFail'))$('#thFail').value=String(fail);saveRules(state.provider,{enabled:$('#thEnabled')?.checked||false,pct:isBalance?20:value,amount:isBalance?value:undefined,fail}).then(r=>{if(s)s.textContent=r?.ok?'已保存':'保存失败';});});document.addEventListener('change',e=>{const row=e.target.closest('[data-alert-provider]');if(!row)return;const provider=row.dataset.alertProvider;const enabled=row.querySelector('[data-alert-enabled]')?.checked||false;const pct=Number(row.querySelector('[data-alert-pct]')?.value)||20;const fail=Number(row.querySelector('[data-alert-fail]')?.value)||3;saveRules(provider,{enabled,pct,fail}).then(()=>{state.rules=Object.assign({},state.rules,{[provider]:{enabled,pct,fail}});});});
 document.addEventListener('mousedown',e=>{const c=e.target.closest('.card,.panel,.provider-item,.chart-card,.api-hero,.price-group,.session-trigger,.model-metric-card');if(c){if(c.closest('.w-detail-card'))detailReleaseTo(c);c.classList.remove('si-release');c.classList.add('si-press');}},true);document.addEventListener('mouseup',()=>{$$('.si-press').forEach(c=>{if(c.closest('.w-detail-card'))detailReleaseTo(c);else{c.classList.remove('si-press');c.classList.add('si-release');setTimeout(()=>c.classList.remove('si-release'),650);}});},true);}
 

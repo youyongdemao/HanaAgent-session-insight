@@ -1361,3 +1361,15 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
    带文字的「启动 Ollama」会被压成方块、文字竖折，所以这里放宽成药丸，并让 .quick 不被标题挤扁。 */
 .provider-title .quick { flex: 0 0 auto; flex-wrap: nowrap; }
 .provider-title .quick button.pd-launch { width: auto; padding: 0 12px; font-weight: 500; white-space: nowrap; }
+/* ── 启动失败的引导条 ──
+   拉起后端口没起来时挂在详情页标题下方，说明原因并指向设置里的「本地供应商」。 */
+.pd-launch-hint {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--text-light, var(--text));
+  background: color-mix(in srgb, var(--si-amber, #c08a3e) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--si-amber, #c08a3e) 30%, transparent);
+}

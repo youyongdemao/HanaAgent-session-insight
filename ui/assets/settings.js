@@ -240,6 +240,115 @@ async function loadWidgetConfig() {
 
 loadWidgetConfig();
 
+/* ── 本地供应商：程序路径 ──
+   启动按钮用哪个程序由后端定（默认安装目录 → 这里指定的），这一块只负责让用户指定与清除。 */
+const localBlockEl = document.getElementById("stLocalBlock");
+const localListEl = document.getElementById("stLocalList");
+const localStatusEl = document.getElementById("stLocalStatus");
+
+function setLocalStatus(text, cls = "") {
+  if (!localStatusEl) return;
+  localStatusEl.textContent = text;
+  localStatusEl.className = "st-status" + (cls ? " " + cls : "");
+}
+
+function renderLocalProviders(providers) {
+  if (!localBlockEl || !localListEl) return;
+  if (!Array.isArray(providers) || providers.length === 0) {
+    localBlockEl.hidden = true;
+    return;
+  }
+  localBlockEl.hidden = false;
+  localListEl.innerHTML = "";
+
+  for (const provider of providers) {
+    const li = document.createElement("li");
+    li.className = "st-item";
+
+    const main = document.createElement("div");
+    main.className = "st-item-main";
+    const title = document.createElement("div");
+    title.className = "st-item-title";
+    title.textContent = provider.name || provider.id;
+    const desc = document.createElement("div");
+    desc.className = "st-item-desc";
+    const where = provider.source === "configured" ? "（你指定的）" : "";
+    desc.textContent = provider.program
+      ? provider.program + where
+      : "还没指定程序，启动时会先让你选一个";
+    main.append(title, desc);
+
+    const ctl = document.createElement("div");
+    ctl.className = "st-item-ctl";
+
+    const pick = document.createElement("button");
+    pick.type = "button";
+    pick.className = "st-btn st-btn-sm";
+    pick.textContent = provider.program ? "重新选择…" : "选择程序…";
+    pick.addEventListener("click", () => pickLocalProgram(provider, pick));
+    ctl.append(pick);
+
+    if (provider.source === "configured") {
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "st-btn st-btn-sm";
+      clear.textContent = "清除";
+      clear.addEventListener("click", () => saveLocalProgram(provider.id, ""));
+      ctl.append(clear);
+    }
+
+    li.append(main, ctl);
+    localListEl.append(li);
+  }
+}
+
+async function loadLocalProviders() {
+  if (!localBlockEl) return;
+  try {
+    const data = await apiFetch("api/local-providers", {}, 20000);
+    renderLocalProviders(data?.providers || []);
+  } catch {
+    /* 读不到就先不显示这一块，不打扰界面设置那边 */
+  }
+}
+
+async function pickLocalProgram(provider, btn) {
+  btn.disabled = true;
+  try {
+    const picked = await hana.resources.pick({ mode: "file" });
+    const ref = picked && Array.isArray(picked.resources) ? picked.resources[0] : null;
+    const path = (ref && (ref.path || ref.localPath)) || null;
+    if (path) await saveLocalProgram(provider.id, path);
+  } catch (error) {
+    setLocalStatus("没能选择程序：" + String(error?.message || error), "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function saveLocalProgram(providerId, path) {
+  try {
+    await apiFetch(
+      "api/local-program",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider: providerId, path }),
+      },
+      15000
+    );
+    setLocalStatus(path ? "已保存" : "已清除", "ok");
+    window.setTimeout(() => {
+      if (localStatusEl && /^已/.test(localStatusEl.textContent)) setLocalStatus("");
+    }, 2400);
+    await loadLocalProviders();
+  } catch (error) {
+    setLocalStatus("保存失败：" + String(error?.message || error), "err");
+  }
+}
+
+loadLocalProviders();
+
 /* ── 关于：版本、检查更新与源码仓库 ── */
 const GITHUB_URL = "https://github.com/youyongdemao";
 const aboutGithubEl = document.getElementById("aboutGithub");
