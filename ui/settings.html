@@ -37,51 +37,57 @@
 <body data-hana-theme="inherit">
   <div class="st-page">
 
-    <section class="st-section">
-      <h2>本轮速览</h2>
-      <ul class="st-list" id="stList"></ul>
-      <div class="st-actions">
-        <button class="st-btn st-btn-primary" id="stSave">保存</button>
-        <button class="st-btn" id="stReset">恢复默认</button>
-        <span class="st-status" id="stStatus"></span>
-      </div>
+    <section class="st-block">
+      <h1 class="st-block-title">界面设置</h1>
+
+      <section class="st-section">
+        <h2>本轮速览</h2>
+        <ul class="st-list" id="stList"></ul>
+        <div class="st-actions">
+          <button class="st-btn st-btn-primary" id="stSave">保存</button>
+          <button class="st-btn" id="stReset">恢复默认</button>
+          <span class="st-status" id="stStatus"></span>
+        </div>
+      </section>
+
+      <section class="st-section">
+        <h2>实时用量</h2>
+        <ul class="st-list" id="wTableBody"></ul>
+        <div class="st-actions">
+          <button class="st-btn st-btn-primary" id="wSave">保存</button>
+          <button class="st-btn" id="wReset">恢复默认</button>
+          <span class="st-status" id="wStatus"></span>
+        </div>
+      </section>
     </section>
 
-    <section class="st-section">
-      <h2>实时用量</h2>
-      <ul class="st-list" id="wTableBody"></ul>
-      <div class="st-actions">
-        <button class="st-btn st-btn-primary" id="wSave">保存</button>
-        <button class="st-btn" id="wReset">恢复默认</button>
-        <span class="st-status" id="wStatus"></span>
-      </div>
-    </section>
-
-    <section class="st-section">
-      <h2>关于</h2>
-      <ul class="st-list">
-        <li class="st-item">
-          <div class="st-item-main">
-            <div class="st-item-title">检查更新</div>
-            <div class="st-item-desc">当前版本 v<span id="aboutVersion">–</span></div>
-          </div>
-          <div class="st-item-ctl">
-            <button class="st-btn" id="aboutUpdate">检查</button>
-          </div>
-        </li>
-        <li class="st-item">
-          <div class="st-item-main">
-            <div class="st-item-title">源码仓库</div>
-            <div class="st-item-desc">在 GitHub 上查看与反馈</div>
-          </div>
-          <div class="st-item-ctl">
-            <button class="st-btn" id="aboutGithub">打开</button>
-          </div>
-        </li>
-      </ul>
-      <div class="st-actions">
-        <span class="st-status" id="aboutStatus"></span>
-      </div>
+    <section class="st-block">
+      <h1 class="st-block-title">关于</h1>
+      <section class="st-section">
+        <ul class="st-list">
+          <li class="st-item">
+            <div class="st-item-main">
+              <div class="st-item-title">检查更新</div>
+              <div class="st-item-desc">当前版本 v<span id="aboutVersion">–</span></div>
+            </div>
+            <div class="st-item-ctl">
+              <button class="st-btn" id="aboutUpdate">检查</button>
+            </div>
+          </li>
+          <li class="st-item">
+            <div class="st-item-main">
+              <div class="st-item-title">源码仓库</div>
+              <div class="st-item-desc">在 GitHub 上查看与反馈</div>
+            </div>
+            <div class="st-item-ctl">
+              <button class="st-btn" id="aboutGithub">打开</button>
+            </div>
+          </li>
+        </ul>
+        <div class="st-actions">
+          <span class="st-status" id="aboutStatus"></span>
+        </div>
+      </section>
     </section>
 
   </div>

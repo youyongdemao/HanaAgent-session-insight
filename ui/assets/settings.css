@@ -33,18 +33,29 @@ body {
   padding: 0;
 }
 
-/* 分区之间：一条淡分隔线加足够的留白。
-   删掉分区说明后，两组之间只剩空白，靠间距撑不起「新分组起点」，线条能一眼切断视线。 */
+/* 大块之间：线只画在这里。线是「分界」这个符号的专属，留给最大的那道边界。 */
+.st-block + .st-block {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
+}
+
+.st-block-title {
+  margin: 0 0 14px;
+  font-size: 15.5px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+/* 块内小组之间不画线：靠字号与间距就足够分出层级 */
 .st-section + .st-section {
-  margin-top: 26px;
-  padding-top: 22px;
-  border-top: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  margin-top: 22px;
 }
 
 .st-section h2 {
-  margin: 0 0 10px;
-  font-size: 14.5px;
-  font-weight: 650;
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--text);
 }
 
