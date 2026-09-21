@@ -1374,17 +1374,34 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
   border: 1px solid color-mix(in srgb, var(--si-amber, #c08a3e) 30%, transparent);
 }
 /* ── 当前轮详情头部 ──
-   上行：Token 最大、靠左；下行：轮次 / 费用 / 命中率三项右对齐。
-   刻意不用 flex 并排：这几个元素作为 flex 子项时，自动基准会被算成整行宽度，
-   右侧那块会永远被挤到下一行（试过 nowrap / grid / 去 auto margin 都不行）。两行是确定的。 */
+   宽度够：一行（Token 左，三项右对齐）；不够：两行（Token 在上，三项平分宽度）。
+   两行时的切换由 JS 算宽度决定（见 layoutTurnHead）：这几个元素作为 flex 子项时
+   自动基准会被算成整行宽度，交给浏览器判断会永远换行。 */
 .w-turn-head { display: block; }
 .w-turn-head .w-turn-main { display: grid; gap: 6px; }
 .w-turn-head .w-turn-main span { color: var(--text-light); font-size: 11px; }
 .w-turn-head .w-turn-main b { font: 600 32px var(--font-mono); color: var(--accent); line-height: 1.05; white-space: nowrap; }
-.w-turn-head .w-turn-side { display: flex; align-items: flex-end; justify-content: flex-end; gap: 16px; margin-top: 12px; }
-.w-turn-head .w-turn-kpi { display: grid; gap: 6px; justify-items: end; }
+.w-turn-head .w-turn-side { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 12px; }
+.w-turn-head .w-turn-kpi { display: grid; gap: 6px; justify-items: center; }
 .w-turn-head .w-turn-kpi span { color: var(--text-muted); font-size: 10.5px; }
 .w-turn-head .w-turn-kpi b { font: 600 15px var(--font-mono); color: var(--text); white-space: nowrap; }
+/* 三项之间的分隔线：与页面里 .uh-divider / .ah-divider 同一套（1px、两端渐隐、20% 文本色） */
+.w-turn-head .w-turn-kpi + .w-turn-kpi { position: relative; }
+.w-turn-head .w-turn-kpi + .w-turn-kpi::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--text) 20%, transparent), transparent);
+}
+/* 一行时：三项靠右、间距 16，分隔线落在两项中间（宽度也由 JS 算好写成 flex 基准） */
+.w-turn-head.inline { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 18px; }
+.w-turn-head.inline .w-turn-main { min-width: 0; }
+.w-turn-head.inline .w-turn-side { display: flex; align-items: flex-end; justify-content: flex-end; gap: 16px; margin-top: 0; }
+.w-turn-head.inline .w-turn-kpi { justify-items: end; }
+.w-turn-head.inline .w-turn-kpi + .w-turn-kpi::before { left: -8px; }
 
 /* 并列的两张构成卡；窗口窄时自动落成一列 */
 .w-detail-pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
