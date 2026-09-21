@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>会话用量</title>
+  <link rel="stylesheet" href="./assets/panel-v2.css">
+</head>
+<body data-hana-theme="inherit" data-surface="widget">
+  <div id="root" data-surface="widget"></div>
+  <script>
+    window.addEventListener("error", function (e) {
+      var root = document.getElementById("root");
+      if (root && !root.innerHTML) {
+        root.innerHTML = '<div class="empty">面板加载失败：' + (e.message || "脚本错误") + "</div>";
+      }
+    });
+  </script>
+  <script type="module" src="./assets/panel-v2.js"></script>
+</body>
+</html>

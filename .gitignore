@@ -7,3 +7,6 @@ node_modules/
 Thumbs.db
 plugin-data/
 rules.json
+sdk/**/*.map
+sdk/**/*.LEGAL.txt
+sdk/**/THIRD_PARTY_NOTICES.txt

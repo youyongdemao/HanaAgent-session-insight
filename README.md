@@ -1,10 +1,17 @@
-# HanaAgent 会话用量统计面板插件
+# Session Insight — HanaAgent 会话用量面板
 
 > 实时查看每个会话的 Token 消耗、缓存命中率、费用与余额，覆盖多供应商账户状态、逐轮趋势与全局用量分析。
 
-Session Insight 是 HanaAgent 的会话用量面板插件。侧栏常驻一条状态条，点开是完整的数据面板：当前会话的 Token、缓存命中率、费用与余额，逐轮趋势图表，各供应商账户的真实余额 / 配额 / 官方成本，以及今天与近期的全局用量。数据全部从本机会话文件与宿主账本算出，管理凭据只留在后端。
+Session Insight 是 HanaAgent 的会话用量面板，以 App 形态装载。完整工作台常驻左侧导航，点开即是当前会话的 Token、缓存命中率、费用与余额、逐轮趋势图表，以及各供应商账户的真实余额 / 配额 / 官方成本。数据全部来自宿主公开接口，管理凭据只留在后端。
 
-v2 相比 v1.2 是一次整体重做：界面与页面层级换新，计费规则外置成可更新的价格库，用量数据源跟随宿主账本。逐版本的改动记在 [Releases](https://github.com/youyongdemao/HanaAgent-session-insight/releases)。
+## v2.1 相比 v2.0 的变化
+
+- **装载形态换成 App**：manifestVersion 2，安装走「设置 → 扩展」，声明的能力在安装时逐项确认
+- **数据源改用宿主公开接口**：会话列表、上下文占用、用量账本、供应商凭据，不再自行读会话 JSONL 与宿主数据库
+- **页面层级**：整页工作台常驻左侧导航；实时预览成为独立卡片，按需放到画布上
+- **主题跟随**：改由宿主 SDK 下发（`hana.theme`），不再读外观偏好文件
+- **统计口径**：费用与趋势覆盖全量账本，按时间分片拉取
+- **更新入口**：面板内指向「设置 → 扩展」
 
 ## 功能特性
 
@@ -12,95 +19,80 @@ v2 相比 v1.2 是一次整体重做：界面与页面层级换新，计费规�
 - **会话级用量指标**：总 Token、缓存命中率、会话费用、轮数、运行时长
 - **图表分析**：每轮 Token / 缓存命中率趋势 / 每轮费用 / 输入构成（未命中·缓存·输出），全部支持点击放大
 - **混用模型会话识别**：自动统计会话内模型分布、主模型归属，会话费用按每轮实际模型价格累计
-- **会话标题提取**：按 session 标题查询，自动跳过系统注入消息（`[hana_reference]` / 附件等），精确单会话用量统计
-- **双形态**：widget 常驻状态条（当前模型、命中、Token、费用、余额、对话标题）+ 完整数据面板
-- **主题同步**：直接读取 HanaAgent 外观偏好，深浅色切换不依赖 renderer 补丁
-- **内置更新检查**：详情页可检查 GitHub Latest Release；发现新版后校验、备份并更新
+- **跟随当前会话**：工作台与实时预览都跟随主窗口选中的会话，可手动锁定到任意会话查看
+- **双形态**：整页工作台 + 实时预览卡片
+- **主题同步**：跟随 HanaAgent 当前主题，深浅色自适应
+- **服务器定位**：每个会话可查看其使用过的供应商、模型与价格来源
 
 ## 安装
 
-> 🧩 **首次安装后，可直接让 HanaAgent 协助配置插件**：对 HanaAgent 说「帮我配置 session-insight 插件」，它会自动读取数据根、会话目录等配置项，无需手动填。
-
-1. 在 HanaAgent 设置 > 插件中，拖入本项目文件夹；或放置到用户插件目录
-2. 刷新插件列表，启用 `session-insight`
-3. **务必为该插件开启「全权访问」（full access）权限**：在插件列表中点开 `session-insight`，找到权限/访问级别设置，授予「全权访问」。否则新版卡片、会话统计等依赖宿主能力的功能会因权限不足而受限或无法加载。
-4. 打开插件：在 HanaAgent 里通过以下几个入口进入——「会话用量」页面、侧边的「用量状态栏」widget、或「卡片中心」里的 Session Insight 卡片。
+1. 从 [Releases](https://github.com/youyongdemao/HanaAgent-session-insight/releases) 下载 `session-insight-v*.zip`
+2. 在 HanaAgent「设置 → 扩展」中安装该 zip
+3. 安装时逐项确认以下能力（均为只读类）：
+   - `app/tools.expose-to-model` — 向模型暴露一个读数据的工具
+   - `app/sessions.read` — 读取会话列表与上下文（跟随当前会话需要）
+   - `app/usage.read` — 读取宿主用量账本
+   - `app/provider.credentials.read` — 读取供应商凭据以查询余额
+   - `app/input.status` — 会话输入栏的状态位
+4. 打开：左侧导航「会话用量·工作台」；实时预览可从卡片中心拖到画布上
 
 ## 配置
 
+安装后在「设置 → 扩展 → Session Insight」里配置：
+
 | 配置项 | 说明 | 默认 |
 |-------|------|------|
-| `sessionsDir` | Hana 会话 JSONL 目录 | Hana 自带 `agents/<agent>/sessions` |
-| `deepseekApiKey` | DeepSeek API Key（余额查询，留空自动读 provider-catalog） | 空 |
-| `openaiAdminKey` | OpenAI Organization Admin Key，用于官方 Usage / Costs | 空 |
-| `xaiManagementKey` | xAI Management Key，用于团队账单接口 | 空 |
-| `xaiTeamId` | xAI Team ID，与 Management Key 配套 | 空 |
-| `enableCodexQuota` | 启用实验性 ChatGPT/Codex 订阅配额查询 | 关闭 |
-| `refreshSeconds` | widget 状态条自动刷新间隔 | 30 |
+| `refreshSeconds` | 状态条刷新间隔（秒） | 30 |
+| `enableCodexQuota` | Codex 订阅配额（实验性，读取已登录的 ChatGPT OAuth 配额） | 关闭 |
+| `deepseekApiKey` | 兜底用；仅在宿主凭据接口取不到时用于余额查询 | 空 |
 
-账户数据分为四种口径：真实余额、官方累计成本、订阅配额和暂不可查询。管理凭据只在后端读取，不会发送到插件 iframe。Codex 配额使用未公开接口，启用后最多每五分钟查询一次。
+账户数据分四种口径：真实余额、官方累计成本、订阅配额和暂不可查询。管理凭据只在后端读取，不会发送到面板页面。
 
 ## 计费数据库
 
-价格不再写死在代码里。仓库根目录的 `pricing.json` 是唯一事实源，包含单价、峰谷时段、模型归属供应商、上下文窗口和来源标注。
+价格不再写死在代码里。仓库根目录的 `pricing.json` 是唯一事实源，包含单价、高峰时段、模型归属供应商、上下文窗口和来源标注。
 
-```json
-{ "schemaVersion": 1, "snapshotAt": "2026-09-09", "currency": "CNY",
-  "peakHours": { "timezone": "Asia/Shanghai", "weekdays": [1,2,3,4,5],
-                 "ranges": [[9,12],[14,18]], "offPeakRatio": 0.5 },
-  "models": { "deepseek-v4-flash": { "provider": "deepseek", "contextWindow": 128000,
-      "peak": { "inputMiss": 3.0, "inputHit": 0.10, "output": 9.0 },
-      "offPeak": { "inputMiss": 1.5, "inputHit": 0.05, "output": 4.5 } } } }
-```
+- **拉取**：App 启动后按 24 小时 TTL 拉取一次，先走 jsDelivr CDN，失败回退 GitHub raw，两者都不可用时使用内置快照
+- **校验**：逐字段校验，非法值（负数、缺字段、类型错误）整条丢弃；整份配置都无效时保持内置数据不变
+- **维护价格**：直接改本仓库的 `pricing.json` 并推送，客户端最迟 24 小时后生效
 
-- **拉取**：插件启动后按 24 小时 TTL 拉取一次，先 jsDelivr CDN、失败回退 GitHub raw，两者都不可用时使用内置快照
-- **校验**：逐字段校验，非法值（负数、缺字段、类型错误）整条丢弃；整份配置都无效时保持内置数据不变，不会把费用算成 0
-- **手动刷新**：费用简报详情页右上角的「重新加载配置」，或直接请求 `GET /api/plugins/session-insight/api/reload-config`
-- **维护价格**：直接改仓库的 `pricing.json` 并推送，客户端最迟 24 小时后自动生效；想立即生效就点一次「重新加载配置」
+价格数据均来自各供应商官方定价页，查不到的模型标「未收录」，不做估算。
 
-价格数据均来自各供应商官方定价页，查不到的模型标为「未收录」，不做估算。
+## App 形态（manifest v2）
 
-## 插件形态（manifest v2）
+本 App 用 `contributes` 声明：
 
-本插件已迁到 `manifestVersion: 2`，用 `contributes.cards[]` 声明两张卡片：
+| 贡献 | 内容 |
+|------|------|
+| `cards` | `panel` 整页卡（常驻左侧导航）+ `widget` 独立卡片（实时预览） |
+| `ui.inputStatus` | 输入栏下方一条上下文占用状态 |
+| `settings.schema` | 上面那张配置表 |
 
-| 卡片 id | 形态 | 说明 |
-|---------|------|------|
-| `session-insight` | `realization: "page"` + `siteNavEntry` | 完整数据面板，出现在站点导航 |
-| `session-insight-widget` | `pageOf: "session-insight"` | 常驻侧栏的用量状态条 |
-
-两张卡片都是 `cardForm: "flush"` + `titlebar: "translucent"`，与 HanaAgent 的玻璃卡片语言一致。
-
-清单只声明 `cards` 与 `configuration`。早期为了兼容尚未支持 `cards[]` 的宿主，曾同时保留 `contributes.page` / `contributes.widget` 两份 legacy 声明；新版宿主（`manifestVersion: 2`）已明确拒绝这两个键，安装时会直接报错，因此已移除。仍需要旧格式清单的宿主请停留在 v2.0.1。
+服务端入口是 `index.js`（`defineApp` + `ctx.routes.register`），后端路由挂在 `/api/apps/session-insight-v2/routes/` 下；页面资源在 `ui/` 下，由宿主签发票据装载。
 
 ## 更新通道
 
-内置更新检查与历史版本完全一致，指向同一个仓库和同一套约定：
-
-- 检查接口：`https://api.github.com/repos/youyongdemao/HanaAgent-session-insight/releases/latest`
-- 安装包：Release 附件中形如 `session-insight-*.zip` 的资产
-- 安装方式：校验 SHA256 → 备份当前插件目录 → 整体替换；失败自动回滚
-- 版本要求：以清单里的 `minAppVersion` 为准（`v2.0.4` 起为 `0.450.0`，`v2.0.0`–`v2.0.3` 为 `0.159.0`）
-
-因此 **宿主版本满足清单要求时，v1.2.x / v2.0.x 的老版本可以直接通过「检查更新」一键升级到最新版**，无需手动重装。
+更新统一走「设置 → 扩展」：从 Releases 下载新 zip 覆盖安装。面板内不再自行下载覆盖，也不会去比对 v1 插件的 Release 版本号。
 
 ## 目录结构
 
 ```
 session-insight/
-├── manifest.json          # 插件清单
-├── index.js               # 宿主端入口（manifestVersion 2 的 entry）
+├── manifest.json          # App 清单（manifestVersion 2）
+├── index.js               # 服务端入口：defineApp、路由注册、工具注册
+├── package.json           # 声明 type: module（子模块按 ESM 加载）
 ├── pricing.json           # 计费数据库（价格 / 峰谷 / 模型归属 / 上下文窗口）
-├── assets/
-│   ├── panel-v2.js        # 前端逻辑（v2）
-│   ├── panel-v2.css       # 样式（v2）
-│   ├── panel.js           # 前端逻辑（v1 兼容）
-│   └── panel.css          # 样式（v1 兼容）
-├── routes/
-│   ├── api.js             # 数据接口（统计/余额/更新）
-│   └── ui.js              # 页面与 widget 路由
-└── lib/
-    └── usage-parser.js    # 会话 JSONL 解析与费用计算
+├── lib/
+│   ├── host-data.js       # 宿主接口 → 面板数据形状
+│   ├── legacy-api.js      # 后端路由实现（数据源已换成宿主接口）
+│   ├── usage-parser.js    # 计费逻辑与内置价格快照
+│   └── provider-directory.js
+├── ui/
+│   ├── panel.html         # 工作台整页
+│   ├── widget.html        # 实时预览
+│   └── assets/            # 前端脚本与样式（panel-v2.js / panel-v2.css）
+├── sdk/                   # 随包 SDK（宿主 App 契约）
+└── assets/icon.svg        # App 图标
 ```
 
 ## License

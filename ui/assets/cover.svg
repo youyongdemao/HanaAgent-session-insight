@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <defs>
+    <linearGradient id="cbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#101a2e"/>
+    </linearGradient>
+    <linearGradient id="cline" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#3d7dff"/>
+      <stop offset="1" stop-color="#5fd0ff"/>
+    </linearGradient>
+    <linearGradient id="cfill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d7dff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#3d7dff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#cbg)"/>
+  <g stroke="#1b2740" stroke-width="1.5">
+    <path d="M64 150h672M64 220h672M64 290h672M64 360h672"/>
+  </g>
+  <path d="M64 380 L176 322 L288 344 L400 240 L512 268 L624 178 L736 150 L736 380 Z" fill="url(#cfill)"/>
+  <path d="M64 380 L176 322 L288 344 L400 240 L512 268 L624 178 L736 150"
+        fill="none" stroke="url(#cline)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="400" cy="240" r="8" fill="#0b1220" stroke="#5fd0ff" stroke-width="4"/>
+  <circle cx="624" cy="178" r="7" fill="#5fd0ff"/>
+  <text x="64" y="88" fill="#e8eefc" font-family="Segoe UI, sans-serif" font-size="44" font-weight="600">Session Insight</text>
+  <text x="64" y="122" fill="#7f8da8" font-family="Segoe UI, sans-serif" font-size="20">会话用量 · 缓存命中率 · 费用与余额</text>
+</svg>
