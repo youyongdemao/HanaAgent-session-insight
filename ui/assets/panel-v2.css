@@ -1341,3 +1341,21 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
 .widget.avoid-host-buttons > .row {
   padding-right: 120px;
 }
+/* ── 详情页的小卡片：同一行等宽均分 ──
+   原先 .w-detail-visual / .w-detail-pair 是块级，一行只放一个；
+   包进网格后，每行能放几个放几个，同行内一律等宽（1fr），
+   容器太窄时自动换行；单张卡片仍会占满整行。 */
+.w-detail-visuals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+/* 网格里由 gap 统一控制间距，卡片自身的下边距与相邻负边距都要让位 */
+.w-detail-visuals > .w-detail-visual,
+.w-detail-visuals > .w-detail-pair {
+  margin-bottom: 0;
+}
+.w-detail-visuals > .w-detail-visual + .w-detail-visual {
+  margin-top: 0;
+}
