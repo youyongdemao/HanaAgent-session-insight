@@ -192,6 +192,33 @@ function parseLiveLayout(raw) {
   return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice() };
 }
 
+// ── 实时用量卡片（widget）的区块清单 ──
+// id 对应 panel-v2.js 里 widgetShell 的 data-block 标记；group 用于设置页分组。
+const WIDGET_BLOCKS = [
+  { id: "overview", label: "会话信息总览", group: null, desc: "上下文环、本会话总 Token、平均缓存命中率、本会话总费用" },
+  { id: "context", label: "上下文余量", group: null, desc: "已用量、距压缩余量与压缩阈值标记" },
+  { id: "turnTokens", label: "当前轮 Token", group: "本轮信息", desc: "本轮的 Token 消耗总量" },
+  { id: "turnHit", label: "当前轮缓存命中", group: "本轮信息", desc: "本轮的缓存命中率" },
+  { id: "composition", label: "输入输出 / 缓存命中未命中", group: null, desc: "输入与输出占比、命中与未命中占比" },
+  { id: "providers", label: "会话供应商统计", group: null, desc: "供应商占比、供应商列表与额度窗口" },
+];
+const WIDGET_DEFAULT = WIDGET_BLOCKS.map((b) => b.id);
+
+/** 解析实时用量卡片的区块开关；缺失或损坏时回退全开。 */
+function parseWidgetLayout(raw) {
+  const known = new Set(WIDGET_BLOCKS.map((b) => b.id));
+  let obj = null;
+  try {
+    obj = typeof raw === "string" ? (raw ? JSON.parse(raw) : null) : raw;
+  } catch {
+    obj = null;
+  }
+  if (obj && Array.isArray(obj.on)) {
+    return { on: obj.on.filter((id) => known.has(id)) };
+  }
+  return { on: WIDGET_DEFAULT.slice() };
+}
+
 /**
  * App 自有配置：存在 dataDir/config.json，不进宿主 settings schema。
  * 宿主只要看到 contributes.settings.schema，就把设置 tab 归成 schema 类，自定义设置页会被降级，
@@ -344,7 +371,36 @@ export default defineApp(async (sdk) => {
         const layout = parseLiveLayout(body);
         await writeAppConfig(sdk, "liveLayout", JSON.stringify(layout));
         liveLayoutCache = layout;
+        // 显隐立即生效：用上一轮的数据重推一次，内容不变、只更新 visible。
+        if (lastInputStatusArgs) {
+          await pushInputStatus(
+            lastInputStatusArgs.sessionId,
+            lastInputStatusArgs.t,
+            lastInputStatusArgs.requestId
+          ).catch(() => {});
+        }
         return c.json({ ok: true, ...layout });
+      } catch (error) {
+        return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    // ── 实时用量卡片（widget）的区块开关 ──
+    app.get("/api/widget-config", async (c) => {
+      try {
+        const all = await readAppConfig(sdk);
+        return c.json({ blocks: WIDGET_BLOCKS, ...parseWidgetLayout(all.widgetLayout) });
+      } catch (error) {
+        return c.json({ blocks: WIDGET_BLOCKS, ...parseWidgetLayout(null), error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    app.post("/api/widget-config", async (c) => {
+      try {
+        const body = await c.req.json().catch(() => null);
+        const layout = parseWidgetLayout(body);
+        await writeAppConfig(sdk, "widgetLayout", JSON.stringify(layout));
+        return c.json({ ok: true, blocks: WIDGET_BLOCKS, ...layout });
       } catch (error) {
         return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
       }
@@ -524,8 +580,13 @@ export default defineApp(async (sdk) => {
   /** 把本轮指标分别写进五个输入栏项。
    *  拆成多项而不是拼成一条：溢出时宿主按项折叠，不会出现半个数字被截断；
    *  显示与否交给设置页的开关，没值只留「—」占位，不让项数忽增忽减。 */
+  // 最后一次推送给输入栏的入参。设置页改完开关时用它立刻重推一次，
+  // 否则要等下一轮对话产生了新的 llm_usage 事件、输入栏才会变。
+  let lastInputStatusArgs = null;
+
   async function pushInputStatus(sessionId, t, requestId = null) {
     if (!sessionId) return;
+    lastInputStatusArgs = { sessionId, t, requestId };
     const on = new Set((await getLiveLayout()).on);
 
     // 实测事件载荷里 endedAt 常缺、durationMs 常为 0，时长与吐吞因此算不出来。

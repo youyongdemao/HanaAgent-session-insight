@@ -163,6 +163,137 @@ resetEl.addEventListener("click", async () => {
 
 load();
 
+/* ── 实时用量：卡片内各区块的开关（含分组子项）── */
+const W_BROADCAST_KEY = "si-widget-layout";
+const wBodyEl = document.getElementById("wTableBody");
+const wSaveEl = document.getElementById("wSave");
+const wResetEl = document.getElementById("wReset");
+const wStatusEl = document.getElementById("wStatus");
+
+let wBlocks = [];
+let wOnSet = new Set();
+
+function setWStatus(text, cls = "") {
+  if (!wStatusEl) return;
+  wStatusEl.textContent = text;
+  wStatusEl.className = "st-status" + (cls ? " " + cls : "");
+}
+
+function broadcastWidgetLayout() {
+  try {
+    localStorage.setItem(W_BROADCAST_KEY, String(Date.now()));
+  } catch {
+    /* 广播失败不影响保存结果 */
+  }
+}
+
+function renderWidgetTable() {
+  if (!wBodyEl) return;
+  wBodyEl.innerHTML = "";
+  let lastGroup = null;
+  for (const b of wBlocks) {
+    if (b.group && b.group !== lastGroup) {
+      lastGroup = b.group;
+      const gr = document.createElement("tr");
+      gr.className = "st-group-row";
+      const gd = document.createElement("td");
+      gd.colSpan = 3;
+      gd.textContent = b.group;
+      gr.append(gd);
+      wBodyEl.append(gr);
+    }
+    const tr = document.createElement("tr");
+    tr.className = "st-trow" + (wOnSet.has(b.id) ? "" : " off");
+
+    const tdName = document.createElement("td");
+    tdName.className = "st-tname" + (b.group ? " is-child" : "");
+    tdName.textContent = b.label;
+
+    const tdDesc = document.createElement("td");
+    tdDesc.className = "st-tdesc";
+    tdDesc.textContent = b.desc || "";
+
+    const tdSw = document.createElement("td");
+    tdSw.className = "st-col-sw";
+    const sw = document.createElement("label");
+    sw.className = "st-sw";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = wOnSet.has(b.id);
+    cb.setAttribute("aria-label", b.label);
+    cb.addEventListener("change", () => {
+      if (cb.checked) wOnSet.add(b.id);
+      else wOnSet.delete(b.id);
+      tr.classList.toggle("off", !cb.checked);
+      if (wSaveEl) wSaveEl.disabled = false;
+      setWStatus("");
+    });
+    const track = document.createElement("i");
+    sw.append(cb, track);
+    tdSw.append(sw);
+
+    tr.append(tdName, tdDesc, tdSw);
+    wBodyEl.append(tr);
+  }
+}
+
+async function loadWidgetConfig() {
+  if (!wBodyEl) return;
+  if (wSaveEl) wSaveEl.disabled = true;
+  try {
+    const cfg = await apiFetch("api/widget-config");
+    wBlocks = cfg.blocks || [];
+    wOnSet = new Set(cfg.on || []);
+    renderWidgetTable();
+    setWStatus("");
+  } catch (error) {
+    setWStatus("读取配置失败：" + String(error?.message || error), "err");
+  }
+}
+
+wSaveEl?.addEventListener("click", async () => {
+  wSaveEl.disabled = true;
+  setWStatus("保存中…");
+  try {
+    const cfg = await apiFetch("api/widget-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ on: [...wOnSet] }),
+    });
+    if (cfg && Array.isArray(cfg.on)) wOnSet = new Set(cfg.on);
+    setWStatus("已保存", "ok");
+    broadcastWidgetLayout();
+    window.setTimeout(() => {
+      if (wStatusEl?.textContent === "已保存") setWStatus("");
+    }, 2400);
+  } catch (error) {
+    wSaveEl.disabled = false;
+    setWStatus("保存失败：" + String(error?.message || error), "err");
+  }
+});
+
+wResetEl?.addEventListener("click", async () => {
+  wSaveEl.disabled = true;
+  setWStatus("恢复中…");
+  try {
+    const cfg = await apiFetch("api/widget-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    wBlocks = cfg.blocks || wBlocks;
+    wOnSet = new Set(cfg.on || []);
+    renderWidgetTable();
+    setWStatus("已恢复默认", "ok");
+    broadcastWidgetLayout();
+  } catch (error) {
+    wSaveEl.disabled = false;
+    setWStatus("恢复失败：" + String(error?.message || error), "err");
+  }
+});
+
+loadWidgetConfig();
+
 /* ── 数据来源：Codex 订阅配额开关 ── */
 const codexEl = document.getElementById("stCodex");
 const codexStatusEl = document.getElementById("stCodexStatus");

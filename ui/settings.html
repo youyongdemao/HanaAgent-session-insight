@@ -50,6 +50,30 @@
     </section>
 
     <section class="st-section">
+      <h2>实时用量</h2>
+      <p class="st-desc">
+        「实时用量」卡片内的各区块，开关决定显示与否。<strong>默认全部显示</strong>。
+      </p>
+      <div class="st-table-wrap">
+        <table class="st-table">
+          <thead>
+            <tr>
+              <th scope="col">区块</th>
+              <th scope="col">说明</th>
+              <th scope="col" class="st-col-sw">显示</th>
+            </tr>
+          </thead>
+          <tbody id="wTableBody"></tbody>
+        </table>
+      </div>
+      <div class="st-actions">
+        <button class="st-btn st-btn-primary" id="wSave">保存</button>
+        <button class="st-btn" id="wReset">恢复默认</button>
+        <span class="st-status" id="wStatus"></span>
+      </div>
+    </section>
+
+    <section class="st-section">
       <h2>数据来源</h2>
       <p class="st-desc">影响余额与配额读取的开关，改完立即生效。</p>
       <ul class="st-list">
