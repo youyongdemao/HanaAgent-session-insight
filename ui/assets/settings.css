@@ -33,11 +33,9 @@ body {
   padding: 0;
 }
 
-/* 大块之间：线只画在这里。线是「分界」这个符号的专属，留给最大的那道边界。 */
+/* 大块之间只用留白分隔：卡片自身的边界已经承担了这件事，再画线是重复 */
 .st-block + .st-block {
   margin-top: 30px;
-  padding-top: 24px;
-  border-top: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
 }
 
 .st-block-title {
@@ -90,7 +88,19 @@ body {
   padding: 12px 16px;
   transition: opacity .16s;
 }
-/* 行与行不画线：线这个符号留给分区边界专用 */
+/* 同一个卡片内的行间分隔线：两端内缩到与行内容对齐，不顶到卡片边缘 */
+.st-item + .st-item {
+  position: relative;
+}
+.st-item + .st-item::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+}
 .st-item.off {
   opacity: .55;
 }
