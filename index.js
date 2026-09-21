@@ -157,28 +157,17 @@ async function buildOverview(sdk, sessionId) {
 const APP_ID = "session-insight-v2";
 const APP_DIR = dirname(fileURLToPath(import.meta.url));
 
-// ── 本轮速览卡（live）的显示项清单 ──
-// group 仅用于设置页分组；id 是配置持久化的键，不要改名。
+// ── 输入栏「本轮速览」的开关清单 ──
+// id 必须与 manifest.json 的 contributes.ui.inputStatus 声明一一对应；键名用于持久化，不要改名。
 const LIVE_ITEMS = [
-  { id: "model", label: "本轮模型", group: "单轮", desc: "供应商 / 模型名" },
-  { id: "hit", label: "缓存命中率", group: "单轮", desc: "本轮请求的缓存命中比例" },
-  { id: "tokens", label: "本轮 tokens", group: "单轮", desc: "本轮消耗总量" },
-  { id: "cost", label: "本轮费用", group: "单轮", desc: "本轮折算费用" },
-  { id: "tps", label: "吞吐速度", group: "单轮", desc: "输出 tokens / 耗时" },
-  { id: "output", label: "输出", group: "单轮", desc: "本轮输出 tokens" },
-  { id: "input", label: "输入", group: "单轮", desc: "含命中与未命中" },
-  { id: "reasoning", label: "思考 tokens", group: "单轮", desc: "推理模型才有" },
-  { id: "duration", label: "本轮耗时", group: "单轮", desc: "整轮墙钟时间" },
-  { id: "sessionName", label: "当前会话", group: "会话", desc: "会话标题" },
-  { id: "sessionTokens", label: "会话 tokens", group: "会话", desc: "本会话累计" },
-  { id: "sessionCost", label: "会话费用", group: "会话", desc: "本会话累计" },
-  { id: "avgHit", label: "平均命中", group: "会话", desc: "本会话均值（非逐轮平均）" },
-  { id: "context", label: "上下文占用", group: "会话", desc: "当前窗口用量" },
-  { id: "compact", label: "压缩阈值", group: "会话", desc: "触发压缩的比例" },
-  { id: "balance", label: "余额", group: "全局", desc: "主供应商余额" },
+  { id: "hit", label: "缓存命中率", group: "本轮", desc: "本轮请求的缓存命中比例" },
+  { id: "tps", label: "吞吐速度", group: "本轮", desc: "输出 tokens ÷ 耗时" },
+  { id: "tokens", label: "Token 用量", group: "本轮", desc: "本轮消耗总量" },
+  { id: "cost", label: "费用", group: "本轮", desc: "本轮折算费用" },
+  { id: "duration", label: "耗时", group: "本轮", desc: "本轮墙钟耗时" },
 ];
-// 默认只开单轮里最常看的六项，会话级与余额交给设置页自行开。
-const LIVE_DEFAULT = ["model", "hit", "tokens", "cost", "tps", "output"];
+// 五项默认全开；关掉的项在输入栏里不显示。
+const LIVE_DEFAULT = ["hit", "tps", "tokens", "cost", "duration"];
 
 /** 解析持久化的显示项配置；缺失或损坏时回退默认，并补上新增项。 */
 function parseLiveLayout(raw) {
@@ -190,6 +179,10 @@ function parseLiveLayout(raw) {
     obj = null;
   }
   if (obj && Array.isArray(obj.order)) {
+    // 老版本（16 项清单）留下的配置里会有现在认不出的 id，说明已经对不上了，直接回默认全开。
+    if (obj.order.some((id) => typeof id === "string" && !known.has(id))) {
+      return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice() };
+    }
     const order = obj.order.filter((id) => known.has(id));
     const on = Array.isArray(obj.on) ? obj.on.filter((id) => known.has(id)) : [];
     for (const it of LIVE_ITEMS) if (!order.includes(it.id)) order.push(it.id);
@@ -301,7 +294,9 @@ export default defineApp(async (sdk) => {
     app.get("/api/live-config", async (c) => {
       try {
         const all = (await sdk.config.getAll()) ?? {};
-        return c.json({ items: LIVE_ITEMS, ...parseLiveLayout(all.liveLayout) });
+        const layout = parseLiveLayout(all.liveLayout);
+        liveLayoutCache = layout;
+        return c.json({ items: LIVE_ITEMS, ...layout });
       } catch (error) {
         return c.json({
           items: LIVE_ITEMS,
@@ -316,7 +311,31 @@ export default defineApp(async (sdk) => {
         const body = await c.req.json().catch(() => null);
         const layout = parseLiveLayout(body);
         await sdk.config.set("liveLayout", JSON.stringify(layout));
+        liveLayoutCache = layout;
         return c.json({ ok: true, ...layout });
+      } catch (error) {
+        return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    // ── App 级配置：目前只有 Codex 配额开关（enableCodexQuota）──
+    app.get("/api/app-config", async (c) => {
+      try {
+        const all = (await sdk.config.getAll()) ?? {};
+        return c.json({ enableCodexQuota: all.enableCodexQuota === true });
+      } catch (error) {
+        return c.json({ enableCodexQuota: false, error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    app.post("/api/app-config", async (c) => {
+      try {
+        const body = await c.req.json().catch(() => null);
+        if (body && typeof body.enableCodexQuota === "boolean") {
+          await sdk.config.set("enableCodexQuota", body.enableCodexQuota);
+        }
+        const all = (await sdk.config.getAll()) ?? {};
+        return c.json({ ok: true, enableCodexQuota: all.enableCodexQuota === true });
       } catch (error) {
         return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
       }
@@ -450,17 +469,32 @@ export default defineApp(async (sdk) => {
       reasoningTokens: num(u?.output?.reasoningTokens),
       totalTokens: num(u?.totalTokens),
       cost,
-      // 事件载荷的 endedAt 常缺、durationMs 常为 0；算不出来就给 null，宁可显示「—」也不报 0。
-      wallMs: Number.isFinite(wall) && wall > 0 ? wall : null,
+      // 事件载荷的 endedAt 常缺、durationMs 常为 0 或只有几十毫秒（噪声）；
+      // 低于 200ms 视为没测到，给 null 让上层兜底，宁可显示「—」也不报 0.0s。
+      wallMs: Number.isFinite(wall) && wall >= 200 ? wall : null,
       tps: raw != null && raw > 0 && raw <= 2000 ? raw : null,
     };
   }
 
-  /** 把本轮指标分别写进四个输入栏项。
+  /** 输入栏五项的开合配置（键 liveLayout）。带一层内存缓存，设置页保存时刷新。 */
+  let liveLayoutCache = null;
+  async function getLiveLayout() {
+    if (liveLayoutCache) return liveLayoutCache;
+    try {
+      const all = (await sdk.config.getAll()) ?? {};
+      liveLayoutCache = parseLiveLayout(all.liveLayout);
+    } catch {
+      liveLayoutCache = parseLiveLayout(null);
+    }
+    return liveLayoutCache;
+  }
+
+  /** 把本轮指标分别写进五个输入栏项。
    *  拆成多项而不是拼成一条：溢出时宿主按项折叠，不会出现半个数字被截断；
-   *  某项暂时无值就单独隐藏，不连累其他项。 */
+   *  显示与否交给设置页的开关，没值只留「—」占位，不让项数忽增忽减。 */
   async function pushInputStatus(sessionId, t, requestId = null) {
     if (!sessionId) return;
+    const on = new Set((await getLiveLayout()).on);
 
     // 实测事件载荷里 endedAt 常缺、durationMs 常为 0，时长与吐吞因此算不出来。
     // 缺失时回查一次账本，用同一条 requestId 的完整记录补上。
@@ -529,10 +563,9 @@ export default defineApp(async (sdk) => {
           id: it.id,
           text: it.text ?? "—",
           tooltip: it.tooltip,
-          // 占位项常驻：本轮取不到值的项也留「—」。
-          // 之前写的是 visible: it.text != null，本轮没值的项会被隐藏，
-          // 导致输入栏的项数随数据有无增减（五变三），看着像坏了。
-          visible: true,
+          // 显示与否由设置页的开关决定（默认五项全开）。
+          // 没值不隐藏，留「—」占位，免得项数随数据有无增减。
+          visible: on.has(it.id),
         });
       } catch (error) {
         await sdk.logger.warn(`inputStatus.set(${it.id}) failed: ${error?.message ?? error}`);
@@ -564,16 +597,18 @@ export default defineApp(async (sdk) => {
 
   /** 事件本身的时间字段不可用时的兜底：优先刚掐完的一轮，其次从 message_start 起算。 */
   function fallbackWallMs(entry) {
-    if (lastMsgWall > 0 && Date.now() - lastMsgWallAt < 5000) return lastMsgWall;
+    // 掐表：message_start / message_end 若挤在同一批 RPC 里到达，差值只有几毫秒，
+    // 会显示成「耗时 0.0s」。低于 200ms 一律视为不可信，退到下一层。
+    if (lastMsgWall >= 200 && Date.now() - lastMsgWallAt < 5000) return lastMsgWall;
     if (msgStartAt > 0) {
       const ms = Date.now() - msgStartAt;
-      if (ms > 0 && ms < 30 * 60 * 1000) return ms;
+      if (ms >= 200 && ms < 30 * 60 * 1000) return ms;
     }
     // 最后一层：宿主给的 startedAt 到此刻（含事件投递延迟，但一定有值）
     const t0 = Date.parse(entry?.startedAt ?? "");
     if (Number.isFinite(t0)) {
       const ms = Date.now() - t0;
-      if (ms > 0 && ms < 30 * 60 * 1000) return ms;
+      if (ms >= 200 && ms < 30 * 60 * 1000) return ms;
     }
     return 0;
   }
@@ -586,7 +621,8 @@ export default defineApp(async (sdk) => {
       const turn = turnFromEntry(entry);
       if (!(turn.wallMs > 0)) {
         const wall = fallbackWallMs(entry);
-        if (wall > 0) {
+        // 兜底也拿不到就宁可留空：t.wallMs 只接受 null 或正值，不允许出现 0。
+        if (wall >= 200) {
           turn.wallMs = wall;
           const raw = wall >= 500 ? Math.round((turn.outputTokens ?? 0) / (wall / 1000)) : 0;
           if (raw > 0 && raw <= 2000) turn.tps = raw;

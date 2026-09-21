@@ -1,4 +1,8 @@
-// assets/settings.js — Session Insight 设置页：本轮速览卡的显示项与顺序
+// assets/settings.js — Session Insight 设置页
+// 必须 import SDK：宿主靠这一步完成握手，才认这个页面是「已就绪的 App 页面」。
+// 少了它，设置页会一直停在「应用加载失败」。
+import "./sdk.js";
+
 const APP_ID = "session-insight-v2";
 const ss = new URLSearchParams(location.search).get("appSurfaceSession") || "";
 // 保存后写一个一次性标记，卡片那边轮询到配置变化就重排
@@ -47,12 +51,7 @@ function render() {
     const li = document.createElement("li");
     li.className = "st-row" + (onSet.has(it.id) ? "" : " off");
     li.dataset.id = it.id;
-    li.draggable = true;
     li.title = it.desc || "";
-
-    const handle = document.createElement("span");
-    handle.className = "st-handle";
-    handle.textContent = "⠿";
 
     const name = document.createElement("span");
     name.className = "st-name";
@@ -76,48 +75,15 @@ function render() {
     const track = document.createElement("i");
     sw.append(cb, track);
 
-    li.append(handle, name, group, sw);
+    li.append(name, group, sw);
     listEl.append(li);
   }
 }
 
-/** 当前 DOM 顺序就是用户看到的顺序，保存时按它取 order。 */
+/** 顺序由清单本身决定，这里只管开关，保存时用 items 自带的顺序。 */
 function currentOrder() {
-  return [...listEl.querySelectorAll(".st-row")].map((el) => el.dataset.id);
+  return items.map((it) => it.id);
 }
-
-/* ── 拖拽排序：dragover 时直接移动节点，松手即定序 ── */
-let dragEl = null;
-listEl.addEventListener("dragstart", (e) => {
-  const li = e.target.closest?.(".st-row");
-  if (!li) return;
-  dragEl = li;
-  li.classList.add("dragging");
-  e.dataTransfer.effectAllowed = "move";
-  try {
-    e.dataTransfer.setData("text/plain", li.dataset.id);
-  } catch {
-    /* 某些环境不允许写 dataTransfer，不影响内部拖拽 */
-  }
-});
-listEl.addEventListener("dragover", (e) => {
-  if (!dragEl) return;
-  e.preventDefault();
-  const li = e.target.closest?.(".st-row");
-  if (!li || li === dragEl) return;
-  const rect = li.getBoundingClientRect();
-  const after = e.clientY > rect.top + rect.height / 2;
-  listEl.insertBefore(dragEl, after ? li.nextSibling : li);
-});
-listEl.addEventListener("drop", (e) => {
-  if (dragEl) e.preventDefault();
-});
-listEl.addEventListener("dragend", () => {
-  if (!dragEl) return;
-  dragEl.classList.remove("dragging");
-  dragEl = null;
-  markDirty();
-});
 
 async function load() {
   saveEl.disabled = true;
@@ -193,3 +159,48 @@ resetEl.addEventListener("click", async () => {
 });
 
 load();
+
+/* ── 数据来源：Codex 订阅配额开关 ── */
+const codexEl = document.getElementById("stCodex");
+const codexStatusEl = document.getElementById("stCodexStatus");
+
+function setCodexStatus(text, cls = "") {
+  if (!codexStatusEl) return;
+  codexStatusEl.textContent = text;
+  codexStatusEl.className = "st-status" + (cls ? " " + cls : "");
+}
+
+async function loadAppConfig() {
+  try {
+    const cfg = await apiFetch("api/app-config");
+    if (codexEl) codexEl.checked = cfg?.enableCodexQuota === true;
+    setCodexStatus("");
+  } catch (error) {
+    setCodexStatus("读取失败：" + String(error?.message || error), "err");
+  }
+}
+
+codexEl?.addEventListener("change", async () => {
+  const next = !!codexEl.checked;
+  codexEl.disabled = true;
+  setCodexStatus("保存中…");
+  try {
+    const cfg = await apiFetch("api/app-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enableCodexQuota: next }),
+    });
+    if (codexEl) codexEl.checked = cfg?.enableCodexQuota === true;
+    setCodexStatus("已保存", "ok");
+    window.setTimeout(() => {
+      if (codexStatusEl?.textContent === "已保存") setCodexStatus("");
+    }, 2400);
+  } catch (error) {
+    codexEl.checked = !next;
+    setCodexStatus("保存失败：" + String(error?.message || error), "err");
+  } finally {
+    codexEl.disabled = false;
+  }
+});
+
+loadAppConfig();

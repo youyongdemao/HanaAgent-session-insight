@@ -48,18 +48,18 @@
         "realization": "page",
         "siteNavEntry": true,
         "face": {
-          "image": "assets/cover.svg"
+          "image": "assets/cover-workbench.jpg"
         }
       },
       {
         "id": "widget",
-        "title": "会话用量·实时预览",
+        "title": "会话用量·实时用量",
         "description": "随当前会话切换的用量状态条，可放到画布上常驻。",
         "route": "/widget.html",
         "cardForm": "flush",
         "titlebar": "translucent",
         "face": {
-          "image": "assets/cover.svg"
+          "image": "assets/cover-live.jpg"
         }
       }
     ],
@@ -100,15 +100,9 @@
       "schema": {
         "type": "object",
         "properties": {
-          "refreshSeconds": {
-            "type": "integer",
-            "title": "状态条刷新间隔（秒）",
-            "description": "侧边状态条自动刷新频率。",
-            "default": 30
-          },
           "liveLayout": {
             "type": "string",
-            "title": "本轮速览卡的显示项与顺序",
+            "title": "本轮速览的显示项",
             "description": "由设置页写入的 JSON；请勿手改。",
             "default": ""
           },
@@ -117,13 +111,6 @@
             "title": "Codex 订阅配额（实验性）",
             "description": "读取已登录的 ChatGPT OAuth 配额；使用私有接口，默认关闭。",
             "default": false
-          },
-          "deepseekApiKey": {
-            "type": "string",
-            "title": "DeepSeek API Key（兜底）",
-            "description": "仅在宿主凭据接口拿不到时用于余额查询，留空即可。",
-            "default": "",
-            "sensitive": true
           }
         }
       }

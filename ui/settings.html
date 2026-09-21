@@ -9,15 +9,30 @@
 <body data-hana-theme="inherit">
   <div class="st-page">
     <section class="st-section">
-      <h2>本轮速览卡</h2>
+      <h2>本轮速览</h2>
       <p class="st-desc">
-        拖动调整顺序，开关决定是否显示。<strong>顺序即卡片上的排列顺序</strong>；未勾选的项不会出现。
+        输入栏下方那五项，开关决定显示与否。<strong>默认五项全开</strong>；关掉的项不再出现在输入栏里。
       </p>
       <ul class="st-list" id="stList"></ul>
       <div class="st-actions">
         <button class="st-btn st-btn-primary" id="stSave">保存</button>
         <button class="st-btn" id="stReset">恢复默认</button>
         <span class="st-status" id="stStatus"></span>
+      </div>
+    </section>
+
+    <section class="st-section">
+      <h2>数据来源</h2>
+      <p class="st-desc">影响余额与配额读取的开关，改完立即生效。</p>
+      <ul class="st-list">
+        <li class="st-row">
+          <span class="st-name">Codex 订阅配额</span>
+          <span class="st-group">实验</span>
+          <label class="st-sw"><input type="checkbox" id="stCodex"><i></i></label>
+        </li>
+      </ul>
+      <div class="st-actions">
+        <span class="st-status" id="stCodexStatus"></span>
       </div>
     </section>
   </div>
