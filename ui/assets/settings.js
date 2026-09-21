@@ -116,14 +116,21 @@ saveEl.addEventListener("click", async () => {
   saveEl.disabled = true;
   setStatus("保存中…");
   try {
-    const payload = { order: currentOrder(), on: [...onSet] };
+    // 界面设置两块一起提交：本轮速览（输入栏五项）与实时用量（卡片区块）。
+    // 两块共用一个保存键，避免出现“按了保存只存了一半”。
     await apiFetch("api/live-config", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ order: currentOrder(), on: [...onSet] }),
+    });
+    await apiFetch("api/widget-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ on: [...wOnSet] }),
     });
     dirty = false;
     setStatus("已保存", "ok");
+    broadcastWidgetLayout();
     try {
       localStorage.setItem(BROADCAST_KEY, String(Date.now()));
     } catch {
@@ -142,7 +149,7 @@ resetEl.addEventListener("click", async () => {
   saveEl.disabled = true;
   setStatus("恢复中…");
   try {
-    // 空对象走后端默认分支：回到"单轮六项"
+    // 空对象走后端默认分支：两块都回到默认（全部显示）
     const cfg = await apiFetch("api/live-config", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -152,9 +159,20 @@ resetEl.addEventListener("click", async () => {
     const known = new Map(items.map((i) => [i.id, i]));
     items = (cfg.order || []).filter((id) => known.has(id)).map((id) => known.get(id));
     onSet = new Set(cfg.on || []);
+
+    const wcfg = await apiFetch("api/widget-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    wBlocks = wcfg.blocks || wBlocks;
+    wOnSet = new Set(wcfg.on || []);
+
     dirty = false;
     render();
+    renderWidgetTable();
     setStatus("已恢复默认", "ok");
+    broadcastWidgetLayout();
     try {
       localStorage.setItem(BROADCAST_KEY, String(Date.now()));
     } catch {
@@ -171,18 +189,9 @@ load();
 /* ── 实时用量：卡片内各区块的开关（含分组子项）── */
 const W_BROADCAST_KEY = "si-widget-layout";
 const wBodyEl = document.getElementById("wTableBody");
-const wSaveEl = document.getElementById("wSave");
-const wResetEl = document.getElementById("wReset");
-const wStatusEl = document.getElementById("wStatus");
 
 let wBlocks = [];
 let wOnSet = new Set();
-
-function setWStatus(text, cls = "") {
-  if (!wStatusEl) return;
-  wStatusEl.textContent = text;
-  wStatusEl.className = "st-status" + (cls ? " " + cls : "");
-}
 
 function broadcastWidgetLayout() {
   try {
@@ -221,8 +230,7 @@ function renderWidgetTable() {
       if (cb.checked) wOnSet.add(b.id);
       else wOnSet.delete(b.id);
       li.classList.toggle("off", !cb.checked);
-      if (wSaveEl) wSaveEl.disabled = false;
-      setWStatus("");
+      markDirty();
     });
     const track = document.createElement("i");
     sw.append(cb, track);
@@ -235,58 +243,17 @@ function renderWidgetTable() {
 
 async function loadWidgetConfig() {
   if (!wBodyEl) return;
-  if (wSaveEl) wSaveEl.disabled = true;
   try {
     const cfg = await apiFetch("api/widget-config");
     wBlocks = cfg.blocks || [];
     wOnSet = new Set(cfg.on || []);
     renderWidgetTable();
-    setWStatus("");
   } catch (error) {
-    setWStatus("读取配置失败：" + String(error?.message || error), "err");
+    setStatus("读取实时用量配置失败：" + String(error?.message || error), "err");
   }
 }
 
-wSaveEl?.addEventListener("click", async () => {
-  wSaveEl.disabled = true;
-  setWStatus("保存中…");
-  try {
-    const cfg = await apiFetch("api/widget-config", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ on: [...wOnSet] }),
-    });
-    if (cfg && Array.isArray(cfg.on)) wOnSet = new Set(cfg.on);
-    setWStatus("已保存", "ok");
-    broadcastWidgetLayout();
-    window.setTimeout(() => {
-      if (wStatusEl?.textContent === "已保存") setWStatus("");
-    }, 2400);
-  } catch (error) {
-    wSaveEl.disabled = false;
-    setWStatus("保存失败：" + String(error?.message || error), "err");
-  }
-});
-
-wResetEl?.addEventListener("click", async () => {
-  wSaveEl.disabled = true;
-  setWStatus("恢复中…");
-  try {
-    const cfg = await apiFetch("api/widget-config", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    wBlocks = cfg.blocks || wBlocks;
-    wOnSet = new Set(cfg.on || []);
-    renderWidgetTable();
-    setWStatus("已恢复默认", "ok");
-    broadcastWidgetLayout();
-  } catch (error) {
-    wSaveEl.disabled = false;
-    setWStatus("恢复失败：" + String(error?.message || error), "err");
-  }
-});
+// 保存与恢复默认都由「界面设置」底部那一对按钮统管（见上），这里不再单设。
 
 loadWidgetConfig();
 
