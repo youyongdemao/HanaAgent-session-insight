@@ -196,16 +196,25 @@ function parseLiveLayout(raw) {
 // 同 group 的几项在设置里挂在一个母项下（母项一个开关管全部，子项各自可调）。
 const WIDGET_BLOCKS = [
   { id: "overview", label: "会话信息总览", group: null, desc: "上下文环、本会话总 Token、平均缓存命中率、本会话总费用" },
-  { id: "context", label: "上下文余量", group: "当前轮信息卡片", desc: "已用量、距压缩余量与压缩阈值标记" },
+  { id: "context", label: "上下文余量", group: null, desc: "已用量、距压缩余量与压缩阈值标记" },
   { id: "turnTokens", label: "当前轮 Token", group: "当前轮信息卡片", desc: "本轮的 Token 消耗总量" },
   { id: "turnHit", label: "当前轮缓存命中", group: "当前轮信息卡片", desc: "本轮的缓存命中率" },
+  { id: "turnCost", label: "当前轮费用", group: "当前轮信息卡片", desc: "本轮产生的费用" },
+  { id: "turnRound", label: "轮次", group: "当前轮信息卡片", desc: "当前会话进行到第几轮" },
   { id: "composition", label: "输入输出 / 缓存命中未命中", group: null, desc: "输入与输出占比、命中与未命中占比" },
   { id: "providers", label: "会话供应商统计", group: null, desc: "供应商占比、供应商列表与额度窗口" },
 ];
 const WIDGET_DEFAULT = WIDGET_BLOCKS.map((b) => b.id);
+// 布局版本：新加的区块要给已有配置补上，不然用户在实时用量卡上看不到新东西。
+const WIDGET_LAYOUT_REV = 2;
+const WIDGET_ADDED_IN_REV2 = ["turnCost", "turnRound"];
 
-/** 解析实时用量卡片的区块开关；缺失或损坏时回退全开。 */
-function parseWidgetLayout(raw) {
+/**
+ * 解析实时用量卡片的区块开关；缺失或损坏时回退全开。
+ * migrateNewBlocks 只在读取时开：给旧配置补上新加的区块；
+ * 写入时不能开，否则用户刚关掉的新区块又会被补回来。
+ */
+function parseWidgetLayout(raw, { migrateNewBlocks = false } = {}) {
   const known = new Set(WIDGET_BLOCKS.map((b) => b.id));
   let obj = null;
   try {
@@ -214,9 +223,14 @@ function parseWidgetLayout(raw) {
     obj = null;
   }
   if (obj && Array.isArray(obj.on)) {
-    return { on: obj.on.filter((id) => known.has(id)) };
+    const on = obj.on.filter((id) => known.has(id));
+    // 注意用「不满足 >=」而不是「<」：缺 rev 时 Number(undefined) 是 NaN，NaN < 2 为 false，迁移会静默不生效
+    if (migrateNewBlocks && !(Number(obj.rev) >= WIDGET_LAYOUT_REV)) {
+      for (const id of WIDGET_ADDED_IN_REV2) if (!on.includes(id)) on.push(id);
+    }
+    return { on, rev: WIDGET_LAYOUT_REV };
   }
-  return { on: WIDGET_DEFAULT.slice() };
+  return { on: WIDGET_DEFAULT.slice(), rev: WIDGET_LAYOUT_REV };
 }
 
 /**
@@ -402,7 +416,7 @@ export default defineApp(async (sdk) => {
     app.get("/api/widget-config", async (c) => {
       try {
         const all = await readAppConfig(sdk);
-        return c.json({ blocks: WIDGET_BLOCKS, ...parseWidgetLayout(all.widgetLayout) });
+        return c.json({ blocks: WIDGET_BLOCKS, ...parseWidgetLayout(all.widgetLayout, { migrateNewBlocks: true }) });
       } catch (error) {
         return c.json({ blocks: WIDGET_BLOCKS, ...parseWidgetLayout(null), error: String(error?.message ?? error) }, 500);
       }
