@@ -7,6 +7,12 @@ html, body {
   background: transparent;
 }
 
+/* 全局 border-box：此前 .st-list 的 1px 边框会把容器顶宽 2px，
+   在窄容器里刚好把最右侧蹭掉一点 */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   font-family: var(--font-ui, system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif);
   color: var(--text-light);
