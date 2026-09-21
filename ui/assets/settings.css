@@ -33,9 +33,12 @@ body {
   padding: 0;
 }
 
-/* 分区之间留白 */
+/* 分区之间：一条淡分隔线加足够的留白。
+   删掉分区说明后，两组之间只剩空白，靠间距撑不起「新分组起点」，线条能一眼切断视线。 */
 .st-section + .st-section {
-  margin-top: 20px;
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
 }
 
 .st-section h2 {
@@ -74,7 +77,9 @@ body {
   transition: opacity .16s;
 }
 .st-item + .st-item {
-  border-top: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+  /* 不画行间线：线这个符号留给分区边界专用，行与行靠行距分开即可。
+     两者都画线时粗细颜色一致，反而分不出层级。 */
+  margin-top: 2px;
 }
 .st-item.off {
   opacity: .55;
