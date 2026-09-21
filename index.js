@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
 import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
+import { registerUpdateRoutes } from "./lib/update-check.js";
 import {
   listSessions,
   listSessionsCached,
@@ -319,8 +320,11 @@ export default defineApp(async (sdk) => {
   const ctx = await makeCtx(sdk);
 
   await sdk.routes.register((app) => {
-    // v1 遗留端点（账本聚合、供应商、余额、更新等）复用原实现，数据源已在内部换成宿主 API。
+    // v1 遗留端点（账本聚合、供应商、余额等）复用原实现，数据源已在内部换成宿主 API。
     registerLegacyRoutes(app, ctx);
+
+    // 检查更新：只查 GitHub 上最新的已发布版本，安装仍走「设置 → 扩展」
+    registerUpdateRoutes(app, ctx);
 
     app.get("/health", (c) => c.json({ ok: true, app: "session-insight-v2" }));
 

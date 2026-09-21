@@ -15,13 +15,13 @@ function apiUrl(path) {
   return `${location.origin}/api/apps/${APP_ID}/routes/${path}`;
 }
 
-async function apiFetch(path, init = {}) {
+async function apiFetch(path, init = {}, timeoutMs = 8000) {
   const headers = new Headers(init.headers || {});
   if (ss) headers.set("X-Hana-App-Surface-Session", ss);
   const res = await fetch(apiUrl(path), {
     ...init,
     headers,
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error("HTTP " + res.status);
   const ct = res.headers.get("content-type") || "";
@@ -257,12 +257,15 @@ async function loadWidgetConfig() {
 
 loadWidgetConfig();
 
-/* ── 关于：版本与源码仓库 ── */
+/* ── 关于：版本、更新与源码仓库 ── */
 const GITHUB_URL = "https://github.com/youyongdemao";
 const aboutGithubEl = document.getElementById("aboutGithub");
 const aboutVersionEl = document.getElementById("aboutVersion");
+const aboutUpdateEl = document.getElementById("aboutUpdate");
+const aboutNoteEl = document.getElementById("aboutVersionNote");
 
-// v2 App 的更新走「设置 → 扩展」，面板内不做自更新；这里只把当前版本读出来显示。
+// 检查更新走 GitHub Release，比对本地清单里的版本号；
+// 装新版本仍走「设置 → 扩展」——应用的安装目录对自己只读，改不了自己。
 async function loadVersion() {
   try {
     const info = await apiFetch("api/version");
@@ -272,18 +275,112 @@ async function loadVersion() {
   }
 }
 
-loadVersion();
+function setNote(text, cls = "") {
+  if (!aboutNoteEl) return;
+  aboutNoteEl.textContent = text;
+  aboutNoteEl.className = "st-item-desc" + (cls ? " " + cls : "");
+  aboutNoteEl.hidden = !text;
+}
+
+function idleButton() {
+  if (!aboutUpdateEl) return;
+  aboutUpdateEl.disabled = false;
+  aboutUpdateEl.className = "st-btn st-btn-sm";
+  aboutUpdateEl.textContent = "更新";
+}
+
+/** "2026-09-22T01:00:00Z" → "9/22"（本地时区） */
+function shortDate(iso) {
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return "";
+  return `${at.getMonth() + 1}/${at.getDate()}`;
+}
+
+// 最近一次检查的结论；按钮第二下要用它决定是“去下载”还是“再查一次”
+let updateInfo = null;
+
+function showAvailable(info) {
+  updateInfo = info;
+  if (!aboutUpdateEl) return;
+  aboutUpdateEl.disabled = false;
+  aboutUpdateEl.className = "st-btn st-btn-sm st-btn-primary";
+  aboutUpdateEl.textContent = `更新到 v${info.latestVersion}`;
+  const at = info.publishedAt ? " · " + shortDate(info.publishedAt) : "";
+  setNote(`新版本 v${info.latestVersion}${at}`);
+}
+
+function openExternal(url) {
+  const fallback = () => window.open(url, "_blank", "noopener");
+  try {
+    const opened = hana.external.open({ url });
+    if (opened && typeof opened.catch === "function") opened.catch(fallback);
+  } catch {
+    fallback();
+  }
+}
+
+async function runUpdateCheck() {
+  if (!aboutUpdateEl) return;
+  aboutUpdateEl.disabled = true;
+  aboutUpdateEl.textContent = "检查中…";
+  setNote("");
+
+  let info = null;
+  try {
+    info = await apiFetch("api/update-check", {}, 14000);
+  } catch (error) {
+    idleButton();
+    setNote("检查更新失败：" + String(error?.message || error), "err");
+    return;
+  }
+
+  if (!info?.ok) {
+    idleButton();
+    setNote("检查更新失败：" + (info?.message || "未知错误"), "err");
+    return;
+  }
+
+  if (info.updateAvailable) {
+    showAvailable(info);
+    return;
+  }
+
+  updateInfo = info;
+  aboutUpdateEl.disabled = true;
+  aboutUpdateEl.textContent = "已是最新";
+  setNote(`v${info.currentVersion} 已是最新`);
+  window.setTimeout(() => {
+    if (aboutUpdateEl.textContent === "已是最新") {
+      idleButton();
+      setNote("");
+    }
+  }, 2400);
+}
+
+loadVersion().then(() => {
+  // 打开设置页时静默查一次：有新版本就把按钮直接摆成可更新的样子，没有就当没发生过
+  apiFetch("api/update-check", {}, 14000)
+    .then((info) => {
+      if (info?.ok && info.updateAvailable) showAvailable(info);
+    })
+    .catch(() => {
+      /* 后台静默检查，失败不打扰 */
+    });
+});
+
+aboutUpdateEl?.addEventListener("click", () => {
+  if (updateInfo?.updateAvailable) {
+    openExternal(updateInfo.url);
+    setNote(`已在浏览器打开 v${updateInfo.latestVersion}，下载后在「扩展」里重新安装`);
+    return;
+  }
+  runUpdateCheck();
+});
 
 aboutGithubEl?.addEventListener("click", (ev) => {
   // 拦下默认行为，改走宿主的外部打开能力。
   // v2 App 不能拉起外部进程，/api/open 在 App 里已降级为空操作，
   // 所以把地址交给系统默认浏览器只能靠这一条。
   ev.preventDefault();
-  const fallback = () => window.open(GITHUB_URL, "_blank", "noopener");
-  try {
-    const opened = hana.external.open({ url: GITHUB_URL });
-    if (opened && typeof opened.catch === "function") opened.catch(fallback);
-  } catch {
-    fallback();
-  }
+  openExternal(GITHUB_URL);
 });
