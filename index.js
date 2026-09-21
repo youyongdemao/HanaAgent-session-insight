@@ -6,8 +6,10 @@ import { defineApp } from "./sdk/app-contract/server-client.js";
 import registerLegacyRoutes from "./lib/legacy-api.js";
 import {
   listSessions,
+  listSessionsCached,
   fetchSessionUsage,
   buildSessionStats,
+  buildStatsFromSessionFile,
   fetchLedger,
   resolveSessionId,
   baseName,
@@ -214,15 +216,22 @@ export default defineApp(async (sdk) => {
       try {
         const sessionId = await resolveSessionId(sdk, ref);
         if (!sessionId) return c.json({ error: `unknown session: ${ref}` }, 404);
-        const [entries, context] = await Promise.all([
+        const [entries, context, sessions] = await Promise.all([
           fetchSessionUsage(sdk, sessionId),
           sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null),
+          listSessionsCached(sdk).catch(() => []),
         ]);
-        const stats = buildSessionStats(entries, context);
-        if (!stats) return c.json({ error: "no usage recorded for this session" }, 404);
-        // 前端一直用文件名当会话标识，这里补回去
-        stats.file = baseName(context?.sessionPath ?? null) || ref;
+        const hit = sessions.find((s) => s.sessionId === sessionId);
+        let stats = buildSessionStats(entries, context);
+        // 默认走宿主账本；账本窗口（本机目前约二十多天）以外的会话回退到解析会话文件。
+        if (entries.length === 0) {
+          const fromFile = await buildStatsFromSessionFile(sdk, hit?.path ?? null);
+          if (fromFile) stats = fromFile;
+        }
+        stats.file = hit?.name ?? (baseName(context?.sessionPath ?? null) || ref);
         stats.sessionId = sessionId;
+        stats.title = hit?.title ?? null;
+        stats.source = stats.source ?? "ledger";
         return c.json(stats);
       } catch (error) {
         return c.json({ error: String(error?.message ?? error) }, 500);

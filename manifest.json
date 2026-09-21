@@ -12,7 +12,8 @@
     "app/sessions.read",
     "app/usage.read",
     "app/provider.credentials.read",
-    "app/input.status"
+    "app/input.status",
+    "app/resources.read"
   ],
   "network": {
     "allowedHosts": [
