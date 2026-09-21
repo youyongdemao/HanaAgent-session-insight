@@ -1,7 +1,10 @@
 // assets/settings.js — Session Insight 设置页
-// 必须 import SDK：宿主靠这一步完成握手，才认这个页面是「已就绪的 App 页面」。
-// 少了它，设置页会一直停在「应用加载失败」。
-import "./sdk.js";
+// 必须 import SDK 并调用 hana.ready()：宿主收到这条 ready 消息才认页面就绪，
+// 5 秒内收不到就一律显示「应用加载失败」（宿主对设置页传的 readyOnTimeout 为 false）。
+// 只 import 而不调用 ready，页面会一直卡在失败态。
+import { hana } from "./sdk.js";
+
+hana.ready();
 
 const APP_ID = "session-insight-v2";
 const ss = new URLSearchParams(location.search).get("appSurfaceSession") || "";
