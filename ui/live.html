@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>本轮速览</title>
+  <link rel="stylesheet" href="./assets/panel-v2.css">
+  <link rel="stylesheet" href="./assets/live.css">
+</head>
+<body data-hana-theme="inherit" data-surface="live">
+  <div class="lv">
+    <div class="lv-row" id="lvRow"></div>
+  </div>
+  <script>
+    window.addEventListener("error", function (e) {
+      var root = document.getElementById("lvRow");
+      if (root && !root.innerHTML) {
+        root.innerHTML = '<span class="lv-empty">加载失败：' + (e.message || "脚本错误") + "</span>";
+      }
+    });
+  </script>
+  <script type="module" src="./assets/live.js"></script>
+</body>
+</html>

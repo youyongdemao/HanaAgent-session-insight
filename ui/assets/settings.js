@@ -1,0 +1,195 @@
+// assets/settings.js — Session Insight 设置页：本轮速览卡的显示项与顺序
+const APP_ID = "session-insight-v2";
+const ss = new URLSearchParams(location.search).get("appSurfaceSession") || "";
+// 保存后写一个一次性标记，卡片那边轮询到配置变化就重排
+const BROADCAST_KEY = "si-live-layout";
+
+function apiUrl(path) {
+  return `${location.origin}/api/apps/${APP_ID}/routes/${path}`;
+}
+
+async function apiFetch(path, init = {}) {
+  const headers = new Headers(init.headers || {});
+  if (ss) headers.set("X-Hana-App-Surface-Session", ss);
+  const res = await fetch(apiUrl(path), {
+    ...init,
+    headers,
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const ct = res.headers.get("content-type") || "";
+  return ct.includes("json") ? res.json() : null;
+}
+
+const listEl = document.getElementById("stList");
+const saveEl = document.getElementById("stSave");
+const resetEl = document.getElementById("stReset");
+const statusEl = document.getElementById("stStatus");
+
+let items = [];   // [{id,label,group,desc}]
+let onSet = new Set();
+let dirty = false;
+
+function setStatus(text, cls = "") {
+  statusEl.textContent = text;
+  statusEl.className = "st-status" + (cls ? " " + cls : "");
+}
+
+function markDirty() {
+  dirty = true;
+  saveEl.disabled = false;
+  setStatus("");
+}
+
+function render() {
+  listEl.innerHTML = "";
+  for (const it of items) {
+    const li = document.createElement("li");
+    li.className = "st-row" + (onSet.has(it.id) ? "" : " off");
+    li.dataset.id = it.id;
+    li.draggable = true;
+    li.title = it.desc || "";
+
+    const handle = document.createElement("span");
+    handle.className = "st-handle";
+    handle.textContent = "⠿";
+
+    const name = document.createElement("span");
+    name.className = "st-name";
+    name.textContent = it.label;
+
+    const group = document.createElement("span");
+    group.className = "st-group";
+    group.textContent = it.group || "";
+
+    const sw = document.createElement("label");
+    sw.className = "st-sw";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = onSet.has(it.id);
+    cb.addEventListener("change", () => {
+      if (cb.checked) onSet.add(it.id);
+      else onSet.delete(it.id);
+      li.classList.toggle("off", !cb.checked);
+      markDirty();
+    });
+    const track = document.createElement("i");
+    sw.append(cb, track);
+
+    li.append(handle, name, group, sw);
+    listEl.append(li);
+  }
+}
+
+/** 当前 DOM 顺序就是用户看到的顺序，保存时按它取 order。 */
+function currentOrder() {
+  return [...listEl.querySelectorAll(".st-row")].map((el) => el.dataset.id);
+}
+
+/* ── 拖拽排序：dragover 时直接移动节点，松手即定序 ── */
+let dragEl = null;
+listEl.addEventListener("dragstart", (e) => {
+  const li = e.target.closest?.(".st-row");
+  if (!li) return;
+  dragEl = li;
+  li.classList.add("dragging");
+  e.dataTransfer.effectAllowed = "move";
+  try {
+    e.dataTransfer.setData("text/plain", li.dataset.id);
+  } catch {
+    /* 某些环境不允许写 dataTransfer，不影响内部拖拽 */
+  }
+});
+listEl.addEventListener("dragover", (e) => {
+  if (!dragEl) return;
+  e.preventDefault();
+  const li = e.target.closest?.(".st-row");
+  if (!li || li === dragEl) return;
+  const rect = li.getBoundingClientRect();
+  const after = e.clientY > rect.top + rect.height / 2;
+  listEl.insertBefore(dragEl, after ? li.nextSibling : li);
+});
+listEl.addEventListener("drop", (e) => {
+  if (dragEl) e.preventDefault();
+});
+listEl.addEventListener("dragend", () => {
+  if (!dragEl) return;
+  dragEl.classList.remove("dragging");
+  dragEl = null;
+  markDirty();
+});
+
+async function load() {
+  saveEl.disabled = true;
+  try {
+    const cfg = await apiFetch("api/live-config");
+    items = cfg.items || [];
+    const order = Array.isArray(cfg.order) ? cfg.order : items.map((i) => i.id);
+    const known = new Map(items.map((i) => [i.id, i]));
+    // 按持久化顺序排列；后端已补齐新增项，这里再兜一层
+    items = order.filter((id) => known.has(id)).map((id) => known.get(id));
+    for (const it of known.values()) if (!items.includes(it)) items.push(it);
+    onSet = new Set(cfg.on || []);
+    dirty = false;
+    render();
+    setStatus("");
+  } catch (error) {
+    setStatus("读取配置失败：" + String(error?.message || error), "err");
+  }
+}
+
+saveEl.addEventListener("click", async () => {
+  saveEl.disabled = true;
+  setStatus("保存中…");
+  try {
+    const payload = { order: currentOrder(), on: [...onSet] };
+    await apiFetch("api/live-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    dirty = false;
+    setStatus("已保存", "ok");
+    try {
+      localStorage.setItem(BROADCAST_KEY, String(Date.now()));
+    } catch {
+      /* 广播失败不影响保存结果 */
+    }
+    window.setTimeout(() => {
+      if (statusEl.textContent === "已保存") setStatus("");
+    }, 2400);
+  } catch (error) {
+    saveEl.disabled = false;
+    setStatus("保存失败：" + String(error?.message || error), "err");
+  }
+});
+
+resetEl.addEventListener("click", async () => {
+  saveEl.disabled = true;
+  setStatus("恢复中…");
+  try {
+    // 空对象走后端默认分支：回到"单轮六项"
+    const cfg = await apiFetch("api/live-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    items = cfg.items || items;
+    const known = new Map(items.map((i) => [i.id, i]));
+    items = (cfg.order || []).filter((id) => known.has(id)).map((id) => known.get(id));
+    onSet = new Set(cfg.on || []);
+    dirty = false;
+    render();
+    setStatus("已恢复默认", "ok");
+    try {
+      localStorage.setItem(BROADCAST_KEY, String(Date.now()));
+    } catch {
+      /* 同上 */
+    }
+  } catch (error) {
+    saveEl.disabled = false;
+    setStatus("恢复失败：" + String(error?.message || error), "err");
+  }
+});
+
+load();

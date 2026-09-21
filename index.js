@@ -3,7 +3,7 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
-import registerLegacyRoutes from "./lib/legacy-api.js";
+import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
 import {
   listSessions,
   listSessionsCached,
@@ -42,7 +42,8 @@ function summarizeUsage(entries) {
       hitRatioSum += ratio;
       hitRatioCount += 1;
     }
-    costTotal += num(entry?.usage?.costTotal) ?? 0;
+    const hostCost = num(entry?.usage?.costTotal);
+    costTotal += hostCost != null && hostCost > 0 ? hostCost : (calcEntryCost(entry) ?? 0);
 
     const key = `${entry?.model?.provider ?? "?"}::${entry?.model?.modelId ?? "?"}`;
     const bucket = byModel.get(key) ?? {
@@ -156,6 +157,47 @@ async function buildOverview(sdk, sessionId) {
 const APP_ID = "session-insight-v2";
 const APP_DIR = dirname(fileURLToPath(import.meta.url));
 
+// ── 本轮速览卡（live）的显示项清单 ──
+// group 仅用于设置页分组；id 是配置持久化的键，不要改名。
+const LIVE_ITEMS = [
+  { id: "model", label: "本轮模型", group: "单轮", desc: "供应商 / 模型名" },
+  { id: "hit", label: "缓存命中率", group: "单轮", desc: "本轮请求的缓存命中比例" },
+  { id: "tokens", label: "本轮 tokens", group: "单轮", desc: "本轮消耗总量" },
+  { id: "cost", label: "本轮费用", group: "单轮", desc: "本轮折算费用" },
+  { id: "tps", label: "吞吐速度", group: "单轮", desc: "输出 tokens / 耗时" },
+  { id: "output", label: "输出", group: "单轮", desc: "本轮输出 tokens" },
+  { id: "input", label: "输入", group: "单轮", desc: "含命中与未命中" },
+  { id: "reasoning", label: "思考 tokens", group: "单轮", desc: "推理模型才有" },
+  { id: "duration", label: "本轮耗时", group: "单轮", desc: "整轮墙钟时间" },
+  { id: "sessionName", label: "当前会话", group: "会话", desc: "会话标题" },
+  { id: "sessionTokens", label: "会话 tokens", group: "会话", desc: "本会话累计" },
+  { id: "sessionCost", label: "会话费用", group: "会话", desc: "本会话累计" },
+  { id: "avgHit", label: "平均命中", group: "会话", desc: "本会话均值（非逐轮平均）" },
+  { id: "context", label: "上下文占用", group: "会话", desc: "当前窗口用量" },
+  { id: "compact", label: "压缩阈值", group: "会话", desc: "触发压缩的比例" },
+  { id: "balance", label: "余额", group: "全局", desc: "主供应商余额" },
+];
+// 默认只开单轮里最常看的六项，会话级与余额交给设置页自行开。
+const LIVE_DEFAULT = ["model", "hit", "tokens", "cost", "tps", "output"];
+
+/** 解析持久化的显示项配置；缺失或损坏时回退默认，并补上新增项。 */
+function parseLiveLayout(raw) {
+  const known = new Set(LIVE_ITEMS.map((i) => i.id));
+  let obj = null;
+  try {
+    obj = typeof raw === "string" ? (raw ? JSON.parse(raw) : null) : raw;
+  } catch {
+    obj = null;
+  }
+  if (obj && Array.isArray(obj.order)) {
+    const order = obj.order.filter((id) => known.has(id));
+    const on = Array.isArray(obj.on) ? obj.on.filter((id) => known.has(id)) : [];
+    for (const it of LIVE_ITEMS) if (!order.includes(it.id)) order.push(it.id);
+    return { order, on };
+  }
+  return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice() };
+}
+
 /** v1 遗留端点用的 ctx 适配：把 sdk 包成老代码认识的那几个成员。 */
 async function makeCtx(sdk) {
   let configSnapshot = {};
@@ -253,7 +295,311 @@ export default defineApp(async (sdk) => {
         return c.json({ count: 0, entries: [], error: String(error?.message ?? error) }, 500);
       }
     });
+
+    // ── 本轮速览卡（live）───────────────────────────────
+    // 配置：显示项清单 + 顺序 + 开关。键名 liveLayout，值是一段 JSON 字符串。
+    app.get("/api/live-config", async (c) => {
+      try {
+        const all = (await sdk.config.getAll()) ?? {};
+        return c.json({ items: LIVE_ITEMS, ...parseLiveLayout(all.liveLayout) });
+      } catch (error) {
+        return c.json({
+          items: LIVE_ITEMS,
+          ...parseLiveLayout(null),
+          error: String(error?.message ?? error),
+        });
+      }
+    });
+
+    app.post("/api/live-config", async (c) => {
+      try {
+        const body = await c.req.json().catch(() => null);
+        const layout = parseLiveLayout(body);
+        await sdk.config.set("liveLayout", JSON.stringify(layout));
+        return c.json({ ok: true, ...layout });
+      } catch (error) {
+        return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    // 数据：一次给齐卡片需要用到的所有原始字段，前端按配置决定显示哪几项。
+    app.get("/api/live-data", async (c) => {
+      try {
+        let sessionId = c.req.query("sessionId") ?? null;
+        const sessions = await listSessionsCached(sdk).catch(() => []);
+        if (!sessionId) sessionId = sessions[0]?.sessionId ?? null;
+        if (!sessionId) return c.json({ error: "no sessions found" }, 404);
+
+        const [recent, context, entries] = await Promise.all([
+          sdk.usage.list({ sessionId, limit: 30 }).catch(() => null),
+          sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null),
+          fetchSessionUsage(sdk, sessionId).catch(() => []),
+        ]);
+
+        // 取最近一轮：按 startedAt 排序后取最后一条
+        const all = (recent?.entries ?? [])
+          .slice()
+          .sort((a, b) => String(a?.startedAt ?? "").localeCompare(String(b?.startedAt ?? "")));
+        const last = all.at(-1) ?? null;
+        const u = last?.usage ?? null;
+        const outTok = num(u?.output?.totalTokens) ?? 0;
+        const durMs = num(last?.durationMs);
+        // 吐吐用墙钟耗时自己算：起止时间最可靠；durationMs 语义不稳（见过只有个位数），
+        // 直接按毫秒折算会得出百万 t/s 这种荒谬值。
+        const t0 = Date.parse(last?.startedAt ?? "");
+        const t1 = Date.parse(last?.endedAt ?? "");
+        const wallMs =
+          Number.isFinite(t0) && Number.isFinite(t1) && t1 > t0 ? t1 - t0 : durMs;
+        const rawTps = wallMs && wallMs >= 500 ? Math.round(outTok / (wallMs / 1000)) : null;
+        // 超过 2000 t/s 视为口径不对，宁可不显示也不给错数
+        const tps = rawTps != null && rawTps > 0 && rawTps <= 2000 ? rawTps : null;
+
+        // 会话累计：命中率按 token 加权，不能简单平均
+        let sumHit = 0;
+        let sumMiss = 0;
+        let sumTokens = 0;
+        let sumCost = 0;
+        for (const e of entries) {
+          if (e?.attribution?.kind !== "session") continue;
+          sumTokens += num(e?.usage?.totalTokens) ?? 0;
+          const hc = num(e?.usage?.costTotal);
+          sumCost += hc != null && hc > 0 ? hc : (calcEntryCost(e) ?? 0);
+          sumHit += num(e?.usage?.cache?.readTokens) ?? 0;
+          sumMiss += num(e?.usage?.cache?.missTokens) ?? 0;
+        }
+        const hit = sessions.find((s) => s.sessionId === sessionId) ?? null;
+
+        return c.json({
+          at: new Date().toISOString(),
+          sessionId,
+          turn: {
+            provider: last?.model?.provider ?? null,
+            modelId: last?.model?.modelId ?? null,
+            inputTokens: num(u?.input?.totalTokens),
+            uncachedTokens: num(u?.input?.uncachedTokens),
+            outputTokens: num(u?.output?.totalTokens),
+            reasoningTokens: num(u?.output?.reasoningTokens),
+            totalTokens: num(u?.totalTokens),
+            hitRatio: num(u?.cache?.hitRatio),
+            cacheReadTokens: num(u?.cache?.readTokens),
+            cacheMissTokens: num(u?.cache?.missTokens),
+            cost: num(u?.costTotal) > 0 ? num(u?.costTotal) : calcEntryCost(last),
+            durationMs: wallMs > 0 ? wallMs : null,
+            tps,
+            startedAt: last?.startedAt ?? null,
+            status: last?.status ?? null,
+          },
+          session: {
+            name: hit?.title ?? hit?.name ?? null,
+            totalTokens: sumTokens,
+            cost: sumCost,
+            hitRatio: sumHit + sumMiss > 0 ? sumHit / (sumHit + sumMiss) : null,
+          },
+          context: context
+            ? {
+                tokens: num(context.contextUsage?.tokens),
+                percent: num(context.contextUsage?.percent),
+                compactThreshold: num(context.compactThreshold),
+                window: num(context.model?.contextWindow),
+              }
+            : null,
+        });
+      } catch (error) {
+        return c.json({ error: String(error?.message ?? error) }, 500);
+      }
+    });
   });
+
+  // ── 输入栏状态项：订阅用量事件，把本轮指标写进输入栏 ──
+
+  const fmtCompactTokens = (n) => {
+    const v = Number(n) || 0;
+    if (v >= 1e9) return (v / 1e9).toFixed(2) + "B";
+    if (v >= 1e6) return (v / 1e6).toFixed(2) + "M";
+    if (v >= 1e3) return (v / 1e3).toFixed(1) + "K";
+    return String(Math.round(v));
+  };
+  const fmtCompactCost = (n) => {
+    const v = Number(n) || 0;
+    if (v >= 1) return "¥" + v.toFixed(2);
+    if (v >= 0.01) return "¥" + v.toFixed(4);
+    return v > 0 ? "¥" + v.toFixed(6) : "¥0";
+  };
+
+  /** 从一条 ledger entry 抽本轮指标（与 /api/live-data 同一套口径）。 */
+  function turnFromEntry(entry) {
+    const u = entry?.usage ?? null;
+    const outTok = num(u?.output?.totalTokens) ?? 0;
+    const t0 = Date.parse(entry?.startedAt ?? "");
+    const t1 = Date.parse(entry?.endedAt ?? "");
+    const wall =
+      Number.isFinite(t0) && Number.isFinite(t1) && t1 > t0
+        ? t1 - t0
+        : num(entry?.durationMs);
+    const raw = wall && wall >= 500 ? Math.round(outTok / (wall / 1000)) : null;
+    // 宿主 usage.costTotal 实测恒为 0，为 0 或缺失时按 pricing.json 自己算。
+    const hostCost = num(u?.costTotal);
+    const cost = hostCost != null && hostCost > 0 ? hostCost : calcEntryCost(entry);
+    return {
+      modelId: entry?.model?.modelId ?? null,
+      hitRatio: num(u?.cache?.hitRatio),
+      cacheReadTokens: num(u?.cache?.readTokens),
+      cacheMissTokens: num(u?.cache?.missTokens),
+      inputTokens: num(u?.input?.totalTokens),
+      outputTokens: num(u?.output?.totalTokens),
+      reasoningTokens: num(u?.output?.reasoningTokens),
+      totalTokens: num(u?.totalTokens),
+      cost,
+      // 事件载荷的 endedAt 常缺、durationMs 常为 0；算不出来就给 null，宁可显示「—」也不报 0。
+      wallMs: Number.isFinite(wall) && wall > 0 ? wall : null,
+      tps: raw != null && raw > 0 && raw <= 2000 ? raw : null,
+    };
+  }
+
+  /** 把本轮指标分别写进四个输入栏项。
+   *  拆成多项而不是拼成一条：溢出时宿主按项折叠，不会出现半个数字被截断；
+   *  某项暂时无值就单独隐藏，不连累其他项。 */
+  async function pushInputStatus(sessionId, t, requestId = null) {
+    if (!sessionId) return;
+
+    // 实测事件载荷里 endedAt 常缺、durationMs 常为 0，时长与吐吞因此算不出来。
+    // 缺失时回查一次账本，用同一条 requestId 的完整记录补上。
+    if (!(t.wallMs > 0) && requestId) {
+      try {
+        const recent = await sdk.usage.list({ sessionId, limit: 10 });
+        const hit = (recent?.entries ?? []).find((e) => e?.requestId && e.requestId === requestId);
+        if (hit) {
+          const full = turnFromEntry(hit);
+          if (full.wallMs > 0) {
+            t.wallMs = full.wallMs;
+            if (full.tps != null) t.tps = full.tps;
+          }
+        }
+      } catch (error) {
+        await sdk.logger.warn(`inputStatus 回查账本失败: ${error?.message ?? error}`);
+      }
+    }
+
+    // 标签常驻：数字没出来时用「—」占位，有数字再顶上去——不让整项忽隐忽现。
+    const DASH = "—";
+    const items = [
+      {
+        id: "hit",
+        text: `命中 ${
+          t.hitRatio != null
+            ? (t.hitRatio * 100).toFixed((t.hitRatio * 100) % 1 === 0 ? 0 : 1) + "%"
+            : DASH
+        }`,
+        // 摊开百分比背后的两个基数：命中的 token 与未命中的 token
+        tooltip:
+          t.cacheReadTokens != null || t.cacheMissTokens != null
+            ? `命中 ${fmtCompactTokens(t.cacheReadTokens ?? 0)} · 未命中 ${fmtCompactTokens(t.cacheMissTokens ?? 0)}`
+            : undefined,
+      },
+      {
+        id: "tps",
+        text: `速度 ${t.tps != null ? t.tps + "t/s" : DASH}`,
+        tooltip: t.tps != null ? `输出速度 ${t.tps} tokens/秒` : undefined,
+      },
+      {
+        id: "tokens",
+        text: `用量 ${t.totalTokens != null ? fmtCompactTokens(t.totalTokens) : DASH}`,
+        // 摊开输入与输出，正好是成本结构的两半
+        tooltip:
+          t.inputTokens != null || t.outputTokens != null
+            ? `输入 ${fmtCompactTokens(t.inputTokens ?? 0)} · 输出 ${fmtCompactTokens(t.outputTokens ?? 0)}`
+            : undefined,
+      },
+      {
+        id: "cost",
+        text: `费用 ${t.cost != null ? fmtCompactCost(t.cost) : DASH}`,
+        tooltip: t.cost != null ? `本轮费用 ${fmtCompactCost(t.cost)}` : undefined,
+      },
+      {
+        id: "duration",
+        text: `耗时 ${t.wallMs != null ? (t.wallMs / 1000).toFixed(1) + "s" : DASH}`,
+        tooltip: t.wallMs != null ? `本轮墙钟耗时 ${(t.wallMs / 1000).toFixed(1)} 秒` : undefined,
+      },
+    ];
+
+    for (const it of items) {
+      try {
+        await sdk.inputStatus.set({
+          sessionId,
+          id: it.id,
+          text: it.text ?? "—",
+          tooltip: it.tooltip,
+          // 占位项常驻：本轮取不到值的项也留「—」。
+          // 之前写的是 visible: it.text != null，本轮没值的项会被隐藏，
+          // 导致输入栏的项数随数据有无增减（五变三），看着像坏了。
+          visible: true,
+        });
+      } catch (error) {
+        await sdk.logger.warn(`inputStatus.set(${it.id}) failed: ${error?.message ?? error}`);
+      }
+    }
+  }
+
+  // ── 时长计时 ──
+  // 宿主 llm_usage 事件的 endedAt 常为空、durationMs 恒为 0（本机实测），
+  // 账本里也查不到当下这一轮（usage.list 最新只到 09-12），所以时长只能自己掉。
+  // 引擎的 message_start / message_end 各是一条消息的边界，差值就是一次模型调用的墙钟时长。
+  let msgStartAt = 0;
+  let lastMsgWall = 0;
+  let lastMsgWallAt = 0;
+  sdk.bus.subscribe(
+    (event) => {
+      const type = event?.type;
+      if (type === "message_start") {
+        msgStartAt = Date.now();
+      } else if (type === "message_end") {
+        if (msgStartAt) {
+          lastMsgWall = Date.now() - msgStartAt;
+          lastMsgWallAt = Date.now();
+        }
+      }
+    },
+    { types: ["message_start", "message_end"] }
+  );
+
+  /** 事件本身的时间字段不可用时的兜底：优先刚掐完的一轮，其次从 message_start 起算。 */
+  function fallbackWallMs(entry) {
+    if (lastMsgWall > 0 && Date.now() - lastMsgWallAt < 5000) return lastMsgWall;
+    if (msgStartAt > 0) {
+      const ms = Date.now() - msgStartAt;
+      if (ms > 0 && ms < 30 * 60 * 1000) return ms;
+    }
+    // 最后一层：宿主给的 startedAt 到此刻（含事件投递延迟，但一定有值）
+    const t0 = Date.parse(entry?.startedAt ?? "");
+    if (Number.isFinite(t0)) {
+      const ms = Date.now() - t0;
+      if (ms > 0 && ms < 30 * 60 * 1000) return ms;
+    }
+    return 0;
+  }
+
+  // 订阅用量事件：每完成一轮就刷新那一行。回调里的异常自己吃掉。
+  sdk.bus.subscribe(
+    (event) => {
+      if (event?.type !== "llm_usage") return;
+      const entry = event?.entry ?? null;
+      const turn = turnFromEntry(entry);
+      if (!(turn.wallMs > 0)) {
+        const wall = fallbackWallMs(entry);
+        if (wall > 0) {
+          turn.wallMs = wall;
+          const raw = wall >= 500 ? Math.round((turn.outputTokens ?? 0) / (wall / 1000)) : 0;
+          if (raw > 0 && raw <= 2000) turn.tps = raw;
+        }
+      }
+      pushInputStatus(
+        entry?.attribution?.sessionId ?? null,
+        turn,
+        entry?.requestId ?? null
+      ).catch(() => {});
+    },
+    { types: ["llm_usage"] }
+  );
 
   await sdk.tools.register({
     name: "session_insight_overview",
@@ -263,10 +609,31 @@ export default defineApp(async (sdk) => {
       type: "object",
       properties: {
         sessionId: { type: "string", description: "可选，指定会话；省略时取最近活跃会话。" },
+        probe: {
+          type: "boolean",
+          description: "临时诊断：额外返回最近几条用量记录的原始时间字段（startedAt/endedAt/durationMs）。",
+        },
       },
     },
     execute: async (args) => {
       const overview = await buildOverview(sdk, args?.sessionId ?? null);
+      if (args?.probe) {
+        const sid = overview.activeSessionId;
+        const rows = sid
+          ? ((await sdk.usage.list({ sessionId: sid, limit: 6 }))?.entries ?? [])
+          : [];
+        overview.probe = {
+          sessionId: sid,
+          rows: rows.map((r) => ({
+            requestId: r?.requestId ?? null,
+            startedAt: r?.startedAt ?? null,
+            endedAt: r?.endedAt ?? null,
+            durationMs: r?.durationMs ?? null,
+            status: r?.status ?? null,
+            subsystem: r?.source?.subsystem ?? null,
+          })),
+        };
+      }
       return { content: [{ type: "text", text: JSON.stringify(overview, null, 2) }] };
     },
   });

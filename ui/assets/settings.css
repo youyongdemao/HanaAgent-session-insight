@@ -1,0 +1,185 @@
+/* assets/settings.css — Session Insight 设置页
+   颜色变量由 HanaAgent 主题注入，这里只画结构。 */
+
+html, body {
+  margin: 0;
+  background: transparent;
+}
+
+body {
+  font-family: var(--font-ui, system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif);
+  color: var(--text-light);
+  -webkit-font-smoothing: antialiased;
+}
+
+.st-page {
+  padding: 4px 2px 24px;
+}
+
+.st-section h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.st-desc {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+.st-desc strong { color: var(--text); font-weight: 600; }
+
+.st-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 520px;
+}
+
+.st-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 55%, transparent);
+  cursor: default;
+  transition: border-color .16s, background .16s, box-shadow .16s, opacity .16s;
+}
+.st-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+}
+.st-row.dragging {
+  opacity: .45;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.st-row.drop-target {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.st-row.off {
+  opacity: .55;
+}
+
+.st-handle {
+  flex: 0 0 auto;
+  cursor: grab;
+  user-select: none;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  letter-spacing: -1px;
+}
+.st-row:active .st-handle { cursor: grabbing; }
+
+.st-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.st-group {
+  flex: 0 0 auto;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+/* 开关 */
+.st-sw {
+  flex: 0 0 auto;
+  position: relative;
+  width: 32px;
+  height: 18px;
+  display: inline-block;
+}
+.st-sw input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.st-sw i {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+  transition: background .18s;
+  pointer-events: none;
+}
+.st-sw i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--bg-card, #fff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .28);
+  transition: transform .18s var(--ease, cubic-bezier(.22,.75,.25,1));
+}
+.st-sw input:checked + i {
+  background: var(--accent);
+}
+.st-sw input:checked + i::after {
+  transform: translateX(14px);
+}
+.st-sw input:disabled { cursor: not-allowed; }
+
+.st-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  max-width: 520px;
+}
+
+.st-btn {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  color: var(--text-light);
+  font: 500 12px var(--font-ui, system-ui, sans-serif);
+  padding: 7px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color .16s, background .16s, color .16s, transform .12s;
+}
+.st-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  color: var(--text);
+}
+.st-btn:active { transform: scale(.97); }
+.st-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.st-btn-primary {
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+  border-color: transparent;
+  color: #fff;
+}
+.st-btn-primary:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.st-status {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.st-status.ok { color: var(--si-green, #4a6b4a); }
+.st-status.err { color: var(--si-amber, #b58b4b); }

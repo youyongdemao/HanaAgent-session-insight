@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session Insight 设置</title>
+  <link rel="stylesheet" href="./assets/settings.css">
+</head>
+<body data-hana-theme="inherit">
+  <div class="st-page">
+    <section class="st-section">
+      <h2>本轮速览卡</h2>
+      <p class="st-desc">
+        拖动调整顺序，开关决定是否显示。<strong>顺序即卡片上的排列顺序</strong>；未勾选的项不会出现。
+      </p>
+      <ul class="st-list" id="stList"></ul>
+      <div class="st-actions">
+        <button class="st-btn st-btn-primary" id="stSave">保存</button>
+        <button class="st-btn" id="stReset">恢复默认</button>
+        <span class="st-status" id="stStatus"></span>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="./assets/settings.js"></script>
+</body>
+</html>

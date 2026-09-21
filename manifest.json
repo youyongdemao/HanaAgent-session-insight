@@ -66,14 +66,37 @@
     "ui": {
       "inputStatus": [
         {
-          "id": "context",
-          "title": "上下文",
-          "text": "—"
+          "id": "hit",
+          "title": "本轮缓存命中率",
+          "text": "命中 —"
+        },
+        {
+          "id": "tps",
+          "title": "输出吞吐速度",
+          "text": "速度 —"
+        },
+        {
+          "id": "tokens",
+          "title": "本轮 Token 用量",
+          "text": "用量 —"
+        },
+        {
+          "id": "cost",
+          "title": "本轮费用",
+          "text": "费用 —"
+        },
+        {
+          "id": "duration",
+          "title": "本轮耗时",
+          "text": "耗时 —"
         }
       ]
     },
     "settings": {
       "title": "Session Insight",
+      "ui": {
+        "route": "/settings.html"
+      },
       "schema": {
         "type": "object",
         "properties": {
@@ -82,6 +105,12 @@
             "title": "状态条刷新间隔（秒）",
             "description": "侧边状态条自动刷新频率。",
             "default": 30
+          },
+          "liveLayout": {
+            "type": "string",
+            "title": "本轮速览卡的显示项与顺序",
+            "description": "由设置页写入的 JSON；请勿手改。",
+            "default": ""
           },
           "enableCodexQuota": {
             "type": "boolean",
