@@ -406,29 +406,6 @@ export default defineApp(async (sdk) => {
       }
     });
 
-    // ── App 级配置：目前只有 Codex 配额开关（enableCodexQuota）──
-    app.get("/api/app-config", async (c) => {
-      try {
-        const all = await readAppConfig(sdk);
-        return c.json({ enableCodexQuota: all.enableCodexQuota === true });
-      } catch (error) {
-        return c.json({ enableCodexQuota: false, error: String(error?.message ?? error) }, 500);
-      }
-    });
-
-    app.post("/api/app-config", async (c) => {
-      try {
-        const body = await c.req.json().catch(() => null);
-        if (body && typeof body.enableCodexQuota === "boolean") {
-          await writeAppConfig(sdk, "enableCodexQuota", body.enableCodexQuota);
-        }
-        const all = await readAppConfig(sdk);
-        return c.json({ ok: true, enableCodexQuota: all.enableCodexQuota === true });
-      } catch (error) {
-        return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
-      }
-    });
-
     // 数据：一次给齐卡片需要用到的所有原始字段，前端按配置决定显示哪几项。
     app.get("/api/live-data", async (c) => {
       try {

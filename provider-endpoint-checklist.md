@@ -24,7 +24,7 @@ node scripts/check-providers.mjs --verify   # 真打各家接口，报告哪些�
 | zhipu | `GET api.z.ai` 或 `open.bigmodel.cn` `/api/monitor/usage/quota/limit` | api_key | 需 Coding Plan |
 | zhipu-coding | 同上（key 与 zhipu 独立） | api_key | 需 Coding Plan |
 | openai | Admin Costs API | Admin Key | 普通 Project Key 无权 |
-| openai-codex | `GET chatgpt.com/backend-api/wham/usage` | OAuth access token | 需打开「Codex 订阅配额」开关 |
+| openai-codex | 无 | — | 原走 chatgpt.com 私有配额接口（需 OAuth），该功能已移除 |
 | xai | `management-api.x.ai` | Management Key + Team ID | 在插件配置里填 |
 | gemini | 无 | — | 只有 AI Studio 网页 |
 | mimo | 无 | — | 只有开放平台网页 |
@@ -35,7 +35,7 @@ node scripts/check-providers.mjs --verify   # 真打各家接口，报告哪些�
 ## 发现变化时怎么改
 
 1. 改 `lib/provider-directory.js` 对应条目的 `query.via` 与 `note`
-2. 响应结构变了就改 `routes/api.js` 里对应的查询函数（`queryZhipuQuotaOne` / `queryOpenAICosts` / `queryCodexQuota` / `queryXaiBalance`）
+2. 响应结构变了就改 `lib/legacy-api.js` 里对应的查询函数（`queryZhipuQuotaOne` / `queryOpenAICosts` / `queryXaiBalance`）
 3. 原本 `reachable=false` 的供应商如果出现了可查接口，把该条改成 `true`（它会从灰灯变成红/绿）
 4. 跑 `node scripts/check-providers.mjs --verify` 与 `node scripts/ui-probe-provider-cards.cjs` 确认
 5. 在 release notes 的「修复」或「优化」段里写清楚改了什么
