@@ -6,27 +6,6 @@ import { hana } from "./sdk.js";
 
 hana.ready();
 
-/**
- * 把内容高度报给宿主，让设置页的 iframe 跟着内容长。
- * 不报的话 iframe 会保持固定高度，内容一超长就在 iframe 内部长出滚动条，
- * 而宿主面板本来那条也在，于是出现两套滚动条，且内部那条会盖住最右侧控件。
- */
-function reportHeight() {
-  try {
-    const h = Math.ceil(document.documentElement.getBoundingClientRect().height);
-    if (h > 0) hana.ui.resize({ height: h });
-  } catch {
-    /* 宿主不支持 resize 时静默，退化为容器自己滚动 */
-  }
-}
-
-if (window.ResizeObserver) {
-  new ResizeObserver(reportHeight).observe(document.body);
-} else {
-  window.addEventListener("resize", reportHeight);
-  window.setTimeout(reportHeight, 300);
-}
-
 const APP_ID = "session-insight-v2";
 const ss = new URLSearchParams(location.search).get("appSurfaceSession") || "";
 // 保存后写一个一次性标记，卡片那边轮询到配置变化就重排

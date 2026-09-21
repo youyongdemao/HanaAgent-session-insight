@@ -7,8 +7,14 @@ html, body {
   background: transparent;
 }
 
-/* 全局 border-box：此前 .st-list 的 1px 边框会把容器顶宽 2px，
-   在窄容器里刚好把最右侧蹭掉一点 */
+/* 给经典滚动条预留位置：iframe 内部出现纵向滚动条时它是浮在内容上的，
+   不放位会把最右侧的卡片边缘盖住（表现为「被裁切」）。
+   overlay 滚动条样式下这条不生效，但不影响布局。 */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* 全局 border-box：此前 .st-list 的 1px 边框会把容器顶宽 2px */
 *, *::before, *::after {
   box-sizing: border-box;
 }
