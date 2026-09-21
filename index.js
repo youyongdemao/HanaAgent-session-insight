@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
 import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
 import { registerUpdateRoutes } from "./lib/update-check.js";
+import { registerLaunchRoutes } from "./lib/local-launch.js";
 import {
   listSessions,
   listSessionsCached,
@@ -290,33 +291,6 @@ async function readReduceCardButtons(sdk) {
 export default defineApp(async (sdk) => {
   await sdk.logger.info("session-insight-v2 loaded");
 
-  // —— 临时探针：验证 app/runtime.local-machine 是否已获授权 ——
-  // 只跑一条 echo，不读不写文件。command 必须绝对路径，验证完即拆。
-  setTimeout(async () => {
-    try {
-      const rt = await sdk.runtime.start({
-        runtime: "command",
-        profile: "local-machine",
-        command: "C:\\Windows\\System32\\cmd.exe",
-        args: ["/c", "echo", "si-runtime-probe-ok"],
-        network: "none",
-      });
-      await sdk.logger.info(
-        `[runtime-probe] OK runtimeId=${rt?.runtimeId ?? "?"} state=${rt?.state ?? "?"} profile=${rt?.profile ?? "?"} enforcement=${rt?.enforcement ?? "?"} backend=${rt?.backend ?? "?"}`
-      );
-      try {
-        await sdk.runtime.stop(rt.runtimeId);
-        await sdk.logger.info("[runtime-probe] stopped");
-      } catch (stopError) {
-        await sdk.logger.warn(`[runtime-probe] stop failed: ${stopError?.message ?? stopError}`);
-      }
-    } catch (error) {
-      await sdk.logger.warn(
-        `[runtime-probe] DENIED/FAILED code=${error?.code ?? "-"} message=${error?.message ?? error}`
-      );
-    }
-  }, 3000);
-
   const ctx = await makeCtx(sdk);
 
   await sdk.routes.register((app) => {
@@ -325,6 +299,9 @@ export default defineApp(async (sdk) => {
 
     // 检查更新：只查 GitHub 上最新的已发布版本，安装仍走「设置 → 扩展」
     registerUpdateRoutes(app, ctx);
+
+    // 本地供应商：拉起本机应用（要 app/process.spawn）
+    registerLaunchRoutes(app, ctx);
 
     app.get("/health", (c) => c.json({ ok: true, app: "session-insight-v2" }));
 

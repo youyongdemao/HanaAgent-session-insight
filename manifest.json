@@ -15,8 +15,7 @@
     "app/input.status",
     "app/resources.read",
     "app/models.read",
-    "app/runtime.execute",
-    "app/runtime.local-machine"
+    "app/process.spawn"
   ],
   "network": {
     "allowedHosts": [
@@ -32,8 +31,11 @@
       "api.z.ai",
       "management-api.x.ai",
       "api.openai.com",
-      "chatgpt.com"
+      "chatgpt.com",
+      "127.0.0.1",
+      "localhost"
     ],
+    "allowLocalhost": true,
     "methods": ["GET", "POST"],
     "defaultTimeoutMs": 15000,
     "maxResponseBytes": 31457280
