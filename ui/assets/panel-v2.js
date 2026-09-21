@@ -814,12 +814,26 @@ function applyWidgetBlocks(on){
       el.style.display=visible?'':'none';
     });
   }
+  // 当前轮那一组的列数跟着实际开启的格数走：不让任何一格单独掉到下一行。
+  // （写死两列会在只开三个时空出一格；CSS 里的 auto-fit 会在窄卡片上塞三列、第四格掉行）
+  layoutTurnGrid();
+}
+
+/** 当前轮分组：1/2/3 格各占一行；4 格时够宽就一行四个，窄了就 2×2 —— 两者都不留空位 */
+function layoutTurnGrid(){
+  const grid=document.querySelector('.w-turn-grid');
+  if(!grid)return;
+  const n=[...grid.querySelectorAll('.card')].filter(el=>!el.hidden).length;
+  const cols=n<=3?Math.max(1,n):(grid.clientWidth/4>=100?4:2);
+  grid.style.gridTemplateColumns='repeat('+cols+', minmax(0, 1fr))';
 }
 async function loadWidgetBlocks(){
   try{const j=await fetchJson("/api/widget-config");if(j&&Array.isArray(j.on))applyWidgetBlocks(j.on);}catch{}
 }
 // 设置页保存后通过 localStorage 广播（同源 iframe 会收到 storage 事件），卡片不需轮询就能跟着变。
-if(surface==='widget'){window.addEventListener('storage',e=>{if(e.key==='si-widget-layout')loadWidgetBlocks();});}
+if(surface==='widget'){window.addEventListener('storage',e=>{if(e.key==='si-widget-layout')loadWidgetBlocks();});
+  // 卡片宽度是用户拖的，宽度变了要重算列数
+  window.addEventListener('resize',layoutTurnGrid);}
 
 const shell=surface==='widget'?widgetShell():pageShell();
 root.style.minHeight='100vh';root.innerHTML=shell;
