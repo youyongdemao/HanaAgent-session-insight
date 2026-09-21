@@ -81,7 +81,7 @@ body[data-surface="widget"] .card:hover{transform:scale(1.025);border-color:colo
 
 /* ── 模型列表行 ── */
 .w-detail-grid .m-list{display:grid;gap:5px;margin-top:8px}
-.m-list>code{font:500 10.5px/1.5 var(--font-mono);color:var(--text-light);background:color-mix(in srgb,var(--text) 5%,transparent);border-radius:8px;padding:6px 9px;display:block}.m-entry{display:grid;gap:5px;padding:7px 9px;border-radius:9px;background:color-mix(in srgb,var(--text) 5%,transparent)}.m-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.m-head code{font:500 10.5px/1.4 var(--font-mono);color:var(--text-light)}.m-head b{font:600 10px var(--font-mono);color:var(--accent);white-space:nowrap}.w-detail-card .card{transition:transform .26s cubic-bezier(.2,.72,.2,1),border-color .2s,box-shadow .2s}.w-detail-card .card:hover{transform:scale(1.025);border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 5px 20px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:5}.w-detail-card .card:active,.w-detail-card .card.si-press{transform:scale(.965)!important;opacity:1!important}.w-detail-card .card.si-release,.w-detail-card .card.si-dynamic-release{opacity:1!important}.w-detail-card .card.si-release{animation:detailGummyRelease .46s cubic-bezier(.16,.82,.24,1) both!important}@keyframes detailGummyRelease{0%{transform:scale(.965)}100%{transform:scale(1.025)}}
+.m-list>code{font:500 10.5px/1.5 var(--font-mono);color:var(--text-light);background:color-mix(in srgb,var(--text) 5%,transparent);border-radius:8px;padding:6px 9px;display:block}.m-entry{display:grid;gap:5px;padding:7px 9px;border-radius:9px;background:color-mix(in srgb,var(--text) 5%,transparent)}.m-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.m-head code{font:500 10.5px/1.4 var(--font-mono);color:var(--text-light)}.m-head b{font:600 10px var(--font-mono);color:var(--accent);white-space:nowrap}.w-detail-card .card,.w-detail-card .model-metric-card{transition:transform .26s cubic-bezier(.2,.72,.2,1),border-color .2s,box-shadow .2s}.w-detail-card .card:hover,.w-detail-card .model-metric-card:hover{transform:scale(1.025);border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 5px 20px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:5}.w-detail-card .card:active,.w-detail-card .card.si-press,.w-detail-card .model-metric-card:active,.w-detail-card .model-metric-card.si-press{transform:scale(.965)!important;opacity:1!important}.w-detail-card .card.si-release,.w-detail-card .card.si-dynamic-release,.w-detail-card .model-metric-card.si-release,.w-detail-card .model-metric-card.si-dynamic-release{opacity:1!important}.w-detail-card .card.si-release,.w-detail-card .model-metric-card.si-release{animation:detailGummyRelease .46s cubic-bezier(.16,.82,.24,1) both!important}@keyframes detailGummyRelease{0%{transform:scale(.965)}100%{transform:scale(1.025)}}
 @media(max-width:1080px){.layout{grid-template-columns:1fr}.widget{position:static;min-height:0}.hero{grid-template-columns:1fr 1fr}.grid2,.grid3,.detail-grid{grid-template-columns:1fr}.provider-item{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}}
 
 /* ── 顶栏操作按钮 ── */
@@ -1346,14 +1346,13 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
    detailGummyReleaseOut：鼠标已移开，落回 1
    两者与 .si-press 配合，形成「按下缩、松手弹」的手感。 */
 @keyframes detailGummyReleaseOut{0%{transform:scale(.965)}100%{transform:scale(1)}}
-.w-detail-card .card.si-release.release-out{animation:detailGummyReleaseOut .46s cubic-bezier(.16,.82,.24,1) both!important}
-/* ── 弹层仪表盘卡片（.model-metric-card）：与 .card 完全对齐的按压回弹 ──
-   这些面板此前没有 transform 过渡声明（用浏览器默认曲线），hover/按压落点也和 .card 不一致，
-   手感因此与其它卡片不同。此处逐项对齐 .card 的那一套：同样的 transition、幅度、动画。 */
-@keyframes detailMetricGummy{0%{transform:scale(.965)}100%{transform:scale(1.025)}}
-@keyframes detailMetricGummyOut{0%{transform:scale(.965)}100%{transform:scale(1)}}
+.w-detail-card .card.si-release.release-out,.w-detail-card .model-metric-card.si-release.release-out{animation:detailGummyReleaseOut .46s cubic-bezier(.16,.82,.24,1) both!important}
+/* ── 弹层仪表盘卡片：直接照搬 .card 的整套动画 ──
+   这些面板（供应商与模型层级 / 模型 Token 消耗 / 占比 / 调用次数）自带一套 hover 1.018、active .975 的旧规则，
+   与弹层内 .card 的 1.025 / .965 不同，而且没有 transform 过渡声明。
+   本段置于文件末尾，用同一套数值和同一个关键帧（detailGummyRelease / detailGummyReleaseOut）整体接管。 */
 .w-detail-overlay .model-metric-card{transition:transform .26s cubic-bezier(.2,.72,.2,1),border-color .2s,box-shadow .2s}
 .w-detail-overlay .model-metric-card:hover{transform:scale(1.025)}
-.w-detail-overlay .model-metric-card:active,.w-detail-overlay .model-metric-card.si-press{transform:scale(.965)!important;transition-duration:.1s;opacity:1!important}
-.w-detail-overlay .model-metric-card.si-release{animation:detailMetricGummy .46s cubic-bezier(.16,.82,.24,1) both!important}
-.w-detail-overlay .model-metric-card.si-release.release-out{animation:detailMetricGummyOut .46s cubic-bezier(.16,.82,.24,1) both!important}
+.w-detail-overlay .model-metric-card:active,.w-detail-overlay .model-metric-card.si-press{transform:scale(.965)!important;opacity:1!important}
+.w-detail-overlay .model-metric-card.si-release{animation:detailGummyRelease .46s cubic-bezier(.16,.82,.24,1) both!important}
+.w-detail-overlay .model-metric-card.si-release.release-out{animation:detailGummyReleaseOut .46s cubic-bezier(.16,.82,.24,1) both!important}
