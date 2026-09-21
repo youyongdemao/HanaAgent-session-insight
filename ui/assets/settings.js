@@ -257,71 +257,22 @@ async function loadWidgetConfig() {
 
 loadWidgetConfig();
 
-/* ── 关于：检查更新与源码仓库（原工作台顶部两个按钮搬到这里）── */
+/* ── 关于：版本与源码仓库 ── */
 const GITHUB_URL = "https://github.com/youyongdemao";
-const aboutUpdateEl = document.getElementById("aboutUpdate");
 const aboutGithubEl = document.getElementById("aboutGithub");
 const aboutVersionEl = document.getElementById("aboutVersion");
-const aboutStatusEl = document.getElementById("aboutStatus");
-let pendingVersion = null;
 
-function setAboutStatus(text, cls = "") {
-  if (!aboutStatusEl) return;
-  aboutStatusEl.textContent = text;
-  aboutStatusEl.className = "st-status" + (cls ? " " + cls : "");
-}
-
-async function checkUpdate() {
-  aboutUpdateEl.disabled = true;
-  setAboutStatus("检查中…");
+// v2 App 的更新走「设置 → 扩展」，面板内不做自更新；这里只把当前版本读出来显示。
+async function loadVersion() {
   try {
-    const info = await apiFetch("api/check-update");
-    if (aboutVersionEl && info?.currentVersion) aboutVersionEl.textContent = "v" + info.currentVersion;
-    if (!info?.updateAvailable) {
-      setAboutStatus("已是最新版本", "ok");
-      window.setTimeout(() => {
-        if (aboutStatusEl?.textContent === "已是最新版本") setAboutStatus("");
-      }, 2400);
-      return;
-    }
-    pendingVersion = info.latestVersion;
-    aboutUpdateEl.textContent = "更新到 v" + info.latestVersion;
-    setAboutStatus("发现新版本 v" + info.latestVersion);
-  } catch (error) {
-    setAboutStatus("检查失败：" + String(error?.message || error), "err");
-  } finally {
-    aboutUpdateEl.disabled = false;
+    const info = await apiFetch("api/version");
+    if (aboutVersionEl && info?.version) aboutVersionEl.textContent = "v" + info.version;
+  } catch {
+    /* 读不到就保持占位 */
   }
 }
 
-async function applyUpdateNow() {
-  aboutUpdateEl.disabled = true;
-  setAboutStatus("更新中…");
-  try {
-    const headers = { "content-type": "application/json" };
-    if (ss) headers["X-Hana-App-Surface-Session"] = ss;
-    const res = await fetch(apiUrl("api/apply-update"), {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ version: pendingVersion }),
-      signal: AbortSignal.timeout(120000),
-    });
-    const result = await res.json().catch(() => ({}));
-    if (!res.ok || !result.ok) throw new Error(result.error || "HTTP " + res.status);
-    setAboutStatus("已更新，正在重新加载…", "ok");
-    const next = new URL(location.href);
-    next.searchParams.set("hot", Date.now().toString(36));
-    location.replace(next.toString());
-  } catch (error) {
-    aboutUpdateEl.disabled = false;
-    setAboutStatus("更新失败：" + String(error?.message || error), "err");
-  }
-}
-
-aboutUpdateEl?.addEventListener("click", () => {
-  if (pendingVersion) applyUpdateNow();
-  else checkUpdate();
-});
+loadVersion();
 
 aboutGithubEl?.addEventListener("click", (ev) => {
   // 拦下默认行为，改走宿主的外部打开能力。
