@@ -1,5 +1,6 @@
 ﻿// assets/panel-v2.js — Session Insight v2 前端（独立于 v1，路由 /page?v=2）
 import { hana as hanaV2 } from "./sdk.js";
+import { initUpdateNotice } from "./update-notice.js";
 
 const PROTOCOL = "hana.plugin.ui";
 const VERSION = 1;
@@ -727,3 +728,5 @@ async function watchProviders(){
 }
 async function start(){hana.ready();if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);},{once:true});}}
 start().catch(()=>{if(surface==='widget')renderWidget();else renderPageAll();});
+// 进页面自检一次更新：有新版才弹窗，没有就什么都不做（与设置页共用同一套弹窗）
+initUpdateNotice();

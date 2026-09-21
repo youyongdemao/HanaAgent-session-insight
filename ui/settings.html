@@ -33,6 +33,7 @@
     })();
   </script>
   <link rel="stylesheet" href="./assets/settings.css">
+  <link rel="stylesheet" href="./assets/update-notice.css">
 </head>
 <body data-hana-theme="inherit">
   <div class="st-page">
@@ -85,27 +86,6 @@
       </section>
     </section>
 
-  </div>
-
-  <!-- 检查更新：只报有无新版本，安装仍走「设置 → 扩展」 -->
-  <div class="st-modal" id="updateModal" hidden>
-    <div class="st-modal-mask" data-update-close></div>
-    <div class="st-modal-card" role="dialog" aria-modal="true" aria-labelledby="updateModalTitle">
-      <div class="st-modal-head">
-        <h2 class="st-modal-title" id="updateModalTitle">检查更新</h2>
-        <button class="st-modal-x" type="button" data-update-close aria-label="关闭">✕</button>
-      </div>
-      <div class="st-upd-verdict" id="updVerdict">检查中…</div>
-      <ul class="st-upd-rows">
-        <li><span>当前版本</span><span class="st-upd-num" id="updCurrent">v–</span></li>
-        <li><span>最新版本</span><span class="st-upd-num" id="updLatest">—</span></li>
-      </ul>
-      <div class="st-upd-notes" id="updNotes" hidden></div>
-      <div class="st-modal-foot">
-        <button class="st-btn" type="button" data-update-close>关闭</button>
-        <button class="st-btn st-btn-primary" type="button" id="updRelease">前往下载更新</button>
-      </div>
-    </div>
   </div>
 
   <script type="module" src="./assets/settings.js"></script>

@@ -3,30 +3,13 @@
 // 5 秒内收不到就一律显示「应用加载失败」（宿主对设置页传的 readyOnTimeout 为 false）。
 // 只 import 而不调用 ready，页面会一直卡在失败态。
 import { hana } from "./sdk.js";
+import { apiFetch } from "./app-api.js";
+import { initUpdateNotice, openUpdateNotice } from "./update-notice.js";
 
 hana.ready();
 
-const APP_ID = "session-insight-v2";
-const ss = new URLSearchParams(location.search).get("appSurfaceSession") || "";
 // 保存后写一个一次性标记，卡片那边轮询到配置变化就重排
 const BROADCAST_KEY = "si-live-layout";
-
-function apiUrl(path) {
-  return `${location.origin}/api/apps/${APP_ID}/routes/${path}`;
-}
-
-async function apiFetch(path, init = {}, timeoutMs = 8000) {
-  const headers = new Headers(init.headers || {});
-  if (ss) headers.set("X-Hana-App-Surface-Session", ss);
-  const res = await fetch(apiUrl(path), {
-    ...init,
-    headers,
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const ct = res.headers.get("content-type") || "";
-  return ct.includes("json") ? res.json() : null;
-}
 
 const listEl = document.getElementById("stList");
 const saveEl = document.getElementById("stSave");
@@ -263,36 +246,6 @@ const aboutGithubEl = document.getElementById("aboutGithub");
 const aboutVersionEl = document.getElementById("aboutVersion");
 const aboutUpdateEl = document.getElementById("aboutUpdate");
 
-const updateModalEl = document.getElementById("updateModal");
-const updVerdictEl = document.getElementById("updVerdict");
-const updCurrentEl = document.getElementById("updCurrent");
-const updLatestEl = document.getElementById("updLatest");
-const updNotesEl = document.getElementById("updNotes");
-const updReleaseEl = document.getElementById("updRelease");
-
-// 打开设置页先取一次本地版本号（纯本地，不联网），弹窗里也用它
-async function loadVersion() {
-  try {
-    const info = await apiFetch("api/version");
-    if (aboutVersionEl && info?.version) aboutVersionEl.textContent = "v" + info.version;
-  } catch {
-    /* 读不到就保持占位 */
-  }
-}
-
-/** "2026-09-22T01:00:00Z" → "9/22"（本地时区） */
-function shortDate(iso) {
-  const at = new Date(iso);
-  if (Number.isNaN(at.getTime())) return "";
-  return `${at.getMonth() + 1}/${at.getDate()}`;
-}
-
-function setVerdict(text, cls = "") {
-  if (!updVerdictEl) return;
-  updVerdictEl.textContent = text;
-  updVerdictEl.className = "st-upd-verdict" + (cls ? " " + cls : "");
-}
-
 function openExternal(url) {
   const fallback = () => window.open(url, "_blank", "noopener");
   try {
@@ -303,104 +256,22 @@ function openExternal(url) {
   }
 }
 
-// 跳转按钮的目标：后端给的最新版 Release 页，拿不到就退回仓库的 /releases/latest
-const RELEASE_PAGE_URL = "https://github.com/youyongdemao/HanaAgent-session-insight/releases/latest";
-let releaseUrl = RELEASE_PAGE_URL;
-
-/** 更新日志：分组标题 + 圆点条目，后端已经把 markdown 整理成 [{ title, items }] */
-function renderNotes(groups) {
-  if (!updNotesEl) return;
-  updNotesEl.innerHTML = "";
-  if (!Array.isArray(groups) || groups.length === 0) {
-    updNotesEl.hidden = true;
-    return;
-  }
-
-  const label = document.createElement("div");
-  label.className = "st-upd-notes-label";
-  label.textContent = "更新内容";
-  updNotesEl.append(label);
-
-  for (const group of groups) {
-    if (group?.title) {
-      const head = document.createElement("div");
-      head.className = "st-upd-group";
-      head.textContent = group.title;
-      updNotesEl.append(head);
-    }
-    const list = document.createElement("ul");
-    list.className = "st-upd-list";
-    for (const item of group?.items ?? []) {
-      const li = document.createElement("li");
-      li.textContent = item;
-      list.append(li);
-    }
-    updNotesEl.append(list);
-  }
-
-  updNotesEl.hidden = false;
-  updNotesEl.scrollTop = 0;
-}
-
-async function checkUpdate() {
-  let info = null;
+// 设置页自己秀一个本地版本号（纯本地，不联网）
+async function loadVersion() {
   try {
-    info = await apiFetch("api/update-check", {}, 14000);
-  } catch (error) {
-    setVerdict("检查失败：" + String(error?.message || error), "err");
-    return;
+    const info = await apiFetch("api/version");
+    if (aboutVersionEl && info?.version) aboutVersionEl.textContent = "v" + info.version;
+  } catch {
+    /* 读不到就保持占位 */
   }
-
-  if (!info?.ok) {
-    setVerdict("检查失败：" + (info?.message || "未知错误"), "err");
-    return;
-  }
-
-  if (info.releaseUrl) releaseUrl = info.releaseUrl;
-  updCurrentEl.textContent = "v" + info.currentVersion;
-
-  if (info.updateAvailable) {
-    const at = info.publishedAt ? " · " + shortDate(info.publishedAt) : "";
-    updLatestEl.textContent = `v${info.latestVersion}${at}`;
-    setVerdict("有新版本可用", "new");
-    renderNotes(info.noteGroups);
-    return;
-  }
-
-  updLatestEl.textContent = `v${info.latestVersion}`;
-  setVerdict("已是最新版本");
-  renderNotes(null);
-}
-
-function openUpdateModal() {
-  if (!updateModalEl) return;
-  updateModalEl.hidden = false;
-  releaseUrl = RELEASE_PAGE_URL;
-  updCurrentEl.textContent = aboutVersionEl?.textContent || "v–";
-  updLatestEl.textContent = "—";
-  setVerdict("检查中…");
-  renderNotes(null);
-  updReleaseEl?.focus();
-  checkUpdate();
-}
-
-function closeUpdateModal() {
-  if (updateModalEl) updateModalEl.hidden = true;
 }
 
 loadVersion();
 
-aboutUpdateEl?.addEventListener("click", openUpdateModal);
-
-for (const el of document.querySelectorAll("[data-update-close]")) {
-  el.addEventListener("click", closeUpdateModal);
-}
-
-updReleaseEl?.addEventListener("click", () => openExternal(releaseUrl));
-
-document.addEventListener("keydown", (ev) => {
-  if (ev.key === "Escape" && updateModalEl && !updateModalEl.hidden) closeUpdateModal();
-});
+// 「更新」按钮打开检查更新弹窗（窗口自己会查）。
+// 弹窗本体、自检逻辑与另外两个页面共用 update-notice.js。
+aboutUpdateEl?.addEventListener("click", () => openUpdateNotice());
+initUpdateNotice();
 
 aboutGithubEl?.addEventListener("click", (ev) => {
   // 拦下默认行为，改走宿主的外部打开能力。

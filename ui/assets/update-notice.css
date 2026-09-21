@@ -1,0 +1,213 @@
+/* assets/update-notice.css — 检查更新弹窗（工作台 / 实时用量 / 设置页共用）
+   尺寸跟着宿主给的空间走：上限就是视口，空间不够先压更新日志区，操作按钮始终留在窗内。 */
+
+.si-upd {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  font-family: var(--font-ui, system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif);
+}
+/* .si-upd 是 flex，得显式把 hidden 拿回来 */
+.si-upd[hidden] { display: none; }
+
+.si-upd-mask {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, #000 46%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.si-upd-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, 100%);
+  max-height: 100%;
+  overflow: hidden;
+  padding: 16px 18px 14px;
+  border-radius: 14px;
+  /* 弹窗要盖住后面的内容，用不透明的卡片色，不跟玻璃质感那套 */
+  background: var(--bg-card, #1b1b1d);
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .36), inset 0 1px 0 color-mix(in srgb, #fff 7%, transparent);
+  animation: si-upd-in .18s var(--ease, cubic-bezier(.22, .75, .25, 1));
+}
+@keyframes si-upd-in {
+  from { opacity: 0; transform: translateY(6px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.si-upd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.si-upd-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.si-upd-x {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color .16s, background .16s;
+}
+.si-upd-x:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+/* 结论句：它回答的就是“有没有新版本”，所以字号最大 */
+.si-upd-verdict {
+  flex: 0 0 auto;
+  margin: 14px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.si-upd-verdict.new { color: var(--accent); }
+.si-upd-verdict.err {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--si-amber, #c08a3e);
+}
+
+.si-upd-rows {
+  flex: 0 0 auto;
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+.si-upd-rows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.si-upd-rows li + li { margin-top: 8px; }
+.si-upd-num {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--text);
+}
+
+/* ── 更新日志 ──
+   Release 正文是给机器看的 markdown，后端已拆成分组 + 条目，这里只负责排版。 */
+.si-upd-notes {
+  /* 唯一可压缩的一块：卡片矮的时候先牺牲它，把按钮留在窗内 */
+  flex: 0 1 auto;
+  min-height: 0;
+  margin-top: 14px;
+  max-height: 188px;
+  overflow-y: auto;
+  padding-right: 6px;
+  /* 页面可能把滚动条全局藏了，这里得放回来：条目多了要看得出来还能往下滚 */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text) 22%, transparent) transparent;
+}
+.si-upd-notes[hidden] { display: none; }
+.si-upd-notes::-webkit-scrollbar { width: 6px; }
+.si-upd-notes::-webkit-scrollbar-track { background: transparent; }
+.si-upd-notes::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text) 20%, transparent);
+  border-radius: 3px;
+}
+
+.si-upd-notes-label {
+  margin-bottom: 8px;
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+}
+
+.si-upd-group {
+  margin: 12px 0 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.si-upd-group:first-of-type { margin-top: 0; }
+
+.si-upd-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.si-upd-list li {
+  position: relative;
+  padding-left: 12px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--text-light, var(--text));
+  overflow-wrap: anywhere;
+}
+.si-upd-list li + li { margin-top: 2px; }
+/* 圆点用伪元素而不是 list-style：缩进和折行后的对齐能自己控制 */
+.si-upd-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: .68em;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 34%, transparent);
+}
+
+.si-upd-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+  margin-top: 16px;
+  /* 日志区可能被滚到一半，用一条淡线把它和操作区分开 */
+  padding-top: 13px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.si-upd-btn {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  color: var(--text-light, var(--text));
+  font: 500 12px var(--font-ui, system-ui, sans-serif);
+  padding: 7px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: border-color .16s, background .16s, color .16s, transform .12s;
+}
+.si-upd-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  color: var(--text);
+}
+.si-upd-btn:active { transform: scale(.97); }
+
+.si-upd-btn-primary {
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+  border-color: transparent;
+  color: #fff;
+}
+.si-upd-btn-primary:hover {
+  background: var(--accent);
+  color: #fff;
+}
