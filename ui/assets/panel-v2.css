@@ -231,8 +231,8 @@ body:not([data-surface="widget"]) .api-hero.si-press,body:not([data-surface="wid
 .state-list::-webkit-scrollbar-thumb{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 30%,transparent),color-mix(in srgb,var(--accent) 48%,transparent));border-radius:999px;border:2px solid transparent;background-clip:padding-box}
 .state-list::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--accent) 62%,transparent);background-clip:padding-box}
 .cost-viz{min-height:250px;margin-top:14px}.cost-ticks{display:flex;position:relative;font:9px var(--font-mono);color:var(--text-muted)}
-.cost-heat{grid-auto-flow:column;grid-template-rows:repeat(5,1fr);grid-template-columns:none;grid-auto-columns:1fr;gap:5px}
-.provider-heat{grid-auto-flow:row!important;grid-template-rows:none!important}
+.cost-heat{grid-auto-flow:column;grid-template-rows:repeat(8,1fr);grid-template-columns:none;grid-auto-columns:1fr;gap:5px}
+.provider-heat{grid-auto-flow:row!important;grid-template-rows:none!important;grid-template-columns:repeat(32,1fr)!important}
 
 
 /* ── 旧版按钮 & 更新弹窗（v1.2.12 移植）── */
@@ -617,15 +617,15 @@ body[data-surface="widget"]::-webkit-scrollbar,body[data-surface="widget"] .widg
 
 /* 单供应商费用概览：折线图与热力图并列展示 */
 #api-detail .provider-cost-section{margin-bottom:20px}
-/* 费用概览卡光标光晕：半径放大四倍，亮度降低 */
-.hero-cost .card>.si-glow-spot{--gr:700px;filter:brightness(.5)}
+/* 费用概览卡光标光晕：半径放大四倍；亮度与主面板对齐（原半亮，已删差异化） */
+.hero-cost .card>.si-glow-spot{--gr:700px}
 #api-detail .provider-cost-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}
 #api-detail .provider-cost-head h3{margin:0;font-size:14px;font-weight:600}
 #api-detail .provider-cost-grid{display:grid;grid-template-columns:1fr;gap:20px}
 #api-detail .provider-mini-chart{padding:16px;min-width:0;transition:border-color .2s,box-shadow .2s,background .2s}
 #api-detail .provider-mini-chart h4{margin:0 0 10px;font-size:11px;font-weight:600;color:var(--text-muted)}
 #api-detail .provider-mini-chart .chart{min-width:0;margin:0}
-#api-detail .provider-mini-chart>.si-glow-spot{--gr:520px;filter:brightness(.333)}
+#api-detail .provider-mini-chart>.si-glow-spot{--gr:520px}
 
 /* 详情页右侧两张工具卡：玻璃光照、放大与按压回弹（与正常卡片同一套曲线） */
 body:not([data-surface="widget"]) #api-detail .provider-model-rank,body:not([data-surface="widget"]) #api-detail .provider-threshold-card{position:relative;overflow:hidden;transform:scale(1)!important;transition:transform .24s cubic-bezier(.22,.8,.28,1),box-shadow .3s,border-color .24s,background .24s;will-change:transform}
@@ -639,7 +639,7 @@ body:not([data-surface="widget"]) #api-detail .provider-model-rank.si-release,bo
 #api-detail .provider-mini-chart.si-release{animation:apiCardRelease .46s cubic-bezier(.16,.82,.24,1) both!important}
 #api-detail .provider-model-rank>.si-glow-spot,#api-detail .provider-model-rank>.si-border-glow,#api-detail .provider-threshold-card>.si-glow-spot,#api-detail .provider-threshold-card>.si-border-glow{display:block!important;pointer-events:none}
 #api-detail .provider-model-rank>.si-glow-spot,#api-detail .provider-threshold-card>.si-glow-spot{--gr:260px}
-.hero-pricing .pricing-side>.si-glow-spot{--gr:390px;filter:brightness(.5)}
+.hero-pricing .pricing-side>.si-glow-spot{--gr:390px}
 @media(max-width:760px){#api-detail .provider-cost-grid{grid-template-columns:1fr}}
 
 /* 主数据区重新建立体块层级：总余额为主视觉，总消耗降一级 */
@@ -679,7 +679,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero,body:not([data-surface
 body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:minmax(0,1.25fr) 1px minmax(180px,.75fr);gap:clamp(26px,3.2vw,48px)}
 body:not([data-surface="widget"]) .hero-pricing{column-gap:48px}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child{grid-column:1;grid-row:1;align-items:flex-start;text-align:left;padding-left:0}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-divider{display:block!important;grid-column:2;grid-row:1;width:1px;height:72%;align-self:center;background:linear-gradient(180deg,transparent,color-mix(in srgb,#fff 22%,transparent),transparent)}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-divider{display:block!important;grid-column:2;grid-row:1;width:1px;height:72%;align-self:center;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--text) 20%,transparent),transparent)}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child{grid-column:3;grid-row:1;align-items:flex-start;text-align:left;opacity:.76}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child .ah-num{font-size:clamp(34px,3.8vw,52px);font-weight:400;letter-spacing:-.045em;color:color-mix(in srgb,var(--text-light) 62%,var(--text-muted));text-shadow:none;opacity:.78}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(56px,6.4vw,82px);letter-spacing:-.065em}
@@ -833,7 +833,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .model-detail-row code.md-hit.low{color:var(--si-red-soft);text-shadow:0 0 10px var(--si-red-soft-glow)}
 #wHitAvg.low,#wHitRound.low{color:var(--si-red-soft);text-shadow:0 0 12px var(--si-red-soft-glow)}
 #usage-session .uh-main .uh-tok,#usage-session .uh-main .uh-side{align-self:end}
-#usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,#fff 12%,transparent),transparent);flex:none}
+#usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--text) 20%,transparent),transparent);flex:none}
 /* 最弱：三个小信息 */
 #usage-overview .uh-sub,#usage-session .uh-sub{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
 #usage-overview .uh-sub span,#usage-session .uh-sub span{font-size:11px;color:var(--text-muted);white-space:nowrap;opacity:.85}
@@ -1113,8 +1113,8 @@ body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-sur
 .w-detail-overlay .model-metric-card::before{content:" ";display:none;pointer-events:none}
 .w-detail-overlay .model-metric-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;background:linear-gradient(135deg,color-mix(in srgb,var(--text) 5%,transparent),transparent 40%);box-shadow:inset 0 1px 0 var(--si-glass-hi)}
 .w-detail-overlay .model-metric-card:hover::after{opacity:1}
-/* 详情卡动态鼠标光晕：差异化半径与亮度（图1=供应商层级×3.5 半亮；图2/图3=2倍 半亮；图4=命中率2倍 原亮） */
-.w-detail-overlay .model-metric-card>.si-glow-spot{--gr:350px;filter:brightness(.5)}
+/* 详情卡动态鼠标光晕：半径保留差异化，亮度与主面板对齐（原半亮，已删差异化） */
+.w-detail-overlay .model-metric-card>.si-glow-spot{--gr:350px}
 .w-detail-overlay .model-metric-card.provider-tree-card>.si-glow-spot{--gr:612px}
 .w-detail-overlay .model-metric-card:has(.model-hit-row)>.si-glow-spot{filter:brightness(1)}
 /* ── 今日数据统计详情：各卡鼠标光晕 + 点击按压回弹 ── */
@@ -1223,7 +1223,8 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
 .scl-legend{display:flex;gap:12px;margin:0 0 4px;padding-left:6px;flex-wrap:wrap}
 .scl-legend span{display:inline-flex;align-items:center;gap:5px;font:400 10px var(--font-mono);color:var(--text-muted);white-space:nowrap}
 .scl-legend span i{width:9px;height:9px;border-radius:3px;background:var(--c,var(--accent));display:inline-block}
-.scl-legend.pe-fixed-legend{position:absolute;top:12px;right:16px;z-index:5;gap:10px;margin:0;padding:4px 8px;border-radius:8px;background:color-mix(in srgb,var(--bg-card) 60%,transparent);backdrop-filter:blur(6px);border:1px solid color-mix(in srgb,var(--text) 10%,transparent)}
+/* 图例已移到图表卡片外面：不再是绝对定位钉在卡内右上角，改为卡片上方独立一行 */
+.scl-legend.pe-fixed-legend{position:static;z-index:auto;gap:12px;margin:0 0 2px;padding:0 0 0 2px;border-radius:0;background:none;backdrop-filter:none;border:0}
 .scroll-chart .chart-scroll::-webkit-scrollbar{height:8px}
 .scroll-chart .chart-scroll::-webkit-scrollbar-track{background:transparent}
 .scroll-chart .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 22%,transparent);border-radius:4px}
@@ -1449,3 +1450,34 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
 /* ── 供应商小卡退场：进场动画的倒放 ── */
 @keyframes wProviderRetract{from{opacity:1;translate:0 0}to{opacity:0;translate:0 -34px}}
 #wProviders>.w-provider.retracting{animation:wProviderRetract .42s var(--ease) both;pointer-events:none}
+/* ── 逐轮图表的横向滚动 ──
+   scrollLines 包 SVG 的那层 .scl-wrap 原本是普通块级，宽度被撑成跟容器一样，
+   SVG 超出它却被盖住，外层 .chart-scroll 看不到溢出，滚动条不出现。
+   这里让它宽度跟随内容（SVG 每轮 26px），并给自己也留一条横向滚动兜底。 */
+.scl-wrap{display:inline-block;max-width:none;overflow-x:auto;overflow-y:hidden}
+.scl-wrap svg{display:block}
+/* ── 逐轮图表横向滚动（修正优先级） ──
+   前面有一条 .scroll-chart .scl-wrap{display:flex;min-width:0} 把宽度压成容器宽，
+   SVG 超出后被盖住，外层看不到溢出，所以一直没有滚动条。
+   这里用同样两段式的选择器压过它，让宽度跟着内容走。 */
+.scroll-chart .scl-wrap{display:inline-block;min-width:max-content;overflow:visible}
+/* scrollbar-width 与 ::-webkit-scrollbar 互斥：全局那条 thin 会让伪元素失效，
+   所以这里显式改回 auto，并放大到 10px，滚动条才看得见也拖得动。 */
+.scroll-chart .chart-scroll{scrollbar-width:auto;scrollbar-color:auto}
+.scroll-chart .chart-scroll::-webkit-scrollbar{height:6px;width:6px}
+.scroll-chart .chart-scroll::-webkit-scrollbar-track{background:transparent}
+.scroll-chart .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 26%,transparent);border-radius:99px}
+.scroll-chart .chart-scroll::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--accent) 55%,transparent)}
+/* ── 详情视图的图例：靠右对齐，并与图表卡片拉开一点距离 ── */
+.w-detail-overlay .chart-legend{justify-content:flex-end;margin:0 0 16px;padding-right:2px}
+/* ── 热力图格子的自绘浮层：替代浏览器原生 title（原生样式不可控，且与玻璃卡片不搭） ── */
+.si-tip{position:fixed;z-index:9999;pointer-events:none;padding:6px 10px;border-radius:9px;
+  font:11px/1.45 var(--font-mono);color:var(--text-light);white-space:nowrap;
+  background:color-mix(in srgb,var(--bg-card) 90%,transparent);
+  border:1px solid var(--si-glass-border);
+  box-shadow:0 8px 24px rgba(0,0,0,.26),inset 0 1px 0 var(--si-glass-hi);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  opacity:0;transform:translateY(3px);transition:opacity .14s var(--ease),transform .14s var(--ease)}
+.si-tip.on{opacity:1;transform:translateY(0)}
+.si-tip .si-tip-t{color:var(--text);font-weight:600}
+.si-tip .si-tip-v{color:var(--accent);margin-left:8px}

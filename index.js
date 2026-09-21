@@ -210,9 +210,14 @@ export default defineApp(async (sdk) => {
     });
 
     app.get("/api/stats", async (c) => {
-      const ref =
+      // 与 v1 对齐：不带任何会话参数时，用最近（列表第一个）那个会话
+      let ref =
         c.req.query("session") ?? c.req.query("file") ?? c.req.query("sessionId") ?? null;
-      if (!ref) return c.json({ error: "session query is required" }, 400);
+      if (!ref) {
+        const sessions = await listSessionsCached(sdk).catch(() => []);
+        ref = sessions[0]?.sessionId ?? null;
+        if (!ref) return c.json({ error: "no sessions found" }, 404);
+      }
       try {
         const sessionId = await resolveSessionId(sdk, ref);
         if (!sessionId) return c.json({ error: `unknown session: ${ref}` }, 404);

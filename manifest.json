@@ -13,7 +13,8 @@
     "app/usage.read",
     "app/provider.credentials.read",
     "app/input.status",
-    "app/resources.read"
+    "app/resources.read",
+    "app/models.read"
   ],
   "network": {
     "allowedHosts": [
