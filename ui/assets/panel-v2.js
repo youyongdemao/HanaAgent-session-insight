@@ -78,6 +78,121 @@ const state={view:"usage",page:"usage-overview",provider:"deepseek",stats:null,s
 function rankRows(id,data){$(id).innerHTML=data.map(x=>`<div class="rank-row"${x.p?` data-provider="${x.p}"`:""}><span>${esc(x.n)}${x.sub?`<em>${esc(x.sub)}</em>`:""}</span><div class="track"><i style="width:${x.pct}%"></i></div><b>${esc(x.v)}</b></div>`).join("")||`<div class="empty">暂无数据</div>`;}
 // 上下文用量分级阀值（百分比）：超过 warn 转橘黄提醒，超过 crit 转红告警
 const CTX_WARN_PCT=47,CTX_CRIT_PCT=80;
+/** 会话切换时先把份额环的弧段顺时针扫回起点，等新数据到了再扫出去（像指针归零再指出）。 */
+function retractShareRing(){
+  try{
+    const svg=document.querySelector('#wProviderShare .w-share-donut>svg');
+    if(!svg)return;
+    for(const c of Array.from(svg.querySelectorAll('.w-share-segment'))){
+      const start=Number(c.dataset.start||0);
+      // 顺时针转出：弧段沿圆周向前移出视野（offset 减 100），不是反向扫回
+      const to=String((-start-100).toFixed(2));
+      c.style.setProperty('--to',to);
+      c.classList.remove('si-sect');
+      void c.getBoundingClientRect();
+      c.classList.add('si-sect');
+      c.addEventListener('animationend',()=>{try{c.classList.remove('si-sect');c.setAttribute('stroke-dashoffset',to);}catch{}},{once:true});
+    }
+  }catch{}
+}
+
+/** 实时预览的份额环：同一供应商复用同一节点，只改弧段属性，让过渡真正跑起来。 */
+function patchShareCard(host,segs,providerCount,providerNames){
+  let card=host.querySelector('.w-share-card');
+  if(!card){
+    host.innerHTML='<div class="card w-share-card" data-detail="providers"><div class="w-share-title"><b>本会话供应商</b><small></small></div><div class="w-share-body"><div class="w-share-donut"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="w-share-track" cx="50" cy="50" r="40"></circle></svg></div><div class="w-share-legend"></div></div></div>';
+    card=host.querySelector('.w-share-card');
+  }
+  if(!card)return;
+  const small=card.querySelector('.w-share-title>small');
+  const smallTxt=`${providerCount} 个供应商`;
+  if(small&&small.textContent!==smallTxt)small.textContent=smallTxt;
+  const svg=card.querySelector('.w-share-donut>svg');
+  const legendBox=card.querySelector('.w-share-legend');
+  if(!svg||!legendBox)return;
+  const arcs=new Map();
+  for(const c of Array.from(svg.querySelectorAll('.w-share-segment')))arcs.set(c.dataset.key,c);
+  const legend=new Map();
+  for(const el of Array.from(legendBox.querySelectorAll('.w-share-item')))legend.set(el.dataset.key,el);
+  const keepA=new Set(),keepL=new Set();
+  segs.forEach((seg,idx)=>{
+    const key=String(seg.p.provider);
+    const label=String(providerNames[seg.p.provider]||seg.p.provider);
+    const len=Math.max(0,seg.pct-1.2);
+    let c=arcs.get(key);
+    const to=String((-seg.start).toFixed(2));
+    c=c||null;
+    const needSweep=!c||state.shareRingSweep;
+    if(!c){
+      c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('class','w-share-segment');
+      c.setAttribute('cx','50');c.setAttribute('cy','50');c.setAttribute('r','40');c.setAttribute('pathLength','100');
+      c.dataset.key=key;
+      svg.appendChild(c);
+    }
+    c.dataset.start=String(seg.start);
+    keepA.add(key);
+    c.setAttribute('stroke',seg.color);
+    c.setAttribute('stroke-dasharray',`${len.toFixed(2)} ${(100-len).toFixed(2)}`);
+    c.style.setProperty('--to',to);
+    if(needSweep){
+      // 复刻「今日输入构成」的入场：弧段从起点扫到目标角度；扫完摘类，后续变化改走过渡
+      c.setAttribute('stroke-dashoffset',String((-seg.start+100).toFixed(2)));
+      c.classList.remove('si-sect');
+      void c.getBoundingClientRect();
+      c.classList.add('si-sect');
+      c.addEventListener('animationend',()=>{try{c.classList.remove('si-sect');c.setAttribute('stroke-dashoffset',to);}catch{}},{once:true});
+    }else{
+      c.setAttribute('stroke-dashoffset',to);
+    }
+    let li=legend.get(key);
+    if(!li){li=document.createElement('div');li.className='w-share-item';li.dataset.key=key;li.innerHTML='<i></i><span></span>';li.style.setProperty('--legend-delay',(idx*0.07).toFixed(2)+'s');legendBox.appendChild(li);}
+    keepL.add(key);
+    const dot=li.querySelector('i'),sp=li.querySelector('span');
+    if(dot)dot.style.background=seg.color;
+    if(sp&&sp.textContent!==label)sp.textContent=label;
+  });
+  for(const [k,c] of arcs)if(!keepA.has(k))c.remove();
+  for(const [k,el] of legend)if(!keepL.has(k))el.remove();
+  state.shareRingSweep=false;
+}
+
+/** 实时预览的供应商列表：按 provider 复用节点，只更新文本。 */
+function patchProviderList(host,rows){
+  const existing=new Map();
+  for(const el of Array.from(host.children)){const k=el.dataset&&el.dataset.provider;if(k)existing.set(k,el);}
+  const keep=new Set();
+  rows.forEach((row,idx)=>{
+    let el=existing.get(row.key);
+    if(!el){
+      el=document.createElement('div');
+      el.className='card w-provider';
+      el.setAttribute('data-detail','provider');
+      el.dataset.provider=row.key;
+      el.innerHTML='<div class="w-provider-name"><strong></strong></div><div class="w-provider-cell"><span>Token</span><b></b></div><div class="w-provider-cell"><span>余额</span><b></b></div>';
+      el.style.setProperty('--drill-delay',(idx*0.09).toFixed(2)+'s');
+      host.appendChild(el);
+    }
+    keep.add(row.key);
+    const name=el.querySelector('.w-provider-name>strong');
+    if(name&&name.textContent!==row.label)name.textContent=row.label;
+    const cells=el.querySelectorAll('.w-provider-cell>b');
+    const tokTxt=fmtTokens(row.tokens||0);
+    if(cells[0]&&cells[0].textContent!==tokTxt)cells[0].textContent=tokTxt;
+    if(cells[1]){
+      if(cells[1].textContent!==row.balance)cells[1].textContent=row.balance;
+      cells[1].style.color=row.warning?'var(--warn)':'';
+    }
+    if(host.children[idx]!==el)host.insertBefore(el,host.children[idx]||null);
+  });
+  for(const [k,el] of existing){
+    if(keep.has(k))continue;
+    el.classList.add('retracting');
+    el.addEventListener('animationend',()=>el.remove(),{once:true});
+    setTimeout(()=>{try{el.remove();}catch{}},700);
+  }
+}
+
 function renderWidget(){
   const st=state.stats;const bal=state.balance?.balances||[];
   const ctxPct=Math.max(0,Math.min(100,Number(st?.contextPercent)||0));
@@ -89,8 +204,8 @@ function renderWidget(){
   const ringFill=$("#wRing .ring-progress");if(ringFill){ringFill.style.strokeDasharray=`${ctxPct.toFixed(1)} ${(100-ctxPct).toFixed(1)}`;ringFill.style.opacity=ctxPct>0?"1":"0";}
   const hitAvg=(()=>{const se=st?.series||[];if(!se.length)return null;return se.reduce((a,s)=>a+(Number(s.hit)||0),0)/se.length;})();
   const last=st?.series?.length?st.series[st.series.length-1]:null;const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};set("#wTokTotal",st?fmtTokens(st.sessionTokens):"–");set("#wHitAvg",hitAvg!=null?fmtPct(hitAvg):"–");setHitClass($("#wHitAvg"),hitAvg);const cacheHit=Math.max(0,Number(st?.sumCacheRead)||0),cacheMiss=Math.max(0,Number(st?.sumInput)||0),outputTok=Math.max(0,(Number(st?.sumOutput)||0)+(Number(st?.sumReasoning)||0)),inputTok=cacheHit+cacheMiss,ioTotal=inputTok+outputTok||1,cacheTotal=cacheHit+cacheMiss||1,inputPct=inputTok/ioTotal*100,outputPct=outputTok/ioTotal*100,hitPct=cacheHit/cacheTotal*100,missPct=cacheMiss/cacheTotal*100;set("#wCompInputPct",inputPct.toFixed(1)+"%");set("#wCompOutputPct",outputPct.toFixed(1)+"%");set("#wCompHitPct",hitPct.toFixed(1)+"%");set("#wCompMissPct",missPct.toFixed(1)+"%");const inputBar=$("#wCompInputBar"),outputBar=$("#wCompOutputBar"),hitBar=$("#wCompHitBar"),missBar=$("#wCompMissBar");if(inputBar)inputBar.style.width=inputPct+"%";if(outputBar)outputBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";const threshold=Math.round(Number(st?.compactThreshold||0.8)*100);const remTrack=$("#wRemTrack");if(remTrack)remTrack.style.width=ctxPct+"%";const thresholdMark=$("#wThresholdMark");if(thresholdMark)thresholdMark.style.left=threshold+"%";const thresholdLabel=$("#wThresholdLabel");if(thresholdLabel){thresholdLabel.style.left=threshold+"%";thresholdLabel.textContent=threshold+"%";}set("#wTokRound",last?fmtTokens(last.total):"–");set("#wHitRound",last?fmtPct(last.hit):"–");setHitClass($("#wHitRound"),last?.hit);set("#wCost",st?fmtCost(st.sessionCostCny):"–");set("#wWindow",st&&st.contextWindow!=null?`${fmtTokens(st.lastWindowTokens||0)} / ${fmtTokens(st.contextWindow)}`:"–");set("#wUsed",st?`已用 ${fmtTokens(st.lastWindowTokens||0)}`:"已用 –");set("#wRem",st&&st.remainingToCompact!=null?`距压缩 ${fmtTokens(st.remainingToCompact)}`:"距压缩 –");
-  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const used=Array.isArray(st?.providers)&&st.providers.length?st.providers:[{provider:st?.provider||"unknown",tokens:st?.sessionTokens||0,turns:st?.turns||0,cost:st?.sessionCostCny}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;let angle=0;const segs=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;const start=angle;angle+=pct;return {p,pct,start,end:angle,color:colors[i%colors.length]};});const shareCard=$("#wProviderShare");if(shareCard){const arcs=segs.map(s=>{const len=Math.max(0,s.pct-1.2);return `<circle class="w-share-segment" cx="50" cy="50" r="40" pathLength="100" stroke="${s.color}" stroke-dasharray="${len.toFixed(2)} ${(100-len).toFixed(2)}" stroke-dashoffset="${(-s.start).toFixed(2)}"></circle>`;}).join("");const legend=segs.map(s=>`<div class="w-share-item"><i style="background:${s.color}"></i><span>${esc(providerNames[s.p.provider]||s.p.provider)}</span></div>`).join("");shareCard.innerHTML=`<div class="card w-share-card" data-detail="providers"><div class="w-share-title"><b>本会话供应商</b><small>${used.length} 个供应商</small></div><div class="w-share-body"><div class="w-share-donut"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="w-share-track" cx="50" cy="50" r="40"></circle>${arcs}</svg></div><div class="w-share-legend">${legend}</div></div></div>`;}
-  const usedProviderIds=new Set(used.map(p=>p.provider));const quotaItems=bal.filter(b=>usedProviderIds.has(b.provider)&&b?.status==="ok"&&(b.kind==="quota"||b.remainingPercent!=null));const quotaList=$("#wQuotaList");if(quotaList){if(!quotaItems.length){quotaList.innerHTML="";}else{const itemsHtml=quotaItems.map(q=>{const windows=Array.isArray(q.windows)&&q.windows.length?q.windows:[q];const limiting=windows.filter(Boolean).reduce((min,x)=>(x.remainingPercent??100)<(min.remainingPercent??100)?x:min,windows[0]||{});const remain=Math.max(0,Math.min(100,Number(limiting.remainingPercent??q.remainingPercent)||0)),usedPct=100-remain;return `<div class="card w-quota w-quota-item" data-detail="quota" data-provider="${esc(q.provider)}"><div class="row"><span>${esc(q.name||q.provider||"额度窗口")}</span><b>${remain.toFixed(0)}% 剩余</b></div><div class="w-quota-meta"><span>${esc(quotaWindowName(limiting))}</span><span>${esc(fmtResetAt(limiting.resetAt??q.resetAt))}</span></div><div class="w-quota-track"><i style="width:${remain}%"></i></div><div class="w-quota-foot"><span>已用 ${usedPct.toFixed(0)}%</span><span>剩余 ${remain.toFixed(0)}%</span></div></div>`;}).join("");quotaList.innerHTML=`<div class="card w-quota-group"><div class="w-qg-title"><b>额度窗口</b><small>${quotaItems.length} 家</small></div>${itemsHtml}</div>`;}}const wprov=$("#wProviders");if(wprov){const balMap=new Map(bal.map(b=>[b.provider,b]));wprov.innerHTML=segs.map(s=>{const b=balMap.get(s.p.provider);const status=b?.status==="ok"?"正常":(b?.status||"不可查询");const balance=b?.status==="ok"?(b.summary||"–"):(b?.status==="no_key"?"未配置":"–");return `<div class="card w-provider" data-detail="provider" data-provider="${esc(s.p.provider)}"><div class="w-provider-name"><strong>${esc(providerNames[s.p.provider]||s.p.provider)}</strong></div><div class="w-provider-cell"><span>Token</span><b>${fmtTokens(s.p.tokens||0)}</b></div><div class="w-provider-cell"><span>余额</span><b style="${status==="正常"?"":"color:var(--warn)"}">${esc(balance)}</b></div></div>`;}).join("");}normalizeNumbers(root,true);}
+  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const used=Array.isArray(st?.providers)&&st.providers.length?st.providers:[{provider:st?.provider||"unknown",tokens:st?.sessionTokens||0,turns:st?.turns||0,cost:st?.sessionCostCny}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;let angle=0;const segs=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;const start=angle;angle+=pct;return {p,pct,start,end:angle,color:colors[i%colors.length]};});const shareCard=$("#wProviderShare");if(shareCard){patchShareCard(shareCard,segs,used.length,providerNames);}
+  const usedProviderIds=new Set(used.map(p=>p.provider));const quotaItems=bal.filter(b=>usedProviderIds.has(b.provider)&&b?.status==="ok"&&(b.kind==="quota"||b.remainingPercent!=null));const quotaList=$("#wQuotaList");if(quotaList){if(!quotaItems.length){quotaList.innerHTML="";}else{const itemsHtml=quotaItems.map(q=>{const windows=Array.isArray(q.windows)&&q.windows.length?q.windows:[q];const limiting=windows.filter(Boolean).reduce((min,x)=>(x.remainingPercent??100)<(min.remainingPercent??100)?x:min,windows[0]||{});const remain=Math.max(0,Math.min(100,Number(limiting.remainingPercent??q.remainingPercent)||0)),usedPct=100-remain;return `<div class="card w-quota w-quota-item" data-detail="quota" data-provider="${esc(q.provider)}"><div class="row"><span>${esc(q.name||q.provider||"额度窗口")}</span><b>${remain.toFixed(0)}% 剩余</b></div><div class="w-quota-meta"><span>${esc(quotaWindowName(limiting))}</span><span>${esc(fmtResetAt(limiting.resetAt??q.resetAt))}</span></div><div class="w-quota-track"><i style="width:${remain}%"></i></div><div class="w-quota-foot"><span>已用 ${usedPct.toFixed(0)}%</span><span>剩余 ${remain.toFixed(0)}%</span></div></div>`;}).join("");quotaList.innerHTML=`<div class="card w-quota-group"><div class="w-qg-title"><b>额度窗口</b><small>${quotaItems.length} 家</small></div>${itemsHtml}</div>`;}}const wprov=$("#wProviders");if(wprov){const balMap=new Map(bal.map(b=>[b.provider,b]));patchProviderList(wprov,segs.map(s=>{const b=balMap.get(s.p.provider);const status=b?.status==="ok"?"正常":(b?.status||"不可查询");const balance=b?.status==="ok"?(b.summary||"–"):(b?.status==="no_key"?"未配置":"–");return {key:String(s.p.provider),label:String(providerNames[s.p.provider]||s.p.provider),tokens:s.p.tokens||0,balance:esc(balance),warning:status!=="正常"};}));}normalizeNumbers(root,true);}
 const EV={range:"2h"};
 async function loadEvents(){const hours=EV.range==="2h"?2:24;const r=await fetchJson("/api/events?hours="+hours+"&limit=300").catch(()=>null);if(r&&!r.error)state.events=r;}
 function renderUsageOverview(){
@@ -125,6 +240,36 @@ function renderUsageOverview(){
   const srcBox=$("#taskCat");if(srcBox){const subs=lg?.subsystems||{};const cn={utility:"工具",session:"会话",memory:"记忆",automation:"自动化",vision:"视觉",compaction:"压缩",subagent:"子代理",other:"其他"};const sArr=Object.entries(subs).sort((a,b)=>b[1].tokens-a[1].tokens),sMax=sArr.length?Math.max(...sArr.map(x=>x[1].tokens)):1;const barsHtml=sArr.map(([k,v])=>{const pct=Math.round(v.tokens/sMax*100),cnLab=cn[k]||k;return `<div class="src-row"><span>${esc(cnLab)}</span><div class="track"><i style="width:${pct}%"></i></div><b>${fmtTokens(v.tokens)}</b></div>`;}).join("");srcBox.innerHTML=sArr.length?barsHtml:`<div class="empty">暂无数据</div>`;}
   const pu=$("#provUnitSeg");if(pu)syncSeg(pu,PROV.unit);
 }
+/** 供应商行按 key 复用节点：已有的只更新属性与文本（让过渡生效），新增的才播入场动画，多余的移除。 */
+function patchProviderRows(pb,rows){
+  if(!rows.length){if(!pb.querySelector('.empty'))pb.innerHTML='<div class="empty">暂无供应商</div>';return;}
+  const empty=pb.querySelector('.empty');if(empty)empty.remove();
+  const existing=new Map();for(const el of Array.from(pb.children)){const k=el.dataset&&el.dataset.key;if(k)existing.set(k,el);}
+  const keep=new Set();
+  rows.forEach((row,idx)=>{
+    let el=existing.get(row.key);
+    if(!el){
+      el=document.createElement('div');
+      el.className='card w-detail-item si-rise';
+      el.dataset.key=row.key;
+      el.innerHTML='<div class="w-detail-item-head"><span></span><b></b></div><div class="w-detail-provider-bar"><i></i></div>';
+      el.style.setProperty('--enter-delay',(idx*0.05).toFixed(2)+'s');
+      pb.appendChild(el);
+    }
+    keep.add(row.key);
+    const span=el.querySelector('.w-detail-item-head>span');
+    const b=el.querySelector('.w-detail-item-head>b');
+    const bar=el.querySelector('.w-detail-provider-bar>i');
+    const label=String(row.label);
+    if(span&&span.textContent!==label)span.textContent=label;
+    const pctTxt=row.pct.toFixed(1)+'%';
+    if(b&&b.textContent!==pctTxt)b.textContent=pctTxt;
+    if(bar){bar.style.setProperty('--pct',Math.max(0,Math.min(100,row.pct)).toFixed(2)+'%');bar.style.setProperty('--bar',row.color);}
+    if(pb.children[idx]!==el)pb.insertBefore(el,pb.children[idx]||null);
+  });
+  for(const [k,el] of existing)if(!keep.has(k))el.remove();
+}
+
 function renderUsageSession(){
   const st=state.sessionStats||state.stats;const $=document.querySelector.bind(document);if(!st||!st.series||!st.series.length){$("#sessionEmpty").innerHTML=`<div class="empty">当前会话暂无逐轮数据</div>`;return;}
   const ser=st.series;const totals=ser.map(s=>s.total||0);const costs=ser.map(s=>s.cost||0);const hits=ser.map(s=>Number(s.hit)||0);
@@ -137,7 +282,7 @@ function renderUsageSession(){
   set("#sTok",fmtTokens(st.sessionTokens));set("#sHit",hits.length?fmtPct(hits.reduce((a,b)=>a+b,0)/hits.length):"–");setHitClass($("#sHit"),hits.length?hits.reduce((a,b)=>a+b,0)/hits.length:null);set("#sCost",fmtCost(st.sessionCostCny));set("#sTurn",String(ser.length));set("#sCtx",fmtPct(st.contextPercent));
   set("#sInPct",inputPct.toFixed(1)+"%");set("#sOutPct",outputPct.toFixed(1)+"%");set("#sHitPct",hitPct.toFixed(1)+"%");set("#sMissPct",missPct.toFixed(1)+"%");
   const inBar=$("#sInBar"),outBar=$("#sOutBar"),hitBar=$("#sHitBar"),missBar=$("#sMissBar");if(inBar)inBar.style.width=inputPct+"%";if(outBar)outBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";
-  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const used=Array.isArray(st.providers)&&st.providers.length?st.providers:[{provider:st.provider||"unknown",tokens:st.sessionTokens||0,turns:st.turns||0}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const pb=$("#sProviderBody");if(pb){pb.innerHTML=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;return `<div class="card w-detail-item si-rise"><div class="w-detail-item-head"><span>${esc(providerNames[p.provider]||p.provider)}</span><b>${pct.toFixed(1)}%</b></div><div class="w-detail-provider-bar"><i style="--pct:${Math.max(0,Math.min(100,pct))}%;--bar:${colors[i%colors.length]}"></i></div></div>`;}).join("")||`<div class="empty">暂无供应商</div>`;}
+  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const used=Array.isArray(st.providers)&&st.providers.length?st.providers:[{provider:st.provider||"unknown",tokens:st.sessionTokens||0,turns:st.turns||0}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const pb=$("#sProviderBody");if(pb){patchProviderRows(pb,used.map((p,i)=>({key:String(p.provider),label:String(providerNames[p.provider]||p.provider),pct:(Number(p.tokens)||0)/totalUsed*100,color:colors[i%colors.length]})));}
 }
 // 会话页要看哪个会话：用户在下拉里手选过就锁定那个；否则跟随当前会话（state.stats.file）；都没有则取最新一个。
 // 判定必须在「请求会话统计之前」完成，否则首屏会先渲染成无数据、下一轮轮询才补上，
@@ -407,14 +552,18 @@ function normalizeNumbers(rootEl,animate){const R=rootEl||root;if(!R)return;R.qu
 function isPlainNumber(t){if(!t||t.length>20)return false;if(!/[0-9]/.test(t))return false;if(/[\u4e00-\u9fff]/.test(t))return false;if(/[A-Za-z]/.test(t.replace(/[kKmMbB]/g,'')))return false;return true;}
 function animateNumbers(rootEl){if(!rootEl)return;rootEl.querySelectorAll('b,strong').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t);});alignNumbers(rootEl);}
 let numEnter=true;
-function playNumbers(){if(!numEnter)return;numEnter=false;requestAnimationFrame(()=>animateNumbers(root));}
+function playNumbers(){numEnter=false;requestAnimationFrame(()=>animateNumbers(root));}
 function renderPageAll(quiet){renderUsageOverview();renderTokenPanel();renderCachePanel();renderUsageSession();renderUsageSessions();renderUsageDistribution();renderApiOverview();renderApiDetail();if(!quiet)playNumbers();normalizeNumbers(root,!quiet);};function renderAll(){if(surface==="widget")renderWidget();else renderPageAll();}
 let focusedFile=null;let activeSessionFile=null;let focusedEntryId=null;let focusedFileFailUntil=0;async function getFocusedSessionFile(){if(v2ActiveFile)return v2ActiveFile;if(Date.now()<focusedFileFailUntil)return focusedFile;try{const r=await fetch(hostApiUrl("/api/sessions/messages?limit=5"),{credentials:"include",signal:AbortSignal.timeout(5000)});if(!r.ok)throw new Error("focus "+r.status);const d=await r.json();const msg=(Array.isArray(d?.messages)?[...d.messages].reverse():[]).find(x=>typeof x?.entryId==="string"&&x.entryId.trim());const entryId=msg?.entryId?.trim()||null;if(entryId&&entryId===focusedEntryId&&focusedFile)return focusedFile;if(entryId){const mapped=await fetchJson("/api/resolve-entry?entryId="+encodeURIComponent(entryId));if(typeof mapped?.file==="string"&&mapped.file.endsWith(".jsonl")){focusedEntryId=entryId;focusedFile=mapped.file;focusedFileFailUntil=0;return focusedFile;}}}catch{}try{const active=await fetchJson("/api/active");if(typeof active?.file==="string"&&active.file.endsWith(".jsonl")){focusedFile=active.file;focusedFileFailUntil=0;return focusedFile;}}catch{}focusedFileFailUntil=Date.now()+5000;return focusedFile;}
-let widgetRefreshSeq=0;async function loadWidget(){const thisRefresh=++widgetRefreshSeq;const requestedFile=activeSessionFile;const statsPath=requestedFile?"/api/stats?file="+encodeURIComponent(requestedFile):"/api/stats";const [stats,balance]=await Promise.all([fetchJson(statsPath).catch(()=>null),fetchJson("/api/balance").catch(()=>null)]);if(thisRefresh!==widgetRefreshSeq||requestedFile!==activeSessionFile)return;state.stats=stats;state.balance=balance;paintQuiet(()=>renderWidget(),widgetBooted);widgetBooted=true;}
+let widgetRefreshSeq=0;async function loadWidget(){const thisRefresh=++widgetRefreshSeq;const requestedFile=activeSessionFile;const switching=lastWidgetSession!==null&&requestedFile!==lastWidgetSession;if(switching){retractShareRing();state.shareRingSweep=true;}const statsPath=requestedFile?"/api/stats?file="+encodeURIComponent(requestedFile):"/api/stats";const [stats,balance]=await Promise.all([fetchJson(statsPath).catch(()=>null),fetchJson("/api/balance").catch(()=>null)]);if(thisRefresh!==widgetRefreshSeq||requestedFile!==activeSessionFile)return;state.stats=stats;state.balance=balance;const sessionChanged=requestedFile!==lastWidgetSession;if(sessionChanged)lastWidgetSession=requestedFile;paintQuiet(()=>renderWidget(),widgetBooted&&!sessionChanged);if(sessionChanged){requestAnimationFrame(()=>{try{animateNumbers(root);}catch{}});}widgetBooted=true;}
 // ── 静默刷新机制 ──
 // 轮询重绘不应该重播整页入场动画：静默模式下临时挂 .si-quiet（把 animation/transition 压到 0.001s），
 // 数据完全没变时干脆不重绘；数值在没变时不会被重写，滚动结构得以保留，画面保持稳定。
+function playSessionEnter(){try{for(const id of ['usage-session','usage-overview']){const el=document.getElementById(id);if(!el)continue;el.classList.remove('si-session-in');void el.offsetWidth;el.classList.add('si-session-in');}}catch{}}
+
 let pageBooted=false,widgetBooted=false,lastFastSig=null,lastSlowSig=null;
+// 会话切换要重播入场动画：记住上一次渲染的会话，变了就不走静默渲染
+let lastRenderedSession=null,lastWidgetSession=null;
 function paintQuiet(fn,quiet){
   if(!quiet){fn();return;}
   // 静默渲染：把这一次新插进来的节点标成静态，之后不再播入场动画。
@@ -453,9 +602,12 @@ async function loadPage(force){
     // 先定下会话页的数据源再拉它：手选优先，否则跟随当前会话（见 resolveSessionPick）。
     // 反过来「先拉后定」的话，首屏会先渲染成无逐轮数据、下一轮轮询才补上，签名因此变化、白跳一次。
     const sessPick=resolveSessionPick();
+    const sessionChanged=Boolean(sessPick)&&sessPick!==lastRenderedSession;
+    if(sessionChanged){lastRenderedSession=sessPick;playSessionEnter();}
     if(sessPick){state.userSelectedFile=sessPick;try{const r=await fetchJson("/api/stats?file="+encodeURIComponent(sessPick));state.sessionStats=(r&&!r.error)?r:null;}catch{state.sessionStats=null;}}
     else state.sessionStats=null;
-    const quiet=!force&&pageBooted;
+    // 会话切过的时候不静默：让本会话那几张卡重播入场动画，而不是硬切
+    const quiet=!force&&pageBooted&&!sessionChanged;
     const sig=dataSig();
     // 先落 pageBooted 再渲染：渲染里任何一处抱错，不能让本函数永远回到“首次渲染”分支。
     // 否则每次轮询都走非静默路径、在同一处再抱，后面的慢组（余额/计费库）永远排不上，

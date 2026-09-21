@@ -1420,3 +1420,32 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
 .provider-list .pv-dot.local{box-shadow:0 0 13px color-mix(in srgb,var(--si-pink) 88%,transparent)}
 .provider-list .pv-dot.err{box-shadow:0 0 13px color-mix(in srgb,var(--si-red-bright) 88%,transparent)}
 .provider-list .pv-dot.muted{box-shadow:0 0 7px color-mix(in srgb,var(--si-muted) 38%,transparent)}
+/* ── 会话切换时的整体过渡 ──
+   切换会话会让这一页的数据整体换新，之前是硬切（节点被重建、瞬时替换）。
+   逐项做动画在快速连续重渲染时会闪，所以改成整块淡入 + 轻微上移：稳定、明确。 */
+@keyframes siSessionIn{from{opacity:.001;translate:0 6px}to{opacity:1;translate:0 0}}
+#usage-session.si-session-in,#usage-overview.si-session-in{animation:siSessionIn .34s var(--ease) both}
+/* ── 会话切换的细粒度过渡 ──
+   供应商行不再整块重建：已有的行只改属性/文本，让 width 的过渡真正生效；
+   只有新出现的行才播入场动画。数字滚动由 JS 在切换会话时重新触发。 */
+.w-detail-provider-bar i{transition:width .5s var(--ease),background .3s linear}
+@keyframes siProviderEnter{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
+#sProviderBody>.si-rise{animation:siProviderEnter .42s var(--ease) both}
+/* ── 实时预览：供应商份额环改成属性更新 ──
+   原来整张卡每帧重建，圆环只能硬切；现在同一个供应商的弧段复用同一节点，
+   起止角度和颜色变化都走过渡。图例同样按 key 复用。 */
+.w-share-segment{transition:stroke-dasharray .55s var(--ease),stroke-dashoffset .55s var(--ease),stroke .3s linear}
+.w-share-item{transition:opacity .3s linear}
+/* ── 实时预览：供应商小卡依次从上面那张大卡底下钻出来 ──
+   起始位置在上方（被大卡遮住）+ 透明，按索引错开延迟依次落下。
+   已有卡片不重建，所以不会重复播。 */
+@keyframes wProviderDrill{from{opacity:0;translate:0 -34px}to{opacity:1;translate:0 0}}
+#wProviders>.w-provider{animation:wProviderDrill .62s var(--ease) both;animation-delay:var(--drill-delay,0s)}
+
+/* 份额环：放慢扫过节奏；图例各项依次浮起 */
+.w-share-segment.si-sect{animation-duration:1.05s}
+@keyframes wLegendIn{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
+.w-share-legend>.w-share-item{animation:wLegendIn .5s var(--ease) both;animation-delay:var(--legend-delay,0s)}
+/* ── 供应商小卡退场：进场动画的倒放 ── */
+@keyframes wProviderRetract{from{opacity:1;translate:0 0}to{opacity:0;translate:0 -34px}}
+#wProviders>.w-provider.retracting{animation:wProviderRetract .42s var(--ease) both;pointer-events:none}
