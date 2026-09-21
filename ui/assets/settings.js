@@ -324,11 +324,15 @@ aboutUpdateEl?.addEventListener("click", () => {
 });
 
 aboutGithubEl?.addEventListener("click", (ev) => {
-  // 拦下默认行为，改走宿主的外链能力：iframe 沙箱下直接新开标签可能被拦
+  // 拦下默认行为，改走宿主的外部打开能力。
+  // v2 App 不能拉起外部进程，/api/open 在 App 里已降级为空操作，
+  // 所以把地址交给系统默认浏览器只能靠这一条。
   ev.preventDefault();
+  const fallback = () => window.open(GITHUB_URL, "_blank", "noopener");
   try {
-    hana.external.open({ url: GITHUB_URL });
+    const opened = hana.external.open({ url: GITHUB_URL });
+    if (opened && typeof opened.catch === "function") opened.catch(fallback);
   } catch {
-    window.open(GITHUB_URL, "_blank", "noopener");
+    fallback();
   }
 });
