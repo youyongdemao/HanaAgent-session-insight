@@ -51,20 +51,22 @@ function markDirty() {
 function render() {
   listEl.innerHTML = "";
   for (const it of items) {
-    const tr = document.createElement("tr");
-    tr.className = "st-trow" + (onSet.has(it.id) ? "" : " off");
-    tr.dataset.id = it.id;
+    const li = document.createElement("li");
+    li.className = "st-item" + (onSet.has(it.id) ? "" : " off");
+    li.dataset.id = it.id;
 
-    const name = document.createElement("td");
-    name.className = "st-tname";
-    name.textContent = it.label;
-
-    const desc = document.createElement("td");
-    desc.className = "st-tdesc";
+    const main = document.createElement("div");
+    main.className = "st-item-main";
+    const title = document.createElement("div");
+    title.className = "st-item-title";
+    title.textContent = it.label;
+    const desc = document.createElement("div");
+    desc.className = "st-item-desc";
     desc.textContent = it.desc || "";
+    main.append(title, desc);
 
-    const swCell = document.createElement("td");
-    swCell.className = "st-col-sw";
+    const ctl = document.createElement("div");
+    ctl.className = "st-item-ctl";
     const sw = document.createElement("label");
     sw.className = "st-sw";
     const cb = document.createElement("input");
@@ -74,15 +76,15 @@ function render() {
     cb.addEventListener("change", () => {
       if (cb.checked) onSet.add(it.id);
       else onSet.delete(it.id);
-      tr.classList.toggle("off", !cb.checked);
+      li.classList.toggle("off", !cb.checked);
       markDirty();
     });
     const track = document.createElement("i");
     sw.append(cb, track);
-    swCell.append(sw);
+    ctl.append(sw);
 
-    tr.append(name, desc, swCell);
-    listEl.append(tr);
+    li.append(main, ctl);
+    listEl.append(li);
   }
 }
 
@@ -193,31 +195,22 @@ function broadcastWidgetLayout() {
 function renderWidgetTable() {
   if (!wBodyEl) return;
   wBodyEl.innerHTML = "";
-  let lastGroup = null;
   for (const b of wBlocks) {
-    if (b.group && b.group !== lastGroup) {
-      lastGroup = b.group;
-      const gr = document.createElement("tr");
-      gr.className = "st-group-row";
-      const gd = document.createElement("td");
-      gd.colSpan = 3;
-      gd.textContent = b.group;
-      gr.append(gd);
-      wBodyEl.append(gr);
-    }
-    const tr = document.createElement("tr");
-    tr.className = "st-trow" + (wOnSet.has(b.id) ? "" : " off");
+    const li = document.createElement("li");
+    li.className = "st-item" + (wOnSet.has(b.id) ? "" : " off");
 
-    const tdName = document.createElement("td");
-    tdName.className = "st-tname" + (b.group ? " is-child" : "");
-    tdName.textContent = b.label;
+    const main = document.createElement("div");
+    main.className = "st-item-main";
+    const title = document.createElement("div");
+    title.className = "st-item-title";
+    title.textContent = b.label;
+    const desc = document.createElement("div");
+    desc.className = "st-item-desc";
+    desc.textContent = b.desc || "";
+    main.append(title, desc);
 
-    const tdDesc = document.createElement("td");
-    tdDesc.className = "st-tdesc";
-    tdDesc.textContent = b.desc || "";
-
-    const tdSw = document.createElement("td");
-    tdSw.className = "st-col-sw";
+    const ctl = document.createElement("div");
+    ctl.className = "st-item-ctl";
     const sw = document.createElement("label");
     sw.className = "st-sw";
     const cb = document.createElement("input");
@@ -227,16 +220,16 @@ function renderWidgetTable() {
     cb.addEventListener("change", () => {
       if (cb.checked) wOnSet.add(b.id);
       else wOnSet.delete(b.id);
-      tr.classList.toggle("off", !cb.checked);
+      li.classList.toggle("off", !cb.checked);
       if (wSaveEl) wSaveEl.disabled = false;
       setWStatus("");
     });
     const track = document.createElement("i");
     sw.append(cb, track);
-    tdSw.append(sw);
+    ctl.append(sw);
 
-    tr.append(tdName, tdDesc, tdSw);
-    wBodyEl.append(tr);
+    li.append(main, ctl);
+    wBodyEl.append(li);
   }
 }
 

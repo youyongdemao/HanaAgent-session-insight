@@ -197,8 +197,8 @@ function parseLiveLayout(raw) {
 const WIDGET_BLOCKS = [
   { id: "overview", label: "会话信息总览", group: null, desc: "上下文环、本会话总 Token、平均缓存命中率、本会话总费用" },
   { id: "context", label: "上下文余量", group: null, desc: "已用量、距压缩余量与压缩阈值标记" },
-  { id: "turnTokens", label: "当前轮 Token", group: "本轮信息", desc: "本轮的 Token 消耗总量" },
-  { id: "turnHit", label: "当前轮缓存命中", group: "本轮信息", desc: "本轮的缓存命中率" },
+  { id: "turnTokens", label: "当前轮 Token", group: null, desc: "本轮的 Token 消耗总量" },
+  { id: "turnHit", label: "当前轮缓存命中", group: null, desc: "本轮的缓存命中率" },
   { id: "composition", label: "输入输出 / 缓存命中未命中", group: null, desc: "输入与输出占比、命中与未命中占比" },
   { id: "providers", label: "会话供应商统计", group: null, desc: "供应商占比、供应商列表与额度窗口" },
 ];
