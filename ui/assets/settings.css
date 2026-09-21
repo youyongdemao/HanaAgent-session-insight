@@ -7,6 +7,16 @@ html, body {
   background: transparent;
 }
 
+/* 不要滚动条：纵向内容尽量压进可视区（下面的紧凑度就是为它服务的），
+   万一仍超出，这里也不显示滚动条外观。 */
+html {
+  scrollbar-width: none;
+}
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /* 全局 border-box：已确保带边框的元素不会把容器顶宽 */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -25,20 +35,20 @@ body {
 
 /* 分区之间留白 */
 .st-section + .st-section {
-  margin-top: 30px;
+  margin-top: 20px;
 }
 
 .st-section h2 {
-  margin: 0 0 6px;
-  font-size: 14px;
+  margin: 0 0 4px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text);
 }
 
 .st-desc {
-  margin: 0 0 12px;
-  font-size: 12px;
-  line-height: 1.7;
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  line-height: 1.6;
   color: var(--text-muted);
 }
 .st-desc strong { color: var(--text); font-weight: 600; }
@@ -58,8 +68,8 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 10px 0;
+  gap: 14px;
+  padding: 7px 0;
   transition: opacity .16s;
 }
 .st-item + .st-item {
@@ -75,15 +85,15 @@ body {
 }
 
 .st-item-title {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text);
   overflow-wrap: anywhere;
 }
 
 .st-item-desc {
-  margin-top: 3px;
-  font-size: 11.5px;
-  line-height: 1.5;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.45;
   color: var(--text-muted);
   overflow-wrap: anywhere;
 }
@@ -144,7 +154,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .st-btn {
