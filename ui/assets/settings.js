@@ -257,15 +257,20 @@ async function loadWidgetConfig() {
 
 loadWidgetConfig();
 
-/* ── 关于：版本、更新与源码仓库 ── */
+/* ── 关于：版本、检查更新与源码仓库 ── */
 const GITHUB_URL = "https://github.com/youyongdemao";
 const aboutGithubEl = document.getElementById("aboutGithub");
 const aboutVersionEl = document.getElementById("aboutVersion");
 const aboutUpdateEl = document.getElementById("aboutUpdate");
-const aboutNoteEl = document.getElementById("aboutVersionNote");
 
-// 检查更新走 GitHub Release，比对本地清单里的版本号；
-// 装新版本仍走「设置 → 扩展」——应用的安装目录对自己只读，改不了自己。
+const updateModalEl = document.getElementById("updateModal");
+const updVerdictEl = document.getElementById("updVerdict");
+const updCurrentEl = document.getElementById("updCurrent");
+const updLatestEl = document.getElementById("updLatest");
+const updNotesEl = document.getElementById("updNotes");
+const updReleaseEl = document.getElementById("updRelease");
+
+// 打开设置页先取一次本地版本号（纯本地，不联网），弹窗里也用它
 async function loadVersion() {
   try {
     const info = await apiFetch("api/version");
@@ -275,20 +280,6 @@ async function loadVersion() {
   }
 }
 
-function setNote(text, cls = "") {
-  if (!aboutNoteEl) return;
-  aboutNoteEl.textContent = text;
-  aboutNoteEl.className = "st-item-desc" + (cls ? " " + cls : "");
-  aboutNoteEl.hidden = !text;
-}
-
-function idleButton() {
-  if (!aboutUpdateEl) return;
-  aboutUpdateEl.disabled = false;
-  aboutUpdateEl.className = "st-btn st-btn-sm";
-  aboutUpdateEl.textContent = "更新";
-}
-
 /** "2026-09-22T01:00:00Z" → "9/22"（本地时区） */
 function shortDate(iso) {
   const at = new Date(iso);
@@ -296,17 +287,10 @@ function shortDate(iso) {
   return `${at.getMonth() + 1}/${at.getDate()}`;
 }
 
-// 最近一次检查的结论；按钮第二下要用它决定是“去下载”还是“再查一次”
-let updateInfo = null;
-
-function showAvailable(info) {
-  updateInfo = info;
-  if (!aboutUpdateEl) return;
-  aboutUpdateEl.disabled = false;
-  aboutUpdateEl.className = "st-btn st-btn-sm st-btn-primary";
-  aboutUpdateEl.textContent = `更新到 v${info.latestVersion}`;
-  const at = info.publishedAt ? " · " + shortDate(info.publishedAt) : "";
-  setNote(`新版本 v${info.latestVersion}${at}`);
+function setVerdict(text, cls = "") {
+  if (!updVerdictEl) return;
+  updVerdictEl.textContent = text;
+  updVerdictEl.className = "st-upd-verdict" + (cls ? " " + cls : "");
 }
 
 function openExternal(url) {
@@ -319,62 +303,103 @@ function openExternal(url) {
   }
 }
 
-async function runUpdateCheck() {
-  if (!aboutUpdateEl) return;
-  aboutUpdateEl.disabled = true;
-  aboutUpdateEl.textContent = "检查中…";
-  setNote("");
+// 跳转按钮的目标：后端给的最新版 Release 页，拿不到就退回仓库的 /releases/latest
+const RELEASE_PAGE_URL = "https://github.com/youyongdemao/HanaAgent-session-insight/releases/latest";
+let releaseUrl = RELEASE_PAGE_URL;
 
+/** 更新日志：分组标题 + 圆点条目，后端已经把 markdown 整理成 [{ title, items }] */
+function renderNotes(groups) {
+  if (!updNotesEl) return;
+  updNotesEl.innerHTML = "";
+  if (!Array.isArray(groups) || groups.length === 0) {
+    updNotesEl.hidden = true;
+    return;
+  }
+
+  const label = document.createElement("div");
+  label.className = "st-upd-notes-label";
+  label.textContent = "更新内容";
+  updNotesEl.append(label);
+
+  for (const group of groups) {
+    if (group?.title) {
+      const head = document.createElement("div");
+      head.className = "st-upd-group";
+      head.textContent = group.title;
+      updNotesEl.append(head);
+    }
+    const list = document.createElement("ul");
+    list.className = "st-upd-list";
+    for (const item of group?.items ?? []) {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.append(li);
+    }
+    updNotesEl.append(list);
+  }
+
+  updNotesEl.hidden = false;
+  updNotesEl.scrollTop = 0;
+}
+
+async function checkUpdate() {
   let info = null;
   try {
     info = await apiFetch("api/update-check", {}, 14000);
   } catch (error) {
-    idleButton();
-    setNote("检查更新失败：" + String(error?.message || error), "err");
+    setVerdict("检查失败：" + String(error?.message || error), "err");
     return;
   }
 
   if (!info?.ok) {
-    idleButton();
-    setNote("检查更新失败：" + (info?.message || "未知错误"), "err");
+    setVerdict("检查失败：" + (info?.message || "未知错误"), "err");
     return;
   }
+
+  if (info.releaseUrl) releaseUrl = info.releaseUrl;
+  updCurrentEl.textContent = "v" + info.currentVersion;
 
   if (info.updateAvailable) {
-    showAvailable(info);
+    const at = info.publishedAt ? " · " + shortDate(info.publishedAt) : "";
+    updLatestEl.textContent = `v${info.latestVersion}${at}`;
+    setVerdict("有新版本可用", "new");
+    renderNotes(info.noteGroups);
     return;
   }
 
-  updateInfo = info;
-  aboutUpdateEl.disabled = true;
-  aboutUpdateEl.textContent = "已是最新";
-  setNote(`v${info.currentVersion} 已是最新`);
-  window.setTimeout(() => {
-    if (aboutUpdateEl.textContent === "已是最新") {
-      idleButton();
-      setNote("");
-    }
-  }, 2400);
+  updLatestEl.textContent = `v${info.latestVersion}`;
+  setVerdict("已是最新版本");
+  renderNotes(null);
 }
 
-loadVersion().then(() => {
-  // 打开设置页时静默查一次：有新版本就把按钮直接摆成可更新的样子，没有就当没发生过
-  apiFetch("api/update-check", {}, 14000)
-    .then((info) => {
-      if (info?.ok && info.updateAvailable) showAvailable(info);
-    })
-    .catch(() => {
-      /* 后台静默检查，失败不打扰 */
-    });
-});
+function openUpdateModal() {
+  if (!updateModalEl) return;
+  updateModalEl.hidden = false;
+  releaseUrl = RELEASE_PAGE_URL;
+  updCurrentEl.textContent = aboutVersionEl?.textContent || "v–";
+  updLatestEl.textContent = "—";
+  setVerdict("检查中…");
+  renderNotes(null);
+  updReleaseEl?.focus();
+  checkUpdate();
+}
 
-aboutUpdateEl?.addEventListener("click", () => {
-  if (updateInfo?.updateAvailable) {
-    openExternal(updateInfo.url);
-    setNote(`已在浏览器打开 v${updateInfo.latestVersion}，下载后在「扩展」里重新安装`);
-    return;
-  }
-  runUpdateCheck();
+function closeUpdateModal() {
+  if (updateModalEl) updateModalEl.hidden = true;
+}
+
+loadVersion();
+
+aboutUpdateEl?.addEventListener("click", openUpdateModal);
+
+for (const el of document.querySelectorAll("[data-update-close]")) {
+  el.addEventListener("click", closeUpdateModal);
+}
+
+updReleaseEl?.addEventListener("click", () => openExternal(releaseUrl));
+
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && updateModalEl && !updateModalEl.hidden) closeUpdateModal();
 });
 
 aboutGithubEl?.addEventListener("click", (ev) => {
