@@ -192,12 +192,13 @@ function parseLiveLayout(raw) {
 }
 
 // ── 实时用量卡片（widget）的区块清单 ──
-// id 对应 panel-v2.js 里 widgetShell 的 data-block 标记；group 用于设置页分组。
+// id 对应 panel-v2.js 里 widgetShell 的 data-block 标记；group 用于设置页分组：
+// 同 group 的几项在设置里挂在一个母项下（母项一个开关管全部，子项各自可调）。
 const WIDGET_BLOCKS = [
   { id: "overview", label: "会话信息总览", group: null, desc: "上下文环、本会话总 Token、平均缓存命中率、本会话总费用" },
-  { id: "context", label: "上下文余量", group: null, desc: "已用量、距压缩余量与压缩阈值标记" },
-  { id: "turnTokens", label: "当前轮 Token", group: null, desc: "本轮的 Token 消耗总量" },
-  { id: "turnHit", label: "当前轮缓存命中", group: null, desc: "本轮的缓存命中率" },
+  { id: "context", label: "上下文余量", group: "当前轮信息卡片", desc: "已用量、距压缩余量与压缩阈值标记" },
+  { id: "turnTokens", label: "当前轮 Token", group: "当前轮信息卡片", desc: "本轮的 Token 消耗总量" },
+  { id: "turnHit", label: "当前轮缓存命中", group: "当前轮信息卡片", desc: "本轮的缓存命中率" },
   { id: "composition", label: "输入输出 / 缓存命中未命中", group: null, desc: "输入与输出占比、命中与未命中占比" },
   { id: "providers", label: "会话供应商统计", group: null, desc: "供应商占比、供应商列表与额度窗口" },
 ];

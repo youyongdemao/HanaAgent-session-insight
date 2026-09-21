@@ -266,3 +266,8 @@ body {
 .st-status.err { color: var(--si-amber, #b58b4b); }
 
 /* 关于里的地址就是入口本身；链接样式见上方 .st-item-link */
+/* ── 分组子项 ──
+   挂在母项下面的一档：左侧缩进，分隔线跟着内缩，标题弱化一级，和母项区分开。 */
+.st-item.sub { padding-left: 30px; }
+.st-item.sub::before { left: 30px; }
+.st-item.sub .st-item-title { font-size: 12px; color: var(--text-light, var(--text)); }

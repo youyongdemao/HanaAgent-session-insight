@@ -34,40 +34,18 @@ function markDirty() {
 function render() {
   listEl.innerHTML = "";
   for (const it of items) {
-    const li = document.createElement("li");
-    li.className = "st-item" + (onSet.has(it.id) ? "" : " off");
-    li.dataset.id = it.id;
-
-    const main = document.createElement("div");
-    main.className = "st-item-main";
-    const title = document.createElement("div");
-    title.className = "st-item-title";
-    title.textContent = it.label;
-    const desc = document.createElement("div");
-    desc.className = "st-item-desc";
-    desc.textContent = it.desc || "";
-    main.append(title, desc);
-
-    const ctl = document.createElement("div");
-    ctl.className = "st-item-ctl";
-    const sw = document.createElement("label");
-    sw.className = "st-sw";
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = onSet.has(it.id);
-    cb.setAttribute("aria-label", it.label);
-    cb.addEventListener("change", () => {
-      if (cb.checked) onSet.add(it.id);
-      else onSet.delete(it.id);
-      li.classList.toggle("off", !cb.checked);
-      markDirty();
-    });
-    const track = document.createElement("i");
-    sw.append(cb, track);
-    ctl.append(sw);
-
-    li.append(main, ctl);
-    listEl.append(li);
+    listEl.append(
+      makeToggleRow({
+        label: it.label,
+        desc: it.desc,
+        checked: onSet.has(it.id),
+        onChange: (on) => {
+          if (on) onSet.add(it.id);
+          else onSet.delete(it.id);
+          markDirty();
+        },
+      })
+    );
   }
 }
 
@@ -184,43 +162,109 @@ function broadcastWidgetLayout() {
   }
 }
 
+/** 一行开关：本轮速览与实时用量共用（带子项样式时给 sub: true） */
+function makeToggleRow({ label, desc, checked, sub, onChange }) {
+  const li = document.createElement("li");
+  li.className = "st-item" + (checked ? "" : " off") + (sub ? " sub" : "");
+
+  const main = document.createElement("div");
+  main.className = "st-item-main";
+  const title = document.createElement("div");
+  title.className = "st-item-title";
+  title.textContent = label;
+  main.append(title);
+  if (desc) {
+    const d = document.createElement("div");
+    d.className = "st-item-desc";
+    d.textContent = desc;
+    main.append(d);
+  }
+
+  const ctl = document.createElement("div");
+  ctl.className = "st-item-ctl";
+  const sw = document.createElement("label");
+  sw.className = "st-sw";
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.checked = checked;
+  cb.setAttribute("aria-label", label);
+  // 变灰的视觉只在这一处改，调用方只管状态
+  cb.addEventListener("change", () => {
+    li.classList.toggle("off", !cb.checked);
+    onChange(cb.checked);
+  });
+  const track = document.createElement("i");
+  sw.append(cb, track);
+  ctl.append(sw);
+
+  li.append(main, ctl);
+  return li;
+}
+
+/**
+ * 实时用量：同 group 的区块挂在一个母项下——母项一个开关管全部，子项各自可调。
+ * 母项与其它未分组项同级。
+ */
 function renderWidgetTable() {
   if (!wBodyEl) return;
   wBodyEl.innerHTML = "";
+  const rendered = new Set();
+
   for (const b of wBlocks) {
-    const li = document.createElement("li");
-    li.className = "st-item" + (wOnSet.has(b.id) ? "" : " off");
+    if (rendered.has(b.id)) continue;
 
-    const main = document.createElement("div");
-    main.className = "st-item-main";
-    const title = document.createElement("div");
-    title.className = "st-item-title";
-    title.textContent = b.label;
-    const desc = document.createElement("div");
-    desc.className = "st-item-desc";
-    desc.textContent = b.desc || "";
-    main.append(title, desc);
+    if (!b.group) {
+      rendered.add(b.id);
+      wBodyEl.append(
+        makeToggleRow({
+          label: b.label,
+          desc: b.desc,
+          checked: wOnSet.has(b.id),
+          onChange: (on) => {
+            if (on) wOnSet.add(b.id);
+            else wOnSet.delete(b.id);
+            markDirty();
+          },
+        })
+      );
+      continue;
+    }
 
-    const ctl = document.createElement("div");
-    ctl.className = "st-item-ctl";
-    const sw = document.createElement("label");
-    sw.className = "st-sw";
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = wOnSet.has(b.id);
-    cb.setAttribute("aria-label", b.label);
-    cb.addEventListener("change", () => {
-      if (cb.checked) wOnSet.add(b.id);
-      else wOnSet.delete(b.id);
-      li.classList.toggle("off", !cb.checked);
-      markDirty();
-    });
-    const track = document.createElement("i");
-    sw.append(cb, track);
-    ctl.append(sw);
+    const siblings = wBlocks.filter((x) => x.group === b.group);
+    for (const x of siblings) rendered.add(x.id);
 
-    li.append(main, ctl);
-    wBodyEl.append(li);
+    wBodyEl.append(
+      makeToggleRow({
+        label: b.group,
+        checked: siblings.every((x) => wOnSet.has(x.id)),
+        onChange: (on) => {
+          for (const x of siblings) {
+            if (on) wOnSet.add(x.id);
+            else wOnSet.delete(x.id);
+          }
+          markDirty();
+          renderWidgetTable();
+        },
+      })
+    );
+
+    for (const x of siblings) {
+      wBodyEl.append(
+        makeToggleRow({
+          label: x.label,
+          desc: x.desc,
+          checked: wOnSet.has(x.id),
+          sub: true,
+          onChange: (on) => {
+            if (on) wOnSet.add(x.id);
+            else wOnSet.delete(x.id);
+            // 子项单独改了，母项的「全开/全关」跟着变，所以整块重画一次
+            markDirty();
+            renderWidgetTable();
+          },
+        })
+      );
+    }
   }
 }
 
