@@ -124,14 +124,16 @@ body {
   overflow-wrap: anywhere;
 }
 
-/* 能跳走的链接：后面跟一个外链小箭头，提示会离开当前界面 */
+/* 能跳走的链接：跟在后面画一个外链小箭头。
+   取弱化色与右侧其它值一致，不单独用亮色，免得这一行在卡片里跳出来。 */
 .st-item-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--link, var(--accent));
+  color: var(--text-muted);
   text-decoration: none;
   cursor: pointer;
+  overflow-wrap: anywhere;
 }
 .st-item-link::after {
   content: "↗";
@@ -139,6 +141,7 @@ body {
   opacity: .8;
 }
 .st-item-link:hover {
+  color: var(--text);
   text-decoration: underline;
 }
 

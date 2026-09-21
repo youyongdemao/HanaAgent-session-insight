@@ -258,7 +258,7 @@ async function loadWidgetConfig() {
 loadWidgetConfig();
 
 /* ── 关于：检查更新与源码仓库（原工作台顶部两个按钮搬到这里）── */
-const GITHUB_URL = "https://github.com/youyongdemao/HanaAgent-session-insight";
+const GITHUB_URL = "https://github.com/youyongdemao";
 const aboutUpdateEl = document.getElementById("aboutUpdate");
 const aboutGithubEl = document.getElementById("aboutGithub");
 const aboutVersionEl = document.getElementById("aboutVersion");
