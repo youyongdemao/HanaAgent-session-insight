@@ -48,7 +48,7 @@
         "realization": "page",
         "siteNavEntry": true,
         "face": {
-          "image": "assets/cover-workbench.jpg"
+          "image": "assets/cover-workbench.webp"
         }
       },
       {
@@ -59,7 +59,7 @@
         "cardForm": "flush",
         "titlebar": "translucent",
         "face": {
-          "image": "assets/cover-live.jpg"
+          "image": "assets/cover-live.webp"
         }
       }
     ],
@@ -96,23 +96,6 @@
       "title": "Session Insight",
       "ui": {
         "route": "/settings.html"
-      },
-      "schema": {
-        "type": "object",
-        "properties": {
-          "liveLayout": {
-            "type": "string",
-            "title": "本轮速览的显示项",
-            "description": "由设置页写入的 JSON；请勿手改。",
-            "default": ""
-          },
-          "enableCodexQuota": {
-            "type": "boolean",
-            "title": "Codex 订阅配额（实验性）",
-            "description": "读取已登录的 ChatGPT OAuth 配额；使用私有接口，默认关闭。",
-            "default": false
-          }
-        }
       }
     }
   }

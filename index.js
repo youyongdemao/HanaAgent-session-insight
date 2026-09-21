@@ -1,6 +1,7 @@
 // Session Insight v2 App — 服务端入口
 // 数据源全部走宿主公开 API：session:list / session:context / usage:list / provider:credentials
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
 import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
@@ -191,14 +192,45 @@ function parseLiveLayout(raw) {
   return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice() };
 }
 
+/**
+ * App 自有配置：存在 dataDir/config.json，不进宿主 settings schema。
+ * 宿主只要看到 contributes.settings.schema，就把设置 tab 归成 schema 类，自定义设置页会被降级，
+ * 所以去掉 schema，配置由 App 自己保管。常驻内存且写入即更新，设置页改完立刻生效。
+ */
+const appConfig = { data: {}, loaded: false };
+
+async function readAppConfig(sdk) {
+  if (!appConfig.loaded) {
+    try {
+      const raw = await readFile(join(sdk.dataDir, "config.json"), "utf8");
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        for (const [key, value] of Object.entries(parsed)) appConfig.data[key] = value;
+      }
+    } catch {
+      // 首次运行、文件缺失或损坏：保持空配置。
+    }
+    appConfig.loaded = true;
+  }
+  return appConfig.data;
+}
+
+async function writeAppConfig(sdk, key, value) {
+  await readAppConfig(sdk);
+  if (value === undefined) delete appConfig.data[key];
+  else appConfig.data[key] = value;
+  try {
+    await mkdir(sdk.dataDir, { recursive: true });
+    await writeFile(join(sdk.dataDir, "config.json"), JSON.stringify(appConfig.data, null, 2), "utf8");
+  } catch (error) {
+    await sdk.logger.warn(`app config write failed: ${error?.message ?? error}`);
+  }
+  return appConfig.data;
+}
+
 /** v1 遗留端点用的 ctx 适配：把 sdk 包成老代码认识的那几个成员。 */
 async function makeCtx(sdk) {
-  let configSnapshot = {};
-  try {
-    configSnapshot = (await sdk.config.getAll()) ?? {};
-  } catch (error) {
-    await sdk.logger.warn(`config snapshot failed: ${error?.message ?? error}`);
-  }
+  const configSnapshot = await readAppConfig(sdk);
   return {
     sdk,
     pluginId: APP_ID,
@@ -293,7 +325,7 @@ export default defineApp(async (sdk) => {
     // 配置：显示项清单 + 顺序 + 开关。键名 liveLayout，值是一段 JSON 字符串。
     app.get("/api/live-config", async (c) => {
       try {
-        const all = (await sdk.config.getAll()) ?? {};
+        const all = await readAppConfig(sdk);
         const layout = parseLiveLayout(all.liveLayout);
         liveLayoutCache = layout;
         return c.json({ items: LIVE_ITEMS, ...layout });
@@ -310,7 +342,7 @@ export default defineApp(async (sdk) => {
       try {
         const body = await c.req.json().catch(() => null);
         const layout = parseLiveLayout(body);
-        await sdk.config.set("liveLayout", JSON.stringify(layout));
+        await writeAppConfig(sdk, "liveLayout", JSON.stringify(layout));
         liveLayoutCache = layout;
         return c.json({ ok: true, ...layout });
       } catch (error) {
@@ -321,7 +353,7 @@ export default defineApp(async (sdk) => {
     // ── App 级配置：目前只有 Codex 配额开关（enableCodexQuota）──
     app.get("/api/app-config", async (c) => {
       try {
-        const all = (await sdk.config.getAll()) ?? {};
+        const all = await readAppConfig(sdk);
         return c.json({ enableCodexQuota: all.enableCodexQuota === true });
       } catch (error) {
         return c.json({ enableCodexQuota: false, error: String(error?.message ?? error) }, 500);
@@ -332,9 +364,9 @@ export default defineApp(async (sdk) => {
       try {
         const body = await c.req.json().catch(() => null);
         if (body && typeof body.enableCodexQuota === "boolean") {
-          await sdk.config.set("enableCodexQuota", body.enableCodexQuota);
+          await writeAppConfig(sdk, "enableCodexQuota", body.enableCodexQuota);
         }
-        const all = (await sdk.config.getAll()) ?? {};
+        const all = await readAppConfig(sdk);
         return c.json({ ok: true, enableCodexQuota: all.enableCodexQuota === true });
       } catch (error) {
         return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
@@ -481,7 +513,7 @@ export default defineApp(async (sdk) => {
   async function getLiveLayout() {
     if (liveLayoutCache) return liveLayoutCache;
     try {
-      const all = (await sdk.config.getAll()) ?? {};
+      const all = await readAppConfig(sdk);
       liveLayoutCache = parseLiveLayout(all.liveLayout);
     } catch {
       liveLayoutCache = parseLiveLayout(null);
