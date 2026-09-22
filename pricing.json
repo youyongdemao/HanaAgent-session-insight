@@ -1,15 +1,16 @@
 {
   "schemaVersion": 2,
-  "snapshotAt": "2026-09-16",
+  "snapshotAt": "2026-09-23",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
   "fx": {
     "USD": 6.8,
-    "note": "美元价 ×6.8 折算人民币；折算方式逐条写在 source 里，便于复核"
+    "note": "价格表按 1 美元 = 6.8 元折算成人民币（折算方式逐条写在 source 里）。改汇率必须同时重算 184 条美元系价格，否则价格与汇率会互相矛盾；这一步属于数据维护，纳入价目更新流程。"
   },
   "peakHours": {
     "timezone": "Asia/Shanghai",
+    "offsetMinutes": 480,
     "weekdays": [
       1,
       2,
@@ -28,7 +29,42 @@
       ]
     ],
     "offPeakRatio": 0.5,
-    "note": "高峰时段为北京时间周一至周五 9:00-12:00、14:00-18:00；空闲价 = 高峰价 × offPeakRatio"
+    "holidays": [
+      "2026-01-01",
+      "2026-01-02",
+      "2026-01-03",
+      "2026-02-15",
+      "2026-02-16",
+      "2026-02-17",
+      "2026-02-18",
+      "2026-02-19",
+      "2026-02-20",
+      "2026-02-21",
+      "2026-02-22",
+      "2026-02-23",
+      "2026-04-04",
+      "2026-04-05",
+      "2026-04-06",
+      "2026-05-01",
+      "2026-05-02",
+      "2026-05-03",
+      "2026-05-04",
+      "2026-05-05",
+      "2026-06-19",
+      "2026-06-20",
+      "2026-06-21",
+      "2026-09-25",
+      "2026-09-26",
+      "2026-09-27",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-03",
+      "2026-10-04",
+      "2026-10-05",
+      "2026-10-06",
+      "2026-10-07"
+    ],
+    "note": "高峰时段为北京时间周一至周五（不含中国法定节假日）9:00-12:00、14:00-18:00；其余时段，包括周末及法定节假日全天均为空闲。holidays 按国务院办公厅年度放假安排维护（现为 2026 年，33 天）。"
   },
   "models": {
     "deepseek::deepseek-flash": {
@@ -697,181 +733,196 @@
     },
     "anthropic::claude-opus-5": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 5",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 5；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 34,
         "inputHit": 3.4,
-        "output": 170
+        "output": 170,
+        "cacheWrite": 42.5
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-sonnet-5": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 5",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 5；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 13.6,
         "inputHit": 1.36,
-        "output": 68
+        "output": 68,
+        "cacheWrite": 17
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-opus-4-8": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.8",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.8；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 34,
         "inputHit": 3.4,
-        "output": 170
+        "output": 170,
+        "cacheWrite": 42.5
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-fable-5-1": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Fable 5.1",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Fable 5.1；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 68,
         "inputHit": 1.7,
-        "output": 340
+        "output": 340,
+        "cacheWrite": 85
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-fable-5": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Fable 5",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Fable 5；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 68,
         "inputHit": 6.8,
-        "output": 340
+        "output": 340,
+        "cacheWrite": 85
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-mythos-5-1": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Mythos 5.1 (limited availability)",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Mythos 5.1 (limited availability)；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 68,
         "inputHit": 1.7,
-        "output": 340
+        "output": 340,
+        "cacheWrite": 85
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-mythos-5": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Mythos 5 (limited availability)",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Mythos 5 (limited availability)；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 68,
         "inputHit": 6.8,
-        "output": 340
+        "output": 340,
+        "cacheWrite": 85
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-opus-4-7": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.7",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.7；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 34,
         "inputHit": 3.4,
-        "output": 170
+        "output": 170,
+        "cacheWrite": 42.5
       },
       "contextWindow": 1000000
     },
     "anthropic::claude-opus-4-6": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.6",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.6；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 34,
         "inputHit": 3.4,
-        "output": 170
+        "output": 170,
+        "cacheWrite": 42.5
       },
       "contextWindow": 200000
     },
     "anthropic::claude-sonnet-4-6": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 4.6",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 4.6；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 20.4,
         "inputHit": 2.04,
-        "output": 102
+        "output": 102,
+        "cacheWrite": 25.5
       },
       "contextWindow": 200000
     },
     "anthropic::claude-sonnet-4-5": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 4.5",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 4.5；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 20.4,
         "inputHit": 2.04,
-        "output": 102
+        "output": 102,
+        "cacheWrite": 25.5
       },
       "contextWindow": 200000
     },
     "anthropic::claude-opus-4-5": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.5",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.5；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 34,
         "inputHit": 3.4,
-        "output": 170
+        "output": 170,
+        "cacheWrite": 42.5
       },
       "contextWindow": 200000
     },
     "anthropic::claude-opus-4-1": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.1 (retired, except on Bedrock and Google Cloud)",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.1 (retired, except on Bedrock and Google Cloud)；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 102,
         "inputHit": 10.2,
-        "output": 510
+        "output": 510,
+        "cacheWrite": 127.5
       },
       "contextWindow": 200000
     },
     "anthropic::claude-haiku-4-5": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 4.5",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 4.5；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 6.8,
         "inputHit": 0.68,
-        "output": 34
+        "output": 34,
+        "cacheWrite": 8.5
       },
       "contextWindow": 200000
     },
     "anthropic::claude-3-5-haiku": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 3.5 (retired, except on Bedrock and Google Cloud)",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 3.5 (retired, except on Bedrock and Google Cloud)；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-09-23",
       "flat": {
         "inputMiss": 5.44,
         "inputHit": 0.54,
-        "output": 27.2
+        "output": 27.2,
+        "cacheWrite": 6.8
       },
       "contextWindow": 200000
     },
