@@ -354,6 +354,24 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 .pd-quota .q-bar i.crit{background:var(--si-red, #C77070)}
 .pd-quota .q-pct{font:600 11.5px var(--font-mono);color:var(--text-light);text-align:right}
 
+/* ── 订阅额度卡片（详情页主位）──
+   板块名 + 套餐徽章 / 每窗口一行（短标签 + 剩余进度条 + 百分比）/ 底行累计 Token */
+.pd-quota-card{border:1px solid color-mix(in srgb,var(--text) 8%,transparent);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--bg-card) 22%,transparent)}
+.pd-quota-card .pq-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px}
+.pd-quota-card .pq-head>span{font:600 12px var(--font-ui);color:var(--text-light)}
+.pd-quota-card .pq-plan{font:500 10.5px var(--font-mono);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 42%,transparent);padding:2px 8px;border-radius:99px}
+.pd-quota-card .pq-row{display:grid;grid-template-columns:46px 1fr 44px;align-items:center;gap:12px;padding:4px 0}
+.pd-quota-card .pq-row .nm{font:500 11.5px var(--font-mono);color:var(--text-muted);white-space:nowrap}
+.pd-quota-card .pq-bar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--text) 11%,transparent);overflow:hidden}
+.pd-quota-card .pq-bar i{display:block;height:100%;border-radius:3px;background:var(--green,#8CC790);transition:width .3s var(--ease,ease)}
+.pd-quota-card .pq-bar i.low{background:var(--si-amber,#C08A3E)}
+.pd-quota-card .pq-bar i.crit{background:var(--si-red,#C77070)}
+.pd-quota-card .pq-row .pct{font:650 13px var(--font-mono);color:var(--text-light);text-align:right}
+.pd-quota-card .pq-row .pct.low{color:var(--si-amber,#C08A3E)}
+.pd-quota-card .pq-row .pct.crit{color:var(--si-red,#C77070)}
+.pd-quota-card .pq-total{margin-top:9px;padding-top:9px;border-top:1px solid color-mix(in srgb,var(--text) 8%,transparent);font-size:10.5px;color:var(--text-muted);display:flex;gap:14px}
+.pd-quota-card .pq-total b{font:600 11.5px var(--font-mono);color:var(--text-light);margin-left:6px}
+
 /* 总消耗标签后的账本覆盖范围：小字、弱化色，跟在标题后面不抢读数 */
 .uh-label .uh-range{margin-left:8px;font-size:10.5px;font-weight:400;color:var(--text-muted);opacity:.85}
 .model-cost-row .pr-cell:first-child b{color:var(--accent)}

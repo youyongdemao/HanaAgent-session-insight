@@ -341,7 +341,7 @@ function renderApiOverview(){
   const modes=state.ledger?.billingModes||{},win=state.ledger?.providerWindows||{};
   // 订阅额度类（OAuth / Coding Plan）：钱花在包月上，官方又未必给配额接口，
   // 于是至少把窗口用量摆出来——近 5 小时与近 7 天的 token 与调用数。
-  const subRows=Object.keys(modes).filter(id=>modes[id]==="subscription").map(id=>{
+  const subRows=Object.keys(modes).filter(id=>modes[id]==="subscription"&&!bal.some(b=>b.provider===id&&b.kind==="quota"&&b.status==="ok")).map(id=>{
     const w=win[id];if(!w)return '';
     const nm=cfgName[id]||NAME_CN[id]||id;
     const txt='5h '+fmtTokens(w.h5?.tokens||0)+' · 7d '+fmtTokens(w.d7?.tokens||0);
@@ -466,15 +466,20 @@ function renderApiDetail(){
   const balanceLabel=isLocalCfg?"累计 Token":(hit?.label||"可用余额");
   const statText=isLocalCfg?(providerTokens>0?fmtTokens(providerTokens):"–"):okStatText();
   const statsEl=$("#pdStats");
-  // 额度类：每个窗口一行（短标签 + 剩余进度条 + 百分比），一眼看哪个额度有紧
-  const winHtml=(hit&&hit.kind==="quota"&&Array.isArray(hit.windows)&&hit.windows.length)
-    ? '<div class="pd-quota">'+hit.windows.map(w=>{
-        const p=Math.max(0,Math.min(100,Number(w.remainingPercent??0)));
-        const cls=p<15?"crit":(p<40?"low":"");
-        return '<div class="q-win"><span class="q-name">'+esc(w.short||w.label||"额度")+'</span><span class="q-bar"><i'+(cls?' class="'+cls+'"':'')+' style="width:'+p.toFixed(0)+'%"></i></span><b class="q-pct">'+p.toFixed(0)+'%</b></div>';
-      }).join("")+'</div>'
-    : "";
-  if(statsEl)statsEl.innerHTML='<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b'+(statIsNote?' class="balance-note"':'')+'>'+esc(statText)+'</b></div>'+winHtml+(!isLocalCfg&&providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':'');
+  // 额度类：按「板块卡片」排——板块名+套餐徽章 / 每窗口一行（短标签+进度条+百分比）/ 底行累计 Token
+  const quotaCard=(hit&&hit.kind==="quota"&&Array.isArray(hit.windows)&&hit.windows.length)?(()=>{
+    const planBadge=hit.plan?'<span class="pq-plan">'+esc(hit.plan)+'</span>':'';
+    const rows=hit.windows.map(w=>{
+      const p=Math.max(0,Math.min(100,Number(w.remainingPercent??0)));
+      const cls=p<15?"crit":(p<40?"low":"");
+      return '<div class="pq-row"><span class="nm">'+esc(w.short||w.label||"额度")+'</span>'
+        +'<span class="pq-bar"><i'+(cls?' class="'+cls+'"':'')+' style="width:'+p.toFixed(0)+'%"></i></span>'
+        +'<span class="pct'+(cls?' '+cls:'')+'">'+p.toFixed(0)+'%</span></div>';
+    }).join("");
+    const foot=providerTokens>0?'<div class="pq-total">累计 Token<b>'+esc(fmtTokens(providerTokens))+'</b></div>':'';
+    return '<div class="pd-quota-card"><div class="pq-head"><span>订阅额度</span>'+planBadge+'</div>'+rows+foot+'</div>';
+  })():"";
+  if(statsEl)statsEl.innerHTML=quotaCard||('<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b'+(statIsNote?' class="balance-note"':'')+'>'+esc(statText)+'</b></div>'+(!isLocalCfg&&providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':''));
   function okStatText(){return hit?(hit.status==="ok"?(hit.summary||"正常"):stat):"不可查询";}
   const thR=(state.rules||{})[state.provider]||{};const isBalance=hit?.kind==="balance";const canThreshold=hit?.status==="ok"&&(isBalance?Number.isFinite(Number(hit.total)):Number.isFinite(Number(hit.remainingPercent)));
   const thE=$("#thEnabled"),thP=$("#thPct"),thF=$("#thFail"),thS=$("#thresholdSaveStatus"),thL=$("#thresholdLabel"),thU=$("#thresholdUnit");
