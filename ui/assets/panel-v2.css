@@ -192,7 +192,7 @@ body:not([data-surface="widget"]) .api-hero.si-press,body:not([data-surface="wid
 .hero-cost>.card{padding:16px 18px;display:block}
 .price-row{display:grid;grid-template-columns:minmax(150px,auto) 1fr auto;gap:14px;align-items:center;padding:10px 12px;border-bottom:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
 .price-row:last-child{border-bottom:0}
-.pr-model{min-width:0}.pr-model strong{display:block;font-size:12px;font-weight:600;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pr-model small{display:block;font:9.5px var(--font-mono);color:var(--text-muted);margin-top:3px}
+.pr-model{min-width:0}.pr-model strong{display:block;font-size:13px;font-weight:600;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pr-model small{display:block;font:9.5px var(--font-mono);color:var(--text-muted);margin-top:3px}
 .pr-cells{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .pr-cell{text-align:right}.pr-cell em{display:block;font:9px var(--font-mono);color:var(--text-muted);font-style:normal}.pr-cell b{display:block;font:600 12px var(--font-mono);color:var(--accent);margin-top:3px}
 .price-row .badge{font-size:9px;padding:3px 7px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -334,17 +334,18 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 .price-group-head>div:first-child{display:flex;align-items:baseline;gap:9px;min-width:0}.price-group-head strong{font-size:13px;color:var(--text-light)}.price-group-head small{font-size:9.5px;color:var(--text-muted)}
 .group-cost{display:flex;align-items:baseline;gap:10px;white-space:nowrap}.group-cost span{font:10px var(--font-mono);color:var(--text-muted)}.group-cost b{font:600 11px var(--font-mono);color:var(--accent)}
 .model-cost-row,.price-head-row{display:grid;grid-template-columns:minmax(150px,.82fr) minmax(0,1.18fr);gap:12px;align-items:start}
-.model-cost-row{padding:11px 8px;border-bottom:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
+/* 价格表：数字是主角，字号加大、行距收紧，别让空白比内容还抢眼 */
+.model-cost-row{padding:7px 8px;border-bottom:1px solid color-mix(in srgb,var(--text) 7%,transparent)}
 .model-cost-row:last-child{border-bottom:0}
 .model-cost-row .pr-cells{grid-template-columns:1.35fr .8fr .8fr;gap:12px}
 .model-cost-row .price-grid,.price-head-row .price-grid{grid-template-columns:repeat(3,minmax(68px,1fr)) minmax(150px,1.35fr);gap:10px}
-.model-cost-row .pr-cell{text-align:left;min-width:0}.model-cost-row .pr-cell em{display:none}.model-cost-row .pr-cell b{display:block;margin-top:0;font:600 12px var(--font-mono);color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.model-cost-row .price-col b{color:var(--accent)}.model-cost-row .price-col small{display:block;margin-top:5px;font:400 10px var(--font-mono);color:var(--text-muted);white-space:nowrap}.model-cost-row .pr-model strong{font-size:12.5px}
+.model-cost-row .pr-cell{text-align:left;min-width:0}.model-cost-row .pr-cell em{display:none}.model-cost-row .pr-cell b{display:block;margin-top:0;font:600 14px var(--font-mono);color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.model-cost-row .price-col b{color:var(--accent)}.model-cost-row .price-col small{display:block;margin-top:5px;font:400 10px var(--font-mono);color:var(--text-muted);white-space:nowrap}.model-cost-row .pr-model strong{font-size:12.5px}
 .price-head-row{padding:9px 8px 7px;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
 .price-head-row .pr-model strong{font-size:10.5px;font-weight:500;color:var(--text-muted)}
-.price-head-row .pr-cell{text-align:left}.price-head-row .pr-cell em{display:block;font-size:10px;color:var(--text-muted);font-style:normal}
+.price-head-row .pr-cell{text-align:left}.price-head-row .pr-cell em{display:block;font-size:11px;color:var(--text-muted);font-style:normal}
 .price-head-row .pr-cells.price-grid{gap:10px}
 .model-cost-row .pr-cell:first-child b{color:var(--accent)}
-.model-cost-row .source-col b{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35;overflow-wrap:anywhere}
+.model-cost-row .source-col b{white-space:normal;overflow:hidden;text-overflow:clip;font-size:11px;font-weight:400;color:var(--text-muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .pr-offpeak{display:block;margin-top:4px;font:9px var(--font-mono);color:var(--text-muted);white-space:nowrap}
 @media(max-width:900px){.price-head-row{display:none}.model-cost-row{grid-template-columns:1fr;gap:12px}.model-cost-row .pr-cell em{display:block;font-size:10px;color:var(--text-muted)}.model-cost-row .pr-cell b{margin-top:5px}.model-cost-row .price-grid{grid-template-columns:repeat(3,minmax(78px,1fr));gap:10px}.model-cost-row .source-col{grid-column:span 3}.price-group-head{align-items:flex-start;flex-direction:column}.group-cost{width:100%;justify-content:space-between}}
 
