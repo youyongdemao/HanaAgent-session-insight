@@ -1,7 +1,7 @@
 // check-providers.mjs —— 只读诊断：用真实 Hana 数据根跑一次 /api/providers，
 // 列出插件认定的启用供应商与「本地/云端」分类。不输出任何密钥内容。
 // 用法: node scripts/check-providers.mjs
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import registerPluginApiRoutes from "../lib/legacy-api.js";
 
@@ -28,6 +28,19 @@ const ctx = {
     : { fetch: async () => new Response("{}", { status: 200 }) },
   sessionId: null,
   sessionPath: null,
+};
+
+// v2 的 App 用 ctx.sdk 拿模型与账本；脚本在宿主之外跑，这里用本机 models.json 拼一份等价的假 sdk，
+// 让 computeActiveProvidersV2 跑出真实供应商列表（而不是空列表）。
+const modelsCfg = existsSync(join(HANA_HOME, "models.json")) ? JSON.parse(readFileSync(join(HANA_HOME, "models.json"), "utf8")) : {};
+const fakeModels = [];
+for (const [pid, p] of Object.entries(modelsCfg.providers || {})) {
+  for (const m of p?.models || []) fakeModels.push({ id: m.id, provider: pid, baseUrl: p.baseUrl || null });
+}
+ctx.sdk = {
+  models: { listAvailable: async () => ({ models: fakeModels }) },
+  usage: { list: async () => ({ entries: [] }) },
+  bus: { request: async () => null },
 };
 
 for (const f of ["provider-catalog.json", "models.json", "auth.json"]) {
