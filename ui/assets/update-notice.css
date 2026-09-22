@@ -21,6 +21,13 @@
   backdrop-filter: blur(3px);
 }
 
+/* 设置页里不要这层模糊：遮罩只盖得住设置容器那一小块 iframe，糊出来的既不是
+   宿主窗口的背景、也没法跟弹窗的位置对上，看过去就是一块脏。面板页的背景是
+   有内容的一整页，那边保留原样。 */
+body.is-settings .si-upd-mask {
+  backdrop-filter: none;
+}
+
 .si-upd-card {
   position: relative;
   display: flex;
