@@ -6,7 +6,7 @@
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
   "fx": {
     "USD": 6.8,
-    "note": "价格表按 1 美元 = 6.8 元折算成人民币（折算方式逐条写在 source 里）。改汇率必须同时重算 184 条美元系价格，否则价格与汇率会互相矛盾；这一步属于数据维护，纳入价目更新流程。"
+    "note": "美元系条目同时保留两套价：flat/peak/offPeak 是按本行汇率折算后的人民币价（兼容旧版读者），usd/usdPeak/usdOffPeak 是官方原币价；新代码优先用原币价 × fx.USD 记账，因此调整本行汇率即可让 184 条价格整体跟随，不必逐条重算。"
   },
   "peakHours": {
     "timezone": "Asia/Shanghai",
@@ -315,7 +315,13 @@
           "output": 0,
           "note": "当前免费"
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.05,
+        "inputHit": 0.004412,
+        "output": 0.15
+      },
+      "currency": "USD"
     },
     "agnes::agnes-2.5-pro-alpha": {
       "provider": "agnes",
@@ -389,7 +395,13 @@
           "cacheWrite": 10,
           "output": 30
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 20
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.6-terra": {
       "provider": "openai",
@@ -417,7 +429,13 @@
           "cacheWrite": 5,
           "output": 18
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.6-luna": {
       "provider": "openai",
@@ -445,7 +463,13 @@
           "cacheWrite": 0.5,
           "output": 1.8
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.5": {
       "provider": "openai",
@@ -473,7 +497,13 @@
           "cacheWrite": null,
           "output": 45
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 30
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.4": {
       "provider": "openai",
@@ -501,7 +531,13 @@
           "cacheWrite": null,
           "output": 22.5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 0.25,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.4-mini": {
       "provider": "openai",
@@ -513,7 +549,13 @@
         "inputHit": 0.51,
         "output": 30.6
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 4.5
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.2": {
       "provider": "openai",
@@ -525,7 +567,13 @@
         "inputHit": 1.19,
         "output": 95.2
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
     },
     "openai::gpt-4o": {
       "provider": "openai",
@@ -537,7 +585,13 @@
         "inputHit": 8.5,
         "output": 68
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 1.25,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "gemini::gemini-2.5-pro": {
       "provider": "gemini",
@@ -607,7 +661,13 @@
           "output": 27,
           "evidence": "Priority: Input price $4.50, prompts > 200k tokens. Output price $27.00. Context caching price $0.45."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "gemini::gemini-2.5-flash": {
       "provider": "gemini",
@@ -677,7 +737,13 @@
           "output": 4.5,
           "evidence": "Priority: Input price $1.80 (audio). Output price $4.50. Context caching price $0.18."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "xai::grok-4.5": {
       "provider": "xai",
@@ -703,7 +769,13 @@
           "inputHit": 0.6,
           "output": 12
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.3,
+        "output": 6
+      },
+      "currency": "USD"
     },
     "xai::grok-4.3": {
       "provider": "xai",
@@ -729,7 +801,13 @@
           "inputHit": 0.4,
           "output": 5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "anthropic::claude-opus-5": {
       "provider": "anthropic",
@@ -742,7 +820,14 @@
         "output": 170,
         "cacheWrite": 42.5
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25,
+        "cacheWrite": 6.25
+      },
+      "currency": "USD"
     },
     "anthropic::claude-sonnet-5": {
       "provider": "anthropic",
@@ -755,7 +840,14 @@
         "output": 68,
         "cacheWrite": 17
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 10,
+        "cacheWrite": 2.5
+      },
+      "currency": "USD"
     },
     "anthropic::claude-opus-4-8": {
       "provider": "anthropic",
@@ -768,7 +860,14 @@
         "output": 170,
         "cacheWrite": 42.5
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25,
+        "cacheWrite": 6.25
+      },
+      "currency": "USD"
     },
     "anthropic::claude-fable-5-1": {
       "provider": "anthropic",
@@ -781,7 +880,14 @@
         "output": 340,
         "cacheWrite": 85
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 0.25,
+        "output": 50,
+        "cacheWrite": 12.5
+      },
+      "currency": "USD"
     },
     "anthropic::claude-fable-5": {
       "provider": "anthropic",
@@ -794,7 +900,14 @@
         "output": 340,
         "cacheWrite": 85
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 1,
+        "output": 50,
+        "cacheWrite": 12.5
+      },
+      "currency": "USD"
     },
     "anthropic::claude-mythos-5-1": {
       "provider": "anthropic",
@@ -807,7 +920,14 @@
         "output": 340,
         "cacheWrite": 85
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 0.25,
+        "output": 50,
+        "cacheWrite": 12.5
+      },
+      "currency": "USD"
     },
     "anthropic::claude-mythos-5": {
       "provider": "anthropic",
@@ -820,7 +940,14 @@
         "output": 340,
         "cacheWrite": 85
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 1,
+        "output": 50,
+        "cacheWrite": 12.5
+      },
+      "currency": "USD"
     },
     "anthropic::claude-opus-4-7": {
       "provider": "anthropic",
@@ -833,7 +960,14 @@
         "output": 170,
         "cacheWrite": 42.5
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25,
+        "cacheWrite": 6.25
+      },
+      "currency": "USD"
     },
     "anthropic::claude-opus-4-6": {
       "provider": "anthropic",
@@ -846,7 +980,14 @@
         "output": 170,
         "cacheWrite": 42.5
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25,
+        "cacheWrite": 6.25
+      },
+      "currency": "USD"
     },
     "anthropic::claude-sonnet-4-6": {
       "provider": "anthropic",
@@ -859,7 +1000,14 @@
         "output": 102,
         "cacheWrite": 25.5
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15,
+        "cacheWrite": 3.75
+      },
+      "currency": "USD"
     },
     "anthropic::claude-sonnet-4-5": {
       "provider": "anthropic",
@@ -872,7 +1020,14 @@
         "output": 102,
         "cacheWrite": 25.5
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15,
+        "cacheWrite": 3.75
+      },
+      "currency": "USD"
     },
     "anthropic::claude-opus-4-5": {
       "provider": "anthropic",
@@ -885,7 +1040,14 @@
         "output": 170,
         "cacheWrite": 42.5
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25,
+        "cacheWrite": 6.25
+      },
+      "currency": "USD"
     },
     "anthropic::claude-opus-4-1": {
       "provider": "anthropic",
@@ -898,7 +1060,14 @@
         "output": 510,
         "cacheWrite": 127.5
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 15,
+        "inputHit": 1.5,
+        "output": 75,
+        "cacheWrite": 18.75
+      },
+      "currency": "USD"
     },
     "anthropic::claude-haiku-4-5": {
       "provider": "anthropic",
@@ -911,7 +1080,14 @@
         "output": 34,
         "cacheWrite": 8.5
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1,
+        "inputHit": 0.1,
+        "output": 5,
+        "cacheWrite": 1.25
+      },
+      "currency": "USD"
     },
     "anthropic::claude-3-5-haiku": {
       "provider": "anthropic",
@@ -924,7 +1100,14 @@
         "output": 27.2,
         "cacheWrite": 6.8
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 0.8,
+        "inputHit": 0.079412,
+        "output": 4,
+        "cacheWrite": 1
+      },
+      "currency": "USD"
     },
     "baichuan::Baichuan4-Air": {
       "provider": "baichuan",
@@ -1523,7 +1706,13 @@
           "output": 13.5,
           "evidence": "Priority: Input price $2.70 starting January 1, 2027. Output price $13.50. Context caching price $0.27."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 3.75
+      },
+      "currency": "USD"
     },
     "gemini::gemini-3.7-flash": {
       "provider": "gemini",
@@ -1593,7 +1782,13 @@
           "output": 13.5,
           "evidence": "Priority: Input price $2.70 starting January 1, 2027. Output price $13.50. Context caching price $0.27."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 3.75
+      },
+      "currency": "USD"
     },
     "gemini::gemini-3.1-pro-preview": {
       "provider": "gemini",
@@ -1656,7 +1851,13 @@
           "output": 32.4,
           "evidence": "Priority: Input price $7.20, prompts > 200k tokens. Output price $32.40. Context caching price $0.72."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
     },
     "gemini::gemini-3.1-flash-lite-preview": {
       "provider": "gemini",
@@ -1726,7 +1927,13 @@
           "output": 2.7,
           "evidence": "Priority: Input price $0.90 (audio). Output price $2.70. Context caching price $0.09."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.25,
+        "inputHit": 0.025,
+        "output": 1.5
+      },
+      "currency": "USD"
     },
     "gemini::gemini-3-flash-preview": {
       "provider": "gemini",
@@ -1796,7 +2003,13 @@
           "output": 5.4,
           "evidence": "Priority: Input price $1.80 (audio). Output price $5.40. Context caching price $0.18."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.5,
+        "inputHit": 0.05,
+        "output": 3
+      },
+      "currency": "USD"
     },
     "gemini::gemini-2.5-flash-lite": {
       "provider": "gemini",
@@ -1866,7 +2079,13 @@
           "output": 0.72,
           "evidence": "Priority: Input price $0.54 (audio). Output price $0.72. Context caching price $0.054."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.010294,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "groq::openai/gpt-oss-120b": {
       "provider": "groq",
@@ -1878,7 +2097,13 @@
         "inputHit": 0.51,
         "output": 4.08
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.075,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "groq::openai/gpt-oss-20b": {
       "provider": "groq",
@@ -1890,7 +2115,13 @@
         "inputHit": 0.25,
         "output": 2.04
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.075,
+        "inputHit": 0.036765,
+        "output": 0.3
+      },
+      "currency": "USD"
     },
     "minimax::MiniMax-M3": {
       "provider": "minimax",
@@ -1948,7 +2179,13 @@
           "outputList": 7.2,
           "evidence": "MiniMax-M3 > 512k input tokens Permanent 50% off: $1.80$0.90 / M tokens, $7.20$3.60 / M tokens, $0.36$0.18 / M tokens"
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.060294,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "minimax::MiniMax-M2.7": {
       "provider": "minimax",
@@ -1960,7 +2197,13 @@
         "inputHit": 0.41,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.060294,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "minimax::MiniMax-M2.7-highspeed": {
       "provider": "minimax",
@@ -1972,7 +2215,13 @@
         "inputHit": 0.41,
         "output": 16.32
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.6,
+        "inputHit": 0.060294,
+        "output": 2.4
+      },
+      "currency": "USD"
     },
     "minimax::MiniMax-M2.5": {
       "provider": "minimax",
@@ -1984,7 +2233,13 @@
         "inputHit": 0.2,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "minimax::MiniMax-M2.5-highspeed": {
       "provider": "minimax",
@@ -1996,7 +2251,13 @@
         "inputHit": 0.2,
         "output": 16.32
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.6,
+        "inputHit": 0.029412,
+        "output": 2.4
+      },
+      "currency": "USD"
     },
     "minimax::MiniMax-M2.1": {
       "provider": "minimax",
@@ -2008,7 +2269,13 @@
         "inputHit": 0.2,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "minimax::MiniMax-M2": {
       "provider": "minimax",
@@ -2020,7 +2287,13 @@
         "inputHit": 0.2,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "mistral::mistral-large-latest": {
       "provider": "mistral",
@@ -2052,7 +2325,13 @@
           "inputHit": 0.0875,
           "output": 2.625
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.5,
+        "inputHit": 0.05,
+        "output": 1.5
+      },
+      "currency": "USD"
     },
     "mistral::mistral-large-3": {
       "provider": "mistral",
@@ -2084,7 +2363,13 @@
           "inputHit": 0.0875,
           "output": 2.625
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.5,
+        "inputHit": 0.05,
+        "output": 1.5
+      },
+      "currency": "USD"
     },
     "mistral::mistral-medium-latest": {
       "provider": "mistral",
@@ -2116,7 +2401,13 @@
           "inputHit": 0.2625,
           "output": 13.125
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.5,
+        "inputHit": 0.15,
+        "output": 7.5
+      },
+      "currency": "USD"
     },
     "mistral::mistral-small-latest": {
       "provider": "mistral",
@@ -2148,7 +2439,13 @@
           "inputHit": 0.02625,
           "output": 1.05
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.014706,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "mistral::codestral-latest": {
       "provider": "mistral",
@@ -2180,7 +2477,13 @@
           "inputHit": 0.0525,
           "output": 1.575
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 0.9
+      },
+      "currency": "USD"
     },
     "openai::gpt-6-astra": {
       "provider": "openai",
@@ -2208,7 +2511,13 @@
           "cacheWrite": 25,
           "output": 75
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 1,
+        "output": 50
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.4-nano": {
       "provider": "openai",
@@ -2220,7 +2529,13 @@
         "inputHit": 0.14,
         "output": 8.5
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.25
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.3-codex": {
       "provider": "openai",
@@ -2232,7 +2547,13 @@
         "inputHit": 1.19,
         "output": 95.2
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
     },
     "openai::gpt-5.1": {
       "provider": "openai",
@@ -2244,7 +2565,13 @@
         "inputHit": 0.85,
         "output": 68
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openai::gpt-5": {
       "provider": "openai",
@@ -2256,7 +2583,13 @@
         "inputHit": 0.85,
         "output": 68
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openai::gpt-5-mini": {
       "provider": "openai",
@@ -2268,7 +2601,13 @@
         "inputHit": 0.17,
         "output": 13.6
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.25,
+        "inputHit": 0.025,
+        "output": 2
+      },
+      "currency": "USD"
     },
     "openai::gpt-5-nano": {
       "provider": "openai",
@@ -2280,7 +2619,13 @@
         "inputHit": 0.03,
         "output": 2.72
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.05,
+        "inputHit": 0.004412,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "openai::gpt-4.1": {
       "provider": "openai",
@@ -2292,7 +2637,13 @@
         "inputHit": 3.4,
         "output": 54.4
       },
-      "contextWindow": 1047576
+      "contextWindow": 1047576,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "openai::gpt-4.1-mini": {
       "provider": "openai",
@@ -2304,7 +2655,13 @@
         "inputHit": 0.68,
         "output": 10.88
       },
-      "contextWindow": 1047576
+      "contextWindow": 1047576,
+      "usd": {
+        "inputMiss": 0.4,
+        "inputHit": 0.1,
+        "output": 1.6
+      },
+      "currency": "USD"
     },
     "openai::gpt-4.1-nano": {
       "provider": "openai",
@@ -2316,7 +2673,13 @@
         "inputHit": 0.17,
         "output": 2.72
       },
-      "contextWindow": 1047576
+      "contextWindow": 1047576,
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.025,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "openai::gpt-4o-mini": {
       "provider": "openai",
@@ -2328,7 +2691,13 @@
         "inputHit": 0.51,
         "output": 4.08
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.075,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "openai::o3": {
       "provider": "openai",
@@ -2340,7 +2709,13 @@
         "inputHit": 3.4,
         "output": 54.4
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "openai::o3-mini": {
       "provider": "openai",
@@ -2352,7 +2727,13 @@
         "inputHit": 3.74,
         "output": 29.92
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1.1,
+        "inputHit": 0.55,
+        "output": 4.4
+      },
+      "currency": "USD"
     },
     "openai::o4-mini": {
       "provider": "openai",
@@ -2364,7 +2745,13 @@
         "inputHit": 1.87,
         "output": 29.92
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1.1,
+        "inputHit": 0.275,
+        "output": 4.4
+      },
+      "currency": "USD"
     },
     "perplexity::sonar": {
       "provider": "perplexity",
@@ -2376,7 +2763,13 @@
         "inputHit": 6.8,
         "output": 6.8
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 1,
+        "inputHit": 1,
+        "output": 1
+      },
+      "currency": "USD"
     },
     "perplexity::sonar-pro": {
       "provider": "perplexity",
@@ -2388,7 +2781,13 @@
         "inputHit": 20.4,
         "output": 102
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 3,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "perplexity::sonar-reasoning-pro": {
       "provider": "perplexity",
@@ -2400,7 +2799,13 @@
         "inputHit": 13.6,
         "output": 54.4
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 2,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "perplexity::sonar-deep-research": {
       "provider": "perplexity",
@@ -2412,7 +2817,13 @@
         "inputHit": 13.6,
         "output": 54.4
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 2,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "stepfun::step-3.5-flash": {
       "provider": "stepfun",
@@ -2484,7 +2895,13 @@
           "inputHit": 1,
           "output": 12
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 6
+      },
+      "currency": "USD"
     },
     "xai::grok-4.20-reasoning": {
       "provider": "xai",
@@ -2510,7 +2927,13 @@
           "inputHit": 0.4,
           "output": 5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "xai::grok-4.20-non-reasoning": {
       "provider": "xai",
@@ -2536,7 +2959,13 @@
           "inputHit": 0.4,
           "output": 5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "zhipu::glm-5.1": {
       "provider": "zhipu",
@@ -2670,7 +3099,13 @@
           "inputHit": 0.4,
           "output": 15
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openrouter::openai/gpt-5.6-terra": {
       "provider": "openrouter",
@@ -2690,7 +3125,13 @@
           "inputHit": 0.4,
           "output": 18
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
     },
     "openrouter::openai/gpt-5.6-luna": {
       "provider": "openrouter",
@@ -2710,7 +3151,13 @@
           "inputHit": 0.04,
           "output": 1.8
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "openrouter::openai/gpt-5.4": {
       "provider": "openrouter",
@@ -2729,7 +3176,13 @@
           "inputHit": 0.5,
           "output": 22.5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 0.25,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "openrouter::openai/gpt-5.2": {
       "provider": "openrouter",
@@ -2741,7 +3194,13 @@
         "inputHit": 1.19,
         "output": 95.2
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
     },
     "openrouter::openai/gpt-5": {
       "provider": "openrouter",
@@ -2753,7 +3212,13 @@
         "inputHit": 0.85,
         "output": 68
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openrouter::openai/gpt-4o": {
       "provider": "openrouter",
@@ -2765,7 +3230,13 @@
         "inputHit": 8.5,
         "output": 68
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 1.25,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openrouter::anthropic/claude-opus-5": {
       "provider": "openrouter",
@@ -2777,7 +3248,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "openrouter::anthropic/claude-sonnet-4.5": {
       "provider": "openrouter",
@@ -2797,7 +3274,13 @@
           "inputHit": 0.6,
           "output": 22.5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "openrouter::anthropic/claude-opus-4.5": {
       "provider": "openrouter",
@@ -2809,7 +3292,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "openrouter::google/gemini-2.5-pro": {
       "provider": "openrouter",
@@ -2829,7 +3318,13 @@
           "inputHit": 0.25,
           "output": 15
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openrouter::google/gemini-2.5-flash": {
       "provider": "openrouter",
@@ -2841,7 +3336,13 @@
         "inputHit": 0.2,
         "output": 17
       },
-      "contextWindow": 1048576
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "openrouter::deepseek/deepseek-chat": {
       "provider": "openrouter",
@@ -2853,7 +3354,13 @@
         "inputHit": 1.75,
         "output": 7
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.257353,
+        "inputHit": 0.257353,
+        "output": 1.029412
+      },
+      "currency": "USD"
     },
     "openrouter::deepseek/deepseek-v3.2": {
       "provider": "openrouter",
@@ -2865,7 +3372,13 @@
         "inputHit": 0.91,
         "output": 2.72
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.269118,
+        "inputHit": 0.133824,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "openrouter::z-ai/glm-5.3": {
       "provider": "openrouter",
@@ -2877,7 +3390,13 @@
         "inputHit": 1.77,
         "output": 29.92
       },
-      "contextWindow": 1048576
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 1.4,
+        "inputHit": 0.260294,
+        "output": 4.4
+      },
+      "currency": "USD"
     },
     "openrouter::z-ai/glm-5.3-flash": {
       "provider": "openrouter",
@@ -2889,7 +3408,13 @@
         "inputHit": 0.14,
         "output": 2.27
       },
-      "contextWindow": 1048576
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.020588,
+        "output": 0.333824
+      },
+      "currency": "USD"
     },
     "openrouter::z-ai/glm-4.7": {
       "provider": "openrouter",
@@ -2901,7 +3426,13 @@
         "inputHit": 0.54,
         "output": 11.9
       },
-      "contextWindow": 202752
+      "contextWindow": 202752,
+      "usd": {
+        "inputMiss": 0.4,
+        "inputHit": 0.079412,
+        "output": 1.75
+      },
+      "currency": "USD"
     },
     "openrouter::moonshotai/kimi-k2.5": {
       "provider": "openrouter",
@@ -2913,7 +3444,13 @@
         "inputHit": 0.48,
         "output": 15.3
       },
-      "contextWindow": 262144
+      "contextWindow": 262144,
+      "usd": {
+        "inputMiss": 0.45,
+        "inputHit": 0.070588,
+        "output": 2.25
+      },
+      "currency": "USD"
     },
     "openrouter::qwen/qwen3.5-397b-a17b": {
       "provider": "openrouter",
@@ -2925,7 +3462,13 @@
         "inputHit": 1.53,
         "output": 23.8
       },
-      "contextWindow": 256000
+      "contextWindow": 256000,
+      "usd": {
+        "inputMiss": 0.55,
+        "inputHit": 0.225,
+        "output": 3.5
+      },
+      "currency": "USD"
     },
     "openrouter::minimax/minimax-m2.5": {
       "provider": "openrouter",
@@ -2937,7 +3480,13 @@
         "inputHit": 0.18,
         "output": 7.34
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.270588,
+        "inputHit": 0.026471,
+        "output": 1.079412
+      },
+      "currency": "USD"
     },
     "together::Qwen/Qwen3-235B-A22B-Instruct-2507-tput": {
       "provider": "together",
@@ -2949,7 +3498,13 @@
         "inputHit": 1.36,
         "output": 4.08
       },
-      "contextWindow": 262144
+      "contextWindow": 262144,
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.2,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "together::meta-llama/Llama-3.3-70B-Instruct-Turbo": {
       "provider": "together",
@@ -2961,7 +3516,13 @@
         "inputHit": 7.07,
         "output": 7.07
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 1.039706,
+        "inputHit": 1.039706,
+        "output": 1.039706
+      },
+      "currency": "USD"
     },
     "together::openai/gpt-oss-120b": {
       "provider": "together",
@@ -2973,7 +3534,13 @@
         "inputHit": 1.02,
         "output": 4.08
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.15,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "fireworks::gpt-oss-120b": {
       "provider": "fireworks",
@@ -2999,7 +3566,13 @@
           "inputHit": 0.018,
           "output": 0.72
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.014706,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "siliconflow::deepseek-v3.2": {
       "provider": "siliconflow",
@@ -3273,7 +3846,13 @@
           "output": 0,
           "note": "当前免费"
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.05,
+        "inputHit": 0.004412,
+        "output": 0.15
+      },
+      "currency": "USD"
     },
     "agnes-2.5-pro-alpha": {
       "provider": "agnes",
@@ -3347,7 +3926,13 @@
           "cacheWrite": 10,
           "output": 30
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 20
+      },
+      "currency": "USD"
     },
     "gpt-5.6-terra": {
       "provider": "openai",
@@ -3375,7 +3960,13 @@
           "cacheWrite": 5,
           "output": 18
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
     },
     "gpt-5.6-luna": {
       "provider": "openai",
@@ -3403,7 +3994,13 @@
           "cacheWrite": 0.5,
           "output": 1.8
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "gpt-5.5": {
       "provider": "openai",
@@ -3431,7 +4028,13 @@
           "cacheWrite": null,
           "output": 45
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 30
+      },
+      "currency": "USD"
     },
     "gpt-5.4": {
       "provider": "openai",
@@ -3459,7 +4062,13 @@
           "cacheWrite": null,
           "output": 22.5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 0.25,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "gpt-5.4-mini": {
       "provider": "openai",
@@ -3471,7 +4080,13 @@
         "inputHit": 0.51,
         "output": 30.6
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 4.5
+      },
+      "currency": "USD"
     },
     "gpt-5.2": {
       "provider": "openai",
@@ -3483,7 +4098,13 @@
         "inputHit": 1.19,
         "output": 95.2
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
     },
     "gpt-4o": {
       "provider": "openai",
@@ -3495,7 +4116,13 @@
         "inputHit": 8.5,
         "output": 68
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 1.25,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "gemini-2.5-pro": {
       "provider": "gemini",
@@ -3565,7 +4192,13 @@
           "output": 27,
           "evidence": "Priority: Input price $4.50, prompts > 200k tokens. Output price $27.00. Context caching price $0.45."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "gemini-2.5-flash": {
       "provider": "gemini",
@@ -3635,7 +4268,13 @@
           "output": 4.5,
           "evidence": "Priority: Input price $1.80 (audio). Output price $4.50. Context caching price $0.18."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "grok-4.5": {
       "provider": "xai",
@@ -3661,7 +4300,13 @@
           "inputHit": 0.6,
           "output": 12
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.3,
+        "output": 6
+      },
+      "currency": "USD"
     },
     "grok-4.3": {
       "provider": "xai",
@@ -3687,7 +4332,13 @@
           "inputHit": 0.4,
           "output": 5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "claude-opus-5": {
       "provider": "anthropic",
@@ -3699,7 +4350,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "claude-sonnet-5": {
       "provider": "anthropic",
@@ -3711,7 +4368,13 @@
         "inputHit": 1.36,
         "output": 68
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "claude-opus-4-8": {
       "provider": "anthropic",
@@ -3723,7 +4386,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "claude-fable-5-1": {
       "provider": "anthropic",
@@ -3735,7 +4404,13 @@
         "inputHit": 1.7,
         "output": 340
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 0.25,
+        "output": 50
+      },
+      "currency": "USD"
     },
     "claude-fable-5": {
       "provider": "anthropic",
@@ -3747,7 +4422,13 @@
         "inputHit": 6.8,
         "output": 340
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 1,
+        "output": 50
+      },
+      "currency": "USD"
     },
     "claude-mythos-5-1": {
       "provider": "anthropic",
@@ -3759,7 +4440,13 @@
         "inputHit": 1.7,
         "output": 340
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 0.25,
+        "output": 50
+      },
+      "currency": "USD"
     },
     "claude-mythos-5": {
       "provider": "anthropic",
@@ -3771,7 +4458,13 @@
         "inputHit": 6.8,
         "output": 340
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 1,
+        "output": 50
+      },
+      "currency": "USD"
     },
     "claude-opus-4-7": {
       "provider": "anthropic",
@@ -3783,7 +4476,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "claude-opus-4-6": {
       "provider": "anthropic",
@@ -3795,7 +4494,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "claude-sonnet-4-6": {
       "provider": "anthropic",
@@ -3807,7 +4512,13 @@
         "inputHit": 2.04,
         "output": 102
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "claude-sonnet-4-5": {
       "provider": "anthropic",
@@ -3819,7 +4530,13 @@
         "inputHit": 2.04,
         "output": 102
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "claude-opus-4-5": {
       "provider": "anthropic",
@@ -3831,7 +4548,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "claude-opus-4-1": {
       "provider": "anthropic",
@@ -3843,7 +4566,13 @@
         "inputHit": 10.2,
         "output": 510
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 15,
+        "inputHit": 1.5,
+        "output": 75
+      },
+      "currency": "USD"
     },
     "claude-haiku-4-5": {
       "provider": "anthropic",
@@ -3855,7 +4584,13 @@
         "inputHit": 0.68,
         "output": 34
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1,
+        "inputHit": 0.1,
+        "output": 5
+      },
+      "currency": "USD"
     },
     "claude-3-5-haiku": {
       "provider": "anthropic",
@@ -3867,7 +4602,13 @@
         "inputHit": 0.54,
         "output": 27.2
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 0.8,
+        "inputHit": 0.079412,
+        "output": 4
+      },
+      "currency": "USD"
     },
     "Baichuan4-Air": {
       "provider": "baichuan",
@@ -4466,7 +5207,13 @@
           "output": 13.5,
           "evidence": "Priority: Input price $2.70 starting January 1, 2027. Output price $13.50. Context caching price $0.27."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 3.75
+      },
+      "currency": "USD"
     },
     "gemini-3.7-flash": {
       "provider": "gemini",
@@ -4536,7 +5283,13 @@
           "output": 13.5,
           "evidence": "Priority: Input price $2.70 starting January 1, 2027. Output price $13.50. Context caching price $0.27."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 3.75
+      },
+      "currency": "USD"
     },
     "gemini-3.1-pro-preview": {
       "provider": "gemini",
@@ -4599,7 +5352,13 @@
           "output": 32.4,
           "evidence": "Priority: Input price $7.20, prompts > 200k tokens. Output price $32.40. Context caching price $0.72."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
     },
     "gemini-3.1-flash-lite-preview": {
       "provider": "gemini",
@@ -4669,7 +5428,13 @@
           "output": 2.7,
           "evidence": "Priority: Input price $0.90 (audio). Output price $2.70. Context caching price $0.09."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.25,
+        "inputHit": 0.025,
+        "output": 1.5
+      },
+      "currency": "USD"
     },
     "gemini-3-flash-preview": {
       "provider": "gemini",
@@ -4739,7 +5504,13 @@
           "output": 5.4,
           "evidence": "Priority: Input price $1.80 (audio). Output price $5.40. Context caching price $0.18."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.5,
+        "inputHit": 0.05,
+        "output": 3
+      },
+      "currency": "USD"
     },
     "gemini-2.5-flash-lite": {
       "provider": "gemini",
@@ -4809,7 +5580,13 @@
           "output": 0.72,
           "evidence": "Priority: Input price $0.54 (audio). Output price $0.72. Context caching price $0.054."
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.010294,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "openai/gpt-oss-20b": {
       "provider": "groq",
@@ -4821,7 +5598,13 @@
         "inputHit": 0.25,
         "output": 2.04
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.075,
+        "inputHit": 0.036765,
+        "output": 0.3
+      },
+      "currency": "USD"
     },
     "MiniMax-M3": {
       "provider": "minimax",
@@ -4879,7 +5662,13 @@
           "outputList": 7.2,
           "evidence": "MiniMax-M3 > 512k input tokens Permanent 50% off: $1.80$0.90 / M tokens, $7.20$3.60 / M tokens, $0.36$0.18 / M tokens"
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.060294,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "MiniMax-M2.7": {
       "provider": "minimax",
@@ -4891,7 +5680,13 @@
         "inputHit": 0.41,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.060294,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "MiniMax-M2.7-highspeed": {
       "provider": "minimax",
@@ -4903,7 +5698,13 @@
         "inputHit": 0.41,
         "output": 16.32
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.6,
+        "inputHit": 0.060294,
+        "output": 2.4
+      },
+      "currency": "USD"
     },
     "MiniMax-M2.5": {
       "provider": "minimax",
@@ -4915,7 +5716,13 @@
         "inputHit": 0.2,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "MiniMax-M2.5-highspeed": {
       "provider": "minimax",
@@ -4927,7 +5734,13 @@
         "inputHit": 0.2,
         "output": 16.32
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.6,
+        "inputHit": 0.029412,
+        "output": 2.4
+      },
+      "currency": "USD"
     },
     "MiniMax-M2.1": {
       "provider": "minimax",
@@ -4939,7 +5752,13 @@
         "inputHit": 0.2,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "MiniMax-M2": {
       "provider": "minimax",
@@ -4951,7 +5770,13 @@
         "inputHit": 0.2,
         "output": 8.16
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "mistral-large-latest": {
       "provider": "mistral",
@@ -4983,7 +5808,13 @@
           "inputHit": 0.0875,
           "output": 2.625
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.5,
+        "inputHit": 0.05,
+        "output": 1.5
+      },
+      "currency": "USD"
     },
     "mistral-large-3": {
       "provider": "mistral",
@@ -5015,7 +5846,13 @@
           "inputHit": 0.0875,
           "output": 2.625
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.5,
+        "inputHit": 0.05,
+        "output": 1.5
+      },
+      "currency": "USD"
     },
     "mistral-medium-latest": {
       "provider": "mistral",
@@ -5047,7 +5884,13 @@
           "inputHit": 0.2625,
           "output": 13.125
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.5,
+        "inputHit": 0.15,
+        "output": 7.5
+      },
+      "currency": "USD"
     },
     "mistral-small-latest": {
       "provider": "mistral",
@@ -5079,7 +5922,13 @@
           "inputHit": 0.02625,
           "output": 1.05
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.014706,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "codestral-latest": {
       "provider": "mistral",
@@ -5111,7 +5960,13 @@
           "inputHit": 0.0525,
           "output": 1.575
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 0.9
+      },
+      "currency": "USD"
     },
     "gpt-6-astra": {
       "provider": "openai",
@@ -5139,7 +5994,13 @@
           "cacheWrite": 25,
           "output": 75
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 1,
+        "output": 50
+      },
+      "currency": "USD"
     },
     "gpt-5.4-nano": {
       "provider": "openai",
@@ -5151,7 +6012,13 @@
         "inputHit": 0.14,
         "output": 8.5
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.25
+      },
+      "currency": "USD"
     },
     "gpt-5.3-codex": {
       "provider": "openai",
@@ -5163,7 +6030,13 @@
         "inputHit": 1.19,
         "output": 95.2
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
     },
     "gpt-5.1": {
       "provider": "openai",
@@ -5175,7 +6048,13 @@
         "inputHit": 0.85,
         "output": 68
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "gpt-5": {
       "provider": "openai",
@@ -5187,7 +6066,13 @@
         "inputHit": 0.85,
         "output": 68
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "gpt-5-mini": {
       "provider": "openai",
@@ -5199,7 +6084,13 @@
         "inputHit": 0.17,
         "output": 13.6
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.25,
+        "inputHit": 0.025,
+        "output": 2
+      },
+      "currency": "USD"
     },
     "gpt-5-nano": {
       "provider": "openai",
@@ -5211,7 +6102,13 @@
         "inputHit": 0.03,
         "output": 2.72
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 0.05,
+        "inputHit": 0.004412,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "gpt-4.1": {
       "provider": "openai",
@@ -5223,7 +6120,13 @@
         "inputHit": 3.4,
         "output": 54.4
       },
-      "contextWindow": 1047576
+      "contextWindow": 1047576,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "gpt-4.1-mini": {
       "provider": "openai",
@@ -5235,7 +6138,13 @@
         "inputHit": 0.68,
         "output": 10.88
       },
-      "contextWindow": 1047576
+      "contextWindow": 1047576,
+      "usd": {
+        "inputMiss": 0.4,
+        "inputHit": 0.1,
+        "output": 1.6
+      },
+      "currency": "USD"
     },
     "gpt-4.1-nano": {
       "provider": "openai",
@@ -5247,7 +6156,13 @@
         "inputHit": 0.17,
         "output": 2.72
       },
-      "contextWindow": 1047576
+      "contextWindow": 1047576,
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.025,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "gpt-4o-mini": {
       "provider": "openai",
@@ -5259,7 +6174,13 @@
         "inputHit": 0.51,
         "output": 4.08
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.075,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "o3": {
       "provider": "openai",
@@ -5271,7 +6192,13 @@
         "inputHit": 3.4,
         "output": 54.4
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "o3-mini": {
       "provider": "openai",
@@ -5283,7 +6210,13 @@
         "inputHit": 3.74,
         "output": 29.92
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1.1,
+        "inputHit": 0.55,
+        "output": 4.4
+      },
+      "currency": "USD"
     },
     "o4-mini": {
       "provider": "openai",
@@ -5295,7 +6228,13 @@
         "inputHit": 1.87,
         "output": 29.92
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1.1,
+        "inputHit": 0.275,
+        "output": 4.4
+      },
+      "currency": "USD"
     },
     "sonar": {
       "provider": "perplexity",
@@ -5307,7 +6246,13 @@
         "inputHit": 6.8,
         "output": 6.8
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 1,
+        "inputHit": 1,
+        "output": 1
+      },
+      "currency": "USD"
     },
     "sonar-pro": {
       "provider": "perplexity",
@@ -5319,7 +6264,13 @@
         "inputHit": 20.4,
         "output": 102
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 3,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "sonar-reasoning-pro": {
       "provider": "perplexity",
@@ -5331,7 +6282,13 @@
         "inputHit": 13.6,
         "output": 54.4
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 2,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "sonar-deep-research": {
       "provider": "perplexity",
@@ -5343,7 +6300,13 @@
         "inputHit": 13.6,
         "output": 54.4
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 2,
+        "output": 8
+      },
+      "currency": "USD"
     },
     "step-3.5-flash": {
       "provider": "stepfun",
@@ -5415,7 +6378,13 @@
           "inputHit": 1,
           "output": 12
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 6
+      },
+      "currency": "USD"
     },
     "grok-4.20-reasoning": {
       "provider": "xai",
@@ -5441,7 +6410,13 @@
           "inputHit": 0.4,
           "output": 5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "grok-4.20-non-reasoning": {
       "provider": "xai",
@@ -5467,7 +6442,13 @@
           "inputHit": 0.4,
           "output": 5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "glm-5.1": {
       "provider": "zhipu",
@@ -5601,7 +6582,13 @@
           "inputHit": 0.4,
           "output": 15
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openai/gpt-5.6-terra": {
       "provider": "openrouter",
@@ -5621,7 +6608,13 @@
           "inputHit": 0.4,
           "output": 18
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
     },
     "openai/gpt-5.6-luna": {
       "provider": "openrouter",
@@ -5641,7 +6634,13 @@
           "inputHit": 0.04,
           "output": 1.8
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.2
+      },
+      "currency": "USD"
     },
     "openai/gpt-5.4": {
       "provider": "openrouter",
@@ -5660,7 +6659,13 @@
           "inputHit": 0.5,
           "output": 22.5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 0.25,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "openai/gpt-5.2": {
       "provider": "openrouter",
@@ -5672,7 +6677,13 @@
         "inputHit": 1.19,
         "output": 95.2
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
     },
     "openai/gpt-5": {
       "provider": "openrouter",
@@ -5684,7 +6695,13 @@
         "inputHit": 0.85,
         "output": 68
       },
-      "contextWindow": 400000
+      "contextWindow": 400000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "openai/gpt-4o": {
       "provider": "openrouter",
@@ -5696,7 +6713,13 @@
         "inputHit": 8.5,
         "output": 68
       },
-      "contextWindow": 128000
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 1.25,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "anthropic/claude-opus-5": {
       "provider": "openrouter",
@@ -5708,7 +6731,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 1000000
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "anthropic/claude-sonnet-4.5": {
       "provider": "openrouter",
@@ -5728,7 +6757,13 @@
           "inputHit": 0.6,
           "output": 22.5
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
     },
     "anthropic/claude-opus-4.5": {
       "provider": "openrouter",
@@ -5740,7 +6775,13 @@
         "inputHit": 3.4,
         "output": 170
       },
-      "contextWindow": 200000
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
     },
     "google/gemini-2.5-pro": {
       "provider": "openrouter",
@@ -5760,7 +6801,13 @@
           "inputHit": 0.25,
           "output": 15
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.125,
+        "output": 10
+      },
+      "currency": "USD"
     },
     "google/gemini-2.5-flash": {
       "provider": "openrouter",
@@ -5772,7 +6819,13 @@
         "inputHit": 0.2,
         "output": 17
       },
-      "contextWindow": 1048576
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.029412,
+        "output": 2.5
+      },
+      "currency": "USD"
     },
     "deepseek/deepseek-chat": {
       "provider": "openrouter",
@@ -5784,7 +6837,13 @@
         "inputHit": 1.75,
         "output": 7
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.257353,
+        "inputHit": 0.257353,
+        "output": 1.029412
+      },
+      "currency": "USD"
     },
     "deepseek/deepseek-v3.2": {
       "provider": "openrouter",
@@ -5796,7 +6855,13 @@
         "inputHit": 0.91,
         "output": 2.72
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.269118,
+        "inputHit": 0.133824,
+        "output": 0.4
+      },
+      "currency": "USD"
     },
     "z-ai/glm-5.3": {
       "provider": "openrouter",
@@ -5808,7 +6873,13 @@
         "inputHit": 1.77,
         "output": 29.92
       },
-      "contextWindow": 1048576
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 1.4,
+        "inputHit": 0.260294,
+        "output": 4.4
+      },
+      "currency": "USD"
     },
     "z-ai/glm-5.3-flash": {
       "provider": "openrouter",
@@ -5820,7 +6891,13 @@
         "inputHit": 0.14,
         "output": 2.27
       },
-      "contextWindow": 1048576
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.020588,
+        "output": 0.333824
+      },
+      "currency": "USD"
     },
     "z-ai/glm-4.7": {
       "provider": "openrouter",
@@ -5832,7 +6909,13 @@
         "inputHit": 0.54,
         "output": 11.9
       },
-      "contextWindow": 202752
+      "contextWindow": 202752,
+      "usd": {
+        "inputMiss": 0.4,
+        "inputHit": 0.079412,
+        "output": 1.75
+      },
+      "currency": "USD"
     },
     "moonshotai/kimi-k2.5": {
       "provider": "openrouter",
@@ -5844,7 +6927,13 @@
         "inputHit": 0.48,
         "output": 15.3
       },
-      "contextWindow": 262144
+      "contextWindow": 262144,
+      "usd": {
+        "inputMiss": 0.45,
+        "inputHit": 0.070588,
+        "output": 2.25
+      },
+      "currency": "USD"
     },
     "qwen/qwen3.5-397b-a17b": {
       "provider": "openrouter",
@@ -5856,7 +6945,13 @@
         "inputHit": 1.53,
         "output": 23.8
       },
-      "contextWindow": 256000
+      "contextWindow": 256000,
+      "usd": {
+        "inputMiss": 0.55,
+        "inputHit": 0.225,
+        "output": 3.5
+      },
+      "currency": "USD"
     },
     "minimax/minimax-m2.5": {
       "provider": "openrouter",
@@ -5868,7 +6963,13 @@
         "inputHit": 0.18,
         "output": 7.34
       },
-      "contextWindow": 204800
+      "contextWindow": 204800,
+      "usd": {
+        "inputMiss": 0.270588,
+        "inputHit": 0.026471,
+        "output": 1.079412
+      },
+      "currency": "USD"
     },
     "Qwen/Qwen3-235B-A22B-Instruct-2507-tput": {
       "provider": "together",
@@ -5880,7 +6981,13 @@
         "inputHit": 1.36,
         "output": 4.08
       },
-      "contextWindow": 262144
+      "contextWindow": 262144,
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.2,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "meta-llama/Llama-3.3-70B-Instruct-Turbo": {
       "provider": "together",
@@ -5892,7 +6999,13 @@
         "inputHit": 7.07,
         "output": 7.07
       },
-      "contextWindow": 131072
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 1.039706,
+        "inputHit": 1.039706,
+        "output": 1.039706
+      },
+      "currency": "USD"
     },
     "gpt-oss-120b": {
       "provider": "fireworks",
@@ -5918,7 +7031,13 @@
           "inputHit": 0.018,
           "output": 0.72
         }
-      ]
+      ],
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.014706,
+        "output": 0.6
+      },
+      "currency": "USD"
     },
     "deepseek-v3.2": {
       "provider": "siliconflow",
