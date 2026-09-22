@@ -28,10 +28,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 页面外侧留白由 Hana 设置容器负责，这里只在左右各让 10px：
+/* 页面外侧留白由 Hana 设置容器负责，这里只在左右再各让 25px：
    卡片贴到容器边看着挤，留一道缝就够，不做成窄列。 */
 .st-page {
-  padding: 0 10px;
+  padding: 0 25px;
 }
 
 /* 大块之间只用留白分隔：卡片自身的边界已经承担了这件事，再画线是重复 */
