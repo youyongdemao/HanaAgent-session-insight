@@ -28,9 +28,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 页面外侧留白由 Hana 设置容器负责，这里不再叠加同一层页边距 */
+/* 页面外侧留白由 Hana 设置容器负责，这里只在左右各让 10px：
+   卡片贴到容器边看着挤，留一道缝就够，不做成窄列。 */
 .st-page {
-  padding: 0;
+  padding: 0 10px;
 }
 
 /* 大块之间只用留白分隔：卡片自身的边界已经承担了这件事，再画线是重复 */
@@ -73,9 +74,6 @@ body {
   list-style: none;
   margin: 0;
   padding: 4px 0;
-  /* 卡片不铺满整幅：容器宽的时候，同一行里的文字和右侧控件会离得太远，
-     收到 620 以内更聚。窄容器下自然铺满，不受影响。 */
-  max-width: 620px;
   background: var(--bg-card, color-mix(in srgb, var(--text) 5%, transparent));
   border-radius: 12px;
   overflow: hidden;
