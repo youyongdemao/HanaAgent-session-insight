@@ -18,7 +18,8 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
 const dbPath = process.argv[2] ? resolve(process.argv[2]) : join(repoRoot, "pricing.json");
-const parserPath = join(repoRoot, "lib", "usage-parser.js");
+// 第二个可选参数：目标 usage-parser.js（默认写本仓库 lib/，App 的内置快照由调用方显式指到 App 目录，避免两份数据各改一半）
+const parserPath = process.argv[3] ? resolve(process.argv[3]) : join(repoRoot, "lib", "usage-parser.js");
 
 const START = "// >>> BUILTIN-PRICING-DATA";
 const END = "// <<< BUILTIN-PRICING-DATA";
@@ -42,13 +43,16 @@ for (const key of Object.keys(db.models).sort()) {
   const cfg = db.models[key];
   if (!cfg || typeof cfg !== "object") { skipped.push(key + "（条目不是对象）"); continue; }
 
+// 缓存写入价（Anthropic / Kimi K3 这类写缓存单独计费的模型）跟着一起带出，缺省的按未命中价兜底。
+const cwOf = (o) => (typeof o.cacheWrite === "number" && Number.isFinite(o.cacheWrite) && o.cacheWrite >= 0 ? { cacheWrite: o.cacheWrite } : {});
+
   let price = null;
   if (isPrice(cfg.flat)) {
-    price = { inputMiss: cfg.flat.inputMiss, inputHit: cfg.flat.inputHit, output: cfg.flat.output };
+    price = { inputMiss: cfg.flat.inputMiss, inputHit: cfg.flat.inputHit, output: cfg.flat.output, ...cwOf(cfg.flat) };
   } else if (isPrice(cfg.peak) && isPrice(cfg.offPeak)) {
     price = {
-      peak: { inputMiss: cfg.peak.inputMiss, inputHit: cfg.peak.inputHit, output: cfg.peak.output },
-      offPeak: { inputMiss: cfg.offPeak.inputMiss, inputHit: cfg.offPeak.inputHit, output: cfg.offPeak.output },
+      peak: { inputMiss: cfg.peak.inputMiss, inputHit: cfg.peak.inputHit, output: cfg.peak.output, ...cwOf(cfg.peak) },
+      offPeak: { inputMiss: cfg.offPeak.inputMiss, inputHit: cfg.offPeak.inputHit, output: cfg.offPeak.output, ...cwOf(cfg.offPeak) },
     };
   }
   if (!price) { skipped.push(key + "（既没有合法 flat 也没有合法 peak/offPeak）"); continue; }
@@ -61,7 +65,8 @@ for (const key of Object.keys(db.models).sort()) {
 }
 
 const q = (s) => JSON.stringify(s);
-const flatObj = (o) => `{ inputMiss: ${o.inputMiss}, inputHit: ${o.inputHit}, output: ${o.output} }`;
+const flatObj = (o) =>
+  `{ inputMiss: ${o.inputMiss}, inputHit: ${o.inputHit}, output: ${o.output}${typeof o.cacheWrite === "number" ? `, cacheWrite: ${o.cacheWrite}` : ""} }`;
 const priceLiteral = (p) =>
   p.peak
     ? `{\n    peak: ${flatObj(p.peak)},\n    offPeak: ${flatObj(p.offPeak)},\n  }`
@@ -91,6 +96,14 @@ const block = [
   "let CONTEXT_WINDOW = {",
   mapLiteral(windows),
   "};",
+  "",
+  // 峰谷规则也内置一份：离线兜底时同样按北京时间工作日分段，节假日表随库更新
+  ...(db.peakHours
+    ? [
+        "// 峰谷时段规则（由 pricing.json 的 peakHours 生成，运行期可被远程配置覆盖）",
+        `const BUILTIN_PEAK_HOURS = ${JSON.stringify(db.peakHours)};`,
+      ]
+    : []),
   END,
 ].join("\n");
 
