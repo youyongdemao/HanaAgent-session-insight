@@ -3,7 +3,7 @@
 // 用法: node scripts/check-providers.mjs
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import registerPluginApiRoutes from "../routes/api.js";
+import registerPluginApiRoutes from "../lib/legacy-api.js";
 
 // 宿主自带 hono，但插件目录不一定有自己的 node_modules，这里按候选路径探测（可用 HONO_PATH 覆盖）
 const HONO_CANDIDATES = [
@@ -20,8 +20,8 @@ const HANA_HOME = process.env.HANA_HOME || "D:/AI/Hanako";
 // --verify：真打一次各家接口，看余额/配额门路是否还有效（不加这个参数只读配置，不触网）
 const VERIFY = process.argv.includes("--verify");
 const ctx = {
-  pluginDir: join(HANA_HOME, "plugins", "session-insight"),
-  dataDir: join(HANA_HOME, "plugin-data", "session-insight"),
+  pluginDir: join(HANA_HOME, "apps", "session-insight-v2"),
+  dataDir: join(HANA_HOME, "app-data", "session-insight-v2"),
   config: { get: () => null },
   network: VERIFY
     ? { fetch: (url, opts) => fetch(url, opts) }
