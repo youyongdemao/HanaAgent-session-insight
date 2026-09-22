@@ -42,13 +42,14 @@ for (const key of Object.keys(db.models).sort()) {
   const cfg = db.models[key];
   if (!cfg || typeof cfg !== "object") { skipped.push(key + "（条目不是对象）"); continue; }
 
+  const cw = (s) => (typeof s?.cacheWrite === "number" && s.cacheWrite >= 0 ? { cacheWrite: s.cacheWrite } : {});
   let price = null;
   if (isPrice(cfg.flat)) {
-    price = { inputMiss: cfg.flat.inputMiss, inputHit: cfg.flat.inputHit, output: cfg.flat.output };
+    price = { inputMiss: cfg.flat.inputMiss, inputHit: cfg.flat.inputHit, output: cfg.flat.output, ...cw(cfg.flat) };
   } else if (isPrice(cfg.peak) && isPrice(cfg.offPeak)) {
     price = {
-      peak: { inputMiss: cfg.peak.inputMiss, inputHit: cfg.peak.inputHit, output: cfg.peak.output },
-      offPeak: { inputMiss: cfg.offPeak.inputMiss, inputHit: cfg.offPeak.inputHit, output: cfg.offPeak.output },
+      peak: { inputMiss: cfg.peak.inputMiss, inputHit: cfg.peak.inputHit, output: cfg.peak.output, ...cw(cfg.peak) },
+      offPeak: { inputMiss: cfg.offPeak.inputMiss, inputHit: cfg.offPeak.inputHit, output: cfg.offPeak.output, ...cw(cfg.offPeak) },
     };
   }
   if (!price) { skipped.push(key + "（既没有合法 flat 也没有合法 peak/offPeak）"); continue; }
@@ -61,7 +62,7 @@ for (const key of Object.keys(db.models).sort()) {
 }
 
 const q = (s) => JSON.stringify(s);
-const flatObj = (o) => `{ inputMiss: ${o.inputMiss}, inputHit: ${o.inputHit}, output: ${o.output} }`;
+const flatObj = (o) => `{ inputMiss: ${o.inputMiss}, inputHit: ${o.inputHit}, output: ${o.output}${typeof o.cacheWrite === "number" ? `, cacheWrite: ${o.cacheWrite}` : ""} }`;
 const priceLiteral = (p) =>
   p.peak
     ? `{\n    peak: ${flatObj(p.peak)},\n    offPeak: ${flatObj(p.offPeak)},\n  }`
@@ -91,6 +92,9 @@ const block = [
   "let CONTEXT_WINDOW = {",
   mapLiteral(windows),
   "};",
+  "",
+  "// 峰谷时段规则（含法定节假日）。在线库拉不到时按这份兜底。",
+  `const BUILTIN_PEAK_HOURS = ${JSON.stringify(db.peakHours || null)};`,
   END,
 ].join("\n");
 
