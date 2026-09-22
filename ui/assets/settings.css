@@ -73,6 +73,9 @@ body {
   list-style: none;
   margin: 0;
   padding: 4px 0;
+  /* 卡片不铺满整幅：容器宽的时候，同一行里的文字和右侧控件会离得太远，
+     收到 620 以内更聚。窄容器下自然铺满，不受影响。 */
+  max-width: 620px;
   background: var(--bg-card, color-mix(in srgb, var(--text) 5%, transparent));
   border-radius: 12px;
   overflow: hidden;
