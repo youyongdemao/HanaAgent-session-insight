@@ -945,6 +945,9 @@ body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-sur
 .w-detail-overlay .model-metric-card.model-donut-center .model-donut-legend{align-content:center}
 .w-detail-overlay .model-donut-main svg{width:170px!important;max-width:170px!important;height:170px!important;display:block}
 .model-donut-legend{display:grid;gap:8px;min-width:0}
+/* 左边「模型 Token 消耗」行数一多就把整行拉高，右边这张卡会被动变高；
+   图例改成按剩余高度分摊，别让空白全堆在下面。条目少时也自然铺开。 */
+.w-detail-overlay .model-metric-card.model-donut-center .model-donut-legend{display:flex;flex-direction:column;justify-content:space-between;height:100%}
 .model-donut-legend span{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:var(--text-light)}
 .model-donut-legend span i{width:10px;height:10px;border-radius:3px}
 .model-donut-legend span em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
