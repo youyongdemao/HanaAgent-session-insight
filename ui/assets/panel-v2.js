@@ -379,7 +379,18 @@ function renderApiOverview(){
     const kindTxt=({balance:'预付余额',quota:'订阅配额',cost:'官方成本'})[b.kind]||(local?'本地模型':(noAdapter?'已配置':''))||'';
     const stateDesc=ok?'可检测余额与连接状态':local?'本地部署，没有可读取的余额接口':(unsup?esc(b.note||'无官方余额接口'):bad?'有余额接口，但本次读取失败':(noAdapter?'已配置，插件暂无该供应商的余额探测':(noKey?'凭证不完整，无法读取':'连接异常，暂时无法读取')));
     const busy=refreshing.has(b.provider);
-    const mainInfo=ok?'<b>'+val+'</b>'+(pct!=null?'<div class="track" title="剩余 '+pct.toFixed(0)+'%"><i style="width:'+pct.toFixed(0)+'%"></i></div>':''):'';
+    // 额度类：每个窗口一行（档位标签 + 剩余条 + 百分比）。窗口数量与档位完全跟着接口给的数据走，
+    // 不给死磕 5h/7d：几分钟、几小时、几天、几月都能显示，卡高随行数自动变
+    const wins=(b.kind==='quota'&&Array.isArray(b.windows)&&b.windows.length)?b.windows:[];
+    const mainInfo=!ok?'':(wins.length
+      ?'<div class="pv-wins">'+wins.map(w=>{
+        const p=Math.max(0,Math.min(100,Number(w.remainingPercent??0)));
+        const cls=p<15?'crit':(p<40?'low':'');
+        return '<div class="pv-win"><span class="nm">'+esc(w.short||w.label||'额度')+'</span>'
+          +'<span class="tr"><i'+(cls?' class="'+cls+'"':'')+' style="width:'+p.toFixed(0)+'%"></i></span>'
+          +'<span class="pc'+(cls?' '+cls:'')+'">'+p.toFixed(0)+'%</span></div>';
+      }).join('')+'</div>'
+      :'<b>'+val+'</b>'+(pct!=null?'<div class="track" title="剩余 '+pct.toFixed(0)+'%"><i style="width:'+pct.toFixed(0)+'%"></i></div>':''));
     return '<div class="card provider-item" data-provider="'+esc(b.provider)+'" title="点击查看供应商详情">'
       +'<div class="pv-main"><div class="pv-name"><strong>'+esc(b.name||b.provider)+'</strong><small>'+kindTxt+'</small></div><span class="pv-state-desc">'+stateDesc+'</span></div>'
       +'<div class="pv-tail" data-refresh="'+esc(b.provider)+'" title="点击刷新该供应商连接">'+(busy?'<i class="pv-pending"></i>':'<i class="pv-dot '+dotCls+'" title="'+statTxt+'"></i>')+'</div>'

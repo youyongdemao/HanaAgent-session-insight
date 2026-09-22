@@ -354,6 +354,18 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 .pd-quota .q-bar i.crit{background:var(--si-red, #C77070)}
 .pd-quota .q-pct{font:600 11.5px var(--font-mono);color:var(--text-light);text-align:right}
 
+/* ── 供应商卡片里的额度窗口列表（每窗口一行，档位标签放大到 13px）── */
+.pv-wins{display:grid;gap:7px}
+.pv-win{display:grid;grid-template-columns:34px minmax(40px,1fr) 46px;align-items:center;gap:10px;min-width:0}
+.pv-win .nm{font:500 13px var(--font-mono);color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-win .tr{height:6px;border-radius:3px;background:color-mix(in srgb,var(--text) 11%,transparent);overflow:hidden}
+.pv-win .tr i{display:block;height:100%;border-radius:3px;background:var(--accent);transition:width .3s var(--ease,ease)}
+.pv-win .tr i.low{background:var(--si-amber,#C08A3E)}
+.pv-win .tr i.crit{background:var(--si-red,#C77070)}
+.pv-win .pc{font:600 13px var(--font-mono);color:var(--text-light);text-align:right}
+.pv-win .pc.low{color:var(--si-amber,#C08A3E)}
+.pv-win .pc.crit{color:var(--si-red,#C77070)}
+
 /* ── 订阅额度卡片（详情页主位）──
    板块名 + 套餐徽章 / 每窗口一行（短标签 + 剩余进度条 + 百分比）/ 底行累计 Token */
 .pd-quota-card{border:1px solid color-mix(in srgb,var(--text) 8%,transparent);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--bg-card) 22%,transparent)}
