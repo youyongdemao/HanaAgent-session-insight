@@ -344,6 +344,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 .price-head-row .pr-model strong{font-size:10.5px;font-weight:500;color:var(--text-muted)}
 .price-head-row .pr-cell{text-align:left}.price-head-row .pr-cell em{display:block;font-size:11px;color:var(--text-muted);font-style:normal}
 .price-head-row .pr-cells.price-grid{gap:10px}
+/* 总消耗标签后的账本覆盖范围：小字、弱化色，跟在标题后面不抢读数 */
+.uh-label .uh-range{margin-left:8px;font-size:10.5px;font-weight:400;color:var(--text-muted);opacity:.85}
 .model-cost-row .pr-cell:first-child b{color:var(--accent)}
 .model-cost-row .source-col b{white-space:normal;overflow:hidden;text-overflow:clip;font-size:11px;font-weight:400;color:var(--text-muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .pr-offpeak{display:block;margin-top:4px;font:9px var(--font-mono);color:var(--text-muted);white-space:nowrap}
