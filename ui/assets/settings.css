@@ -141,11 +141,13 @@ body {
 }
 
 /* 能跳走的链接：跟在后面画一个外链小箭头。
-   取弱化色与右侧其它值一致，不单独用亮色，免得这一行在卡片里跳出来。 */
+   取弱化色与右侧其它值一致，不单独用亮色，免得这一行在卡片里跳出来。
+   字号必须显式给：它和「版本」这类值同属右侧值，不给就会继承正文 16px，比隔壁那行大一圈。 */
 .st-item-link {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-size: 12px;
   color: var(--text-muted);
   text-decoration: none;
   cursor: pointer;
