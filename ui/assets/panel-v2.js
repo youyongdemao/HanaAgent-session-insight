@@ -465,7 +465,10 @@ function renderApiDetail(){
   const statIsNote=!isLocalCfg&&!(hit&&hit.status==="ok");
   const balanceLabel=isLocalCfg?"累计 Token":(hit?.label||"可用余额");
   const statText=isLocalCfg?(providerTokens>0?fmtTokens(providerTokens):"–"):okStatText();
-  const statsEl=$("#pdStats");if(statsEl)statsEl.innerHTML='<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b'+(statIsNote?' class="balance-note"':'')+'>'+esc(statText)+'</b></div>'+(!isLocalCfg&&providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':'');
+  const statsEl=$("#pdStats");
+  // 额度类：把每个窗口单列一行（5 小时 / 周 / 月…），只说一个百分比看不出是哪个额度
+  const winHtml=(hit&&hit.kind==="quota"&&Array.isArray(hit.windows))?hit.windows.map(w=>'<div class="provider-token-stat"><span>'+esc(w.label||"额度")+'</span><b>'+esc(Number(w.remainingPercent??0).toFixed(0)+"%")+'</b></div>').join(""):"";
+  if(statsEl)statsEl.innerHTML='<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b'+(statIsNote?' class="balance-note"':'')+'>'+esc(statText)+'</b></div>'+winHtml+(!isLocalCfg&&providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':'');
   function okStatText(){return hit?(hit.status==="ok"?(hit.summary||"正常"):stat):"不可查询";}
   const thR=(state.rules||{})[state.provider]||{};const isBalance=hit?.kind==="balance";const canThreshold=hit?.status==="ok"&&(isBalance?Number.isFinite(Number(hit.total)):Number.isFinite(Number(hit.remainingPercent)));
   const thE=$("#thEnabled"),thP=$("#thPct"),thF=$("#thFail"),thS=$("#thresholdSaveStatus"),thL=$("#thresholdLabel"),thU=$("#thresholdUnit");
