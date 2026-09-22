@@ -68,7 +68,7 @@ body {
 
 /* ── 设置行 ──
    一组行包在一个卡片里、分区标题留在卡片外，与宿主设置页一致；
-   行与行不画分隔线，靠行距与卡片底色把一组括起来。 */
+   卡片底负责把一组括起来，组内再用内缩的细线分行。 */
 .st-list {
   list-style: none;
   margin: 0;
@@ -118,12 +118,6 @@ body {
   font-size: 12.5px;
   color: var(--text);
   overflow-wrap: anywhere;
-}
-
-/* 标题前的图标：跟文字同色，垂直居中 */
-.st-item-icon {
-  flex: 0 0 auto;
-  opacity: .85;
 }
 
 /* 右侧的值（如版本号）：弱化色，与标签区分 */
