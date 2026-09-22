@@ -114,6 +114,9 @@ function applyResult(info) {
   if (current) current.textContent = currentVersion ? "v" + currentVersion : "v–";
   const latest = el("siUpdateLatest");
   if (!latest) return;
+  // 只有真有新版本时才给下载入口，免得「已是最新版本」旁边挂一个前往下载
+  const rel = el("siUpdateRelease");
+  if (rel) rel.hidden = !info.updateAvailable;
 
   if (info.updateAvailable) {
     latest.textContent = `v${info.latestVersion}${info.publishedAt ? " · " + shortDate(info.publishedAt) : ""}`;
@@ -153,10 +156,13 @@ function open(info, focusButton = true) {
   if (current) current.textContent = currentVersion ? "v" + currentVersion : "v–";
   const latest = el("siUpdateLatest");
   if (latest) latest.textContent = "—";
+  // 结论出来前先收起下载入口：已是最新版本时这按钮没意义
+  const rel0 = el("siUpdateRelease");
+  if (rel0) rel0.hidden = true;
 
   if (info) applyResult(info);
   // 自检自动弹出时不抢焦点：用户可能正在拨开关
-  if (focusButton) el("siUpdateRelease")?.focus();
+  if (focusButton) { const r = el("siUpdateRelease"); if (r && !r.hidden) r.focus(); }
   if (!info) check();
 }
 
