@@ -951,6 +951,9 @@ body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-sur
 /* 空白超过阈值时改成上下结构：甜甜圈在上、图例在下并纵向铺开，把高度吃掉 */
 .w-detail-overlay .model-metric-card.model-donut-center.is-tall .model-donut-split{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:22px;align-content:stretch}
 .w-detail-overlay .model-metric-card.model-donut-center.is-tall .model-donut-main{margin:0 auto}
+/* 图例在上下结构里铺成两栏并占满卡宽：单栏铺满会让名称和百分比隔得太远，
+   单栏不铺满又在右边留一大块。两栏的栏宽刚好和原来左右结构时的图例栏差不多。 */
+.w-detail-overlay .model-metric-card.model-donut-center.is-tall .model-donut-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px;align-content:space-between;width:100%;height:100%}
 .model-donut-legend span{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:var(--text-light)}
 .model-donut-legend span i{width:10px;height:10px;border-radius:3px}
 .model-donut-legend span em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
