@@ -466,8 +466,14 @@ function renderApiDetail(){
   const balanceLabel=isLocalCfg?"累计 Token":(hit?.label||"可用余额");
   const statText=isLocalCfg?(providerTokens>0?fmtTokens(providerTokens):"–"):okStatText();
   const statsEl=$("#pdStats");
-  // 额度类：把每个窗口单列一行（5 小时 / 周 / 月…），只说一个百分比看不出是哪个额度
-  const winHtml=(hit&&hit.kind==="quota"&&Array.isArray(hit.windows))?hit.windows.map(w=>'<div class="provider-token-stat"><span>'+esc(w.label||"额度")+'</span><b>'+esc(Number(w.remainingPercent??0).toFixed(0)+"%")+'</b></div>').join(""):"";
+  // 额度类：每个窗口一行（短标签 + 剩余进度条 + 百分比），一眼看哪个额度有紧
+  const winHtml=(hit&&hit.kind==="quota"&&Array.isArray(hit.windows)&&hit.windows.length)
+    ? '<div class="pd-quota">'+hit.windows.map(w=>{
+        const p=Math.max(0,Math.min(100,Number(w.remainingPercent??0)));
+        const cls=p<15?"crit":(p<40?"low":"");
+        return '<div class="q-win"><span class="q-name">'+esc(w.short||w.label||"额度")+'</span><span class="q-bar"><i'+(cls?' class="'+cls+'"':'')+' style="width:'+p.toFixed(0)+'%"></i></span><b class="q-pct">'+p.toFixed(0)+'%</b></div>';
+      }).join("")+'</div>'
+    : "";
   if(statsEl)statsEl.innerHTML='<div class="provider-balance-main"><span>'+esc(balanceLabel)+'</span><b'+(statIsNote?' class="balance-note"':'')+'>'+esc(statText)+'</b></div>'+winHtml+(!isLocalCfg&&providerTokens>0?'<div class="provider-token-stat"><span>累计 Token</span><b>'+esc(fmtTokens(providerTokens))+'</b></div>':'');
   function okStatText(){return hit?(hit.status==="ok"?(hit.summary||"正常"):stat):"不可查询";}
   const thR=(state.rules||{})[state.provider]||{};const isBalance=hit?.kind==="balance";const canThreshold=hit?.status==="ok"&&(isBalance?Number.isFinite(Number(hit.total)):Number.isFinite(Number(hit.remainingPercent)));

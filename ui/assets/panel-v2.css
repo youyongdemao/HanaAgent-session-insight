@@ -344,6 +344,16 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 .price-head-row .pr-model strong{font-size:10.5px;font-weight:500;color:var(--text-muted)}
 .price-head-row .pr-cell{text-align:left}.price-head-row .pr-cell em{display:block;font-size:11px;color:var(--text-muted);font-style:normal}
 .price-head-row .pr-cells.price-grid{gap:10px}
+/* ── 订阅额度：每个窗口一行，短标签 + 剩余进度条 + 百分比 ── */
+.pd-quota{display:grid;gap:7px;margin-top:10px;min-width:0}
+.pd-quota .q-win{display:grid;grid-template-columns:52px minmax(60px,1fr) 42px;align-items:center;gap:10px;min-width:0}
+.pd-quota .q-name{font:500 11px var(--font-mono);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd-quota .q-bar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--text) 11%,transparent);overflow:hidden}
+.pd-quota .q-bar i{display:block;height:100%;border-radius:3px;background:var(--green, #8CC790);transition:width .3s var(--ease, ease)}
+.pd-quota .q-bar i.low{background:var(--si-amber, #C08A3E)}
+.pd-quota .q-bar i.crit{background:var(--si-red, #C77070)}
+.pd-quota .q-pct{font:600 11.5px var(--font-mono);color:var(--text-light);text-align:right}
+
 /* 总消耗标签后的账本覆盖范围：小字、弱化色，跟在标题后面不抢读数 */
 .uh-label .uh-range{margin-left:8px;font-size:10.5px;font-weight:400;color:var(--text-muted);opacity:.85}
 .model-cost-row .pr-cell:first-child b{color:var(--accent)}
