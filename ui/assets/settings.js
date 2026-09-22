@@ -5,7 +5,9 @@
 import { hana } from "./sdk.js";
 import { apiFetch } from "./app-api.js";
 import { initUpdateNotice, openUpdateNotice } from "./update-notice.js";
+import { initHostThemeSync } from "./theme-sync.js";
 
+initHostThemeSync();
 hana.ready();
 
 // 保存后写一个一次性标记，卡片那边轮询到配置变化就重排

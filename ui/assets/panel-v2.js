@@ -1,6 +1,8 @@
 ﻿// assets/panel-v2.js — Session Insight v2 前端（独立于 v1，路由 /page?v=2）
 import { hana as hanaV2 } from "./sdk.js";
 import { initUpdateNotice } from "./update-notice.js";
+// 共享的宿主主题跟随（SDK 订阅 + 宿主签发的样式表），设置页也用同一份
+import { initHostThemeSync as initSharedThemeSync, syncComputedColorMode, resolveThemeIntent } from "./theme-sync.js";
 
 const PROTOCOL = "hana.plugin.ui";
 const VERSION = 1;
@@ -34,16 +36,12 @@ function siDiag(msg){try{let el=document.getElementById("si-diag");if(!msg){if(e
 async function fetchJson(path){try{const res=await hana.api.fetch(path,{signal:AbortSignal.timeout(8000)});if(!res.ok)throw new Error("HTTP "+res.status);const out=await res.json();siDiag("");return out;}catch(error){siDiag(`${path}\n${String(error?.message||error)}`);throw error;}}
 
 /* 主题同步（与 v1 一致） */
-function parseThemeRgb(v){const raw=String(v||"").trim();let m=raw.match(/^#([0-9a-f]{6})$/i);if(m)return[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16));m=raw.match(/^#([0-9a-f]{3})$/i);if(m)return[...m[1]].map(x=>parseInt(x+x,16));m=raw.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i);return m?[+m[1],+m[2],+m[3]]:null;}
-function syncComputedColorMode(){try{const s=getComputedStyle(document.body);const rgb=parseThemeRgb(s.getPropertyValue("--bg"))||parseThemeRgb(s.backgroundColor);if(!rgb)return;const lum=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];const mode=lum<145?"dark":"light";document.documentElement.dataset.colorMode=mode;document.body.dataset.colorMode=mode;}catch{}}
-function resolveThemeIntent(t){const raw=typeof t==="string"?t.trim():"";if(raw==="auto")return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches?"midnight":"warm-paper";if(!raw||raw==="inherit")return "";return raw;}
 function applyHostTheme(t){const raw=resolveThemeIntent(t);if(!raw)return false;if(document.documentElement.dataset.theme!==raw)document.documentElement.dataset.theme=raw;if(document.body.dataset.hanaTheme!==raw)document.body.dataset.hanaTheme=raw;const tc=document.getElementById("hana-theme-css")||document.querySelector('link[href*="/api/plugins/theme.css"]');if(tc){try{const u=new URL(tc.href,window.location.href);if(u.searchParams.get("theme")!==raw){u.searchParams.set("theme",raw);tc.addEventListener("load",syncComputedColorMode,{once:true});tc.href=u.toString();}}catch{}}requestAnimationFrame(syncComputedColorMode);return true;}
 function initHostThemeSync(){const initial=new URLSearchParams(window.location.search).get("hana-theme")||document.body.dataset.hanaTheme||"warm-paper";if(!applyHostTheme(initial))applyHostTheme("warm-paper");try{const hw=window.parent,hd=hw.document,hr=hd.documentElement,media=hw.matchMedia?.("(prefers-color-scheme: dark)");const read=()=>{const a=hr.getAttribute("data-theme")?.trim()||hd.body?.getAttribute("data-theme")?.trim();if(a&&a!=="auto"&&a!=="inherit")return a;const s=hw.localStorage?.getItem("hana-theme")?.trim();if(s&&s!=="auto"&&s!=="inherit")return s;if(initial&&initial!=="auto"&&initial!=="inherit")return initial;return media?.matches?"midnight":"warm-paper";};const sync=()=>applyHostTheme(read());sync();const obs=new MutationObserver(sync);obs.observe(hr,{attributes:true,attributeFilter:["data-theme","class","style"]});if(hd.body)obs.observe(hd.body,{attributes:true,attributeFilter:["data-theme","class","style"]});hw.addEventListener("storage",sync);hw.addEventListener("hana-settings",sync);media?.addEventListener?.("change",sync);const timer=hw.setInterval(sync,500);window.addEventListener("beforeunload",()=>{obs.disconnect();hw.removeEventListener("storage",sync);hw.removeEventListener("hana-settings",sync);media?.removeEventListener?.("change",sync);hw.clearInterval(timer);},{once:true});}catch{}}
 initHostThemeSync();
-/* v2 主题跟随：宿主经 SDK 下发 { theme, cssUrl }，以它为准覆盖上面的推断。
-   cssUrl 由宿主签发，不要改它的参数（v1 那套改写 theme query 的做法对 v2 无效）。 */
-function initV2ThemeSync(){const apply=(snap)=>{if(!snap)return;const theme=typeof snap.theme==="string"?snap.theme.trim():"";if(theme&&theme!=="auto"&&theme!=="inherit"){if(document.documentElement.dataset.theme!==theme)document.documentElement.dataset.theme=theme;if(document.body.dataset.hanaTheme!==theme)document.body.dataset.hanaTheme=theme;}if(typeof snap.cssUrl==="string"&&snap.cssUrl){let link=document.getElementById("hana-theme-css");if(!link){link=document.createElement("link");link.id="hana-theme-css";link.rel="stylesheet";document.head.appendChild(link);}if(link.getAttribute("href")!==snap.cssUrl)link.setAttribute("href",snap.cssUrl);}requestAnimationFrame(syncComputedColorMode);};try{apply(hanaV2.theme?.getSnapshot?.());hanaV2.theme?.subscribe?.(apply);}catch{}}
-initV2ThemeSync();
+/* v2 主题跟随：宿主下发 { theme, appearance, palettes, cssUrl }，以它为准覆盖上面的推断。
+   共用模块里也顺便处理了 appearance 为 dark/light 时该取哪套调色板。 */
+initSharedThemeSync();
 /* v2 当前会话跟踪：宿主 SDK 的 sessions.getActive / onActiveChanged 是唯一可靠来源。
    v1 那套（宿主 /api/sessions/messages + resolve-entry）在 v2 里不存在，会退化成一个固定会话。 */
 let v2ActiveFile=null;
