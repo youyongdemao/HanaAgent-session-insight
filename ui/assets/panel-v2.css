@@ -1316,7 +1316,9 @@ body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glo
    会通过后代 span 选择器误伤 .od-strip / .od-d，把每个数字盒撑宽、字距拉散。 */
 .od,.od *{white-space:nowrap!important;letter-spacing:inherit!important}
 /* 滚动结束后摘掉滚动结构自带的发光与上下遮罩：静止的数字应与普通文字完全一致 */
-.od-done{text-shadow:none!important;-webkit-mask-image:none!important;mask-image:none!important}
+/* 滚动结构内的数字全程不发光：内联光晕只在滚动期间存在、结束即被摘掉，会在滚动时闪一层边缘光晕 */
+.od{text-shadow:none!important}
+.od-done{-webkit-mask-image:none!important;mask-image:none!important}
 .mini-card{min-width:0}
 .mini-card b{white-space:nowrap}
 .uh-mini>*,.uh-block>*,.uh-side>*,.uh-hit>*,.hero-metrics>*{min-width:0}
