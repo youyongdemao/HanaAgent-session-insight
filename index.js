@@ -17,12 +17,16 @@ import {
   resolveSessionId,
   baseName,
 } from "./lib/host-data.js";
+import { missInputOf } from "./lib/usage-parser.js";
 
 export const name = "session-insight-v2";
 
 function num(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
+
+// 未命中输入统一走 usage-parser 的 missInputOf（口径单一来源）
+const missTokensOf = missInputOf;
 
 function summarizeUsage(entries) {
   let totalTokens = 0;
@@ -476,7 +480,7 @@ export default defineApp(async (sdk) => {
           const hc = num(e?.usage?.costTotal);
           sumCost += hc != null && hc > 0 ? hc : (calcEntryCost(e) ?? 0);
           sumHit += num(e?.usage?.cache?.readTokens) ?? 0;
-          sumMiss += num(e?.usage?.cache?.missTokens) ?? 0;
+          sumMiss += missTokensOf(e?.usage) ?? 0;
         }
         const hit = sessions.find((s) => s.sessionId === sessionId) ?? null;
 
@@ -493,7 +497,7 @@ export default defineApp(async (sdk) => {
             totalTokens: num(u?.totalTokens),
             hitRatio: num(u?.cache?.hitRatio),
             cacheReadTokens: num(u?.cache?.readTokens),
-            cacheMissTokens: num(u?.cache?.missTokens),
+            cacheMissTokens: missTokensOf(u),
             cost: num(u?.costTotal) > 0 ? num(u?.costTotal) : calcEntryCost(last),
             durationMs: wallMs > 0 ? wallMs : null,
             tps,
@@ -568,7 +572,7 @@ export default defineApp(async (sdk) => {
       modelId: entry?.model?.modelId ?? null,
       hitRatio: num(u?.cache?.hitRatio),
       cacheReadTokens: num(u?.cache?.readTokens),
-      cacheMissTokens: num(u?.cache?.missTokens),
+      cacheMissTokens: missTokensOf(u),
       inputTokens: num(u?.input?.totalTokens),
       outputTokens: num(u?.output?.totalTokens),
       reasoningTokens: num(u?.output?.reasoningTokens),
