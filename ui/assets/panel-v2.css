@@ -840,7 +840,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview #taskCat .src-row b{font:500 11px var(--font-mono);color:var(--accent)}
 
 /* ── 供应商 / 模型 层级大卡 ── */
-#usage-overview #providerTree .pvtree-group{display:grid;gap:8px;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
+#usage-overview #providerTree .pvtree-group{display:grid;gap:8px;padding:10px 12px;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent);transition:.14s}
+#usage-overview #providerTree .pvtree-group:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 #usage-overview #providerTree .pvtree-group:last-child{border:0}
 #usage-overview #providerTree .pvtree-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 #usage-overview #providerTree .pvtree-head b{font:600 13px var(--font-mono);color:var(--text-light)}
