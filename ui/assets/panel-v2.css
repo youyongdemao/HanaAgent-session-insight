@@ -803,10 +803,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .today-stats .ts-main{display:flex;align-items:center;gap:20px;min-width:0;flex-wrap:wrap}
 #usage-overview .today-stats .ts-tok{display:grid;gap:4px;min-width:0}
 #usage-overview .today-stats .ts-tok span{font-size:11px;color:var(--text-muted);white-space:nowrap}
-#usage-overview .today-stats .ts-tok b{font:400 34px/1 var(--font-mono);color:var(--text-light);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#usage-overview .today-stats .ts-tok b{font:400 42px/1 var(--font-mono);color:var(--text-light);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 #usage-overview .today-stats .ts-hit{display:grid;gap:4px;min-width:0;padding-left:20px;border-left:1px solid color-mix(in srgb,var(--text) 14%,transparent)}
 #usage-overview .today-stats .ts-hit span{font-size:11px;color:var(--text-muted);white-space:nowrap}
-#usage-overview .today-stats .ts-hit b{font:400 24px/1 var(--font-mono);color:var(--green);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#usage-overview .today-stats .ts-hit b{font:400 30px/1 var(--font-mono);color:var(--green);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 #usage-overview .today-stats .ts-mini{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:auto;min-width:0}
 #usage-overview .today-stats .ts-mini .mini-card{padding:10px 12px}
 

@@ -15,6 +15,8 @@ const CSS = path.join(REPO, "ui", "assets", "panel-v2.css");
 const PANEL = path.join(REPO, "ui", "assets", "panel-v2.js");
 const ID = "session-insight";
 const TURNS = 200;
+// 今日（本机日期）也在账本里：今日用量卡要有真实数字才能看出字号差别
+const TODAY_KEY = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
 // 前端指纹：探针中途会改它，验证「页面自己发现代码变了就刷新」这条链路
 const STAMP = { value: "probe-1" };
 const BS_HITS = { value: 0 };
@@ -82,7 +84,7 @@ function startServer(port, assets) {
       if (api === "active") return json({ dir: "mock", file: SESSION_FILE });
       if (api === "resolve-entry") return json({ file: SESSION_FILE });
       if (api === "sessions") return json({ dir: "mock", sessions: [{ name: SESSION_FILE, title: STATS.title, model: STATS.model, size: 1, mtime: Date.now(), turns: TURNS }] });
-      if (api === "ledger-stats") return json({ days: { "2026-08-29": { tokens: 2.6e9, cost: 146.4 }, "2026-09-10": { tokens: 2.59e9, cost: 146.5 } }, calls: 39408, errors: 39, tokens: { input: 5.1e9, output: 9.1e7, cacheHit: 4.9e9, cacheMiss: 1.1e8, hitRate: 0.982 }, coverage: { firstDay: "2026-08-29" }, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
+      if (api === "ledger-stats") return json({ days: { [TODAY_KEY]: { tokens: 351.08e6, cost: 16.05, hitRate: 0.99, calls: 2424, err: 1 }, "2026-08-29": { tokens: 2.6e9, cost: 146.4 }, "2026-09-10": { tokens: 2.59e9, cost: 146.5 } }, calls: 39408, errors: 39, tokens: { input: 5.1e9, output: 9.1e7, cacheHit: 4.9e9, cacheMiss: 1.1e8, hitRate: 0.982 }, coverage: { firstDay: "2026-08-29" }, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
       if (api === "total-cost") return json({ totalCost: 16.62 });
       if (api === "rules") return json({});
       if (api === "providers" || api === "local-providers") return json({ providers: [] });
@@ -190,6 +192,9 @@ const HERO = `(()=>{
   ov.todayStats=T('#usage-overview .today-stats');
   ov.todayMini=T('#usage-overview .ts-mini');
   ov.todayCard=T('#usage-overview .ts-mini .mini-card');
+  ov.todayTok=T('#usage-overview .ts-tok b');
+  ov.todayHit=T('#usage-overview .ts-hit b');
+  ov.todayMain=T('#usage-overview .ts-main');
   ov.todayPad=(()=>{const e=document.querySelector('#usage-overview .uh-today');if(!e)return null;const s=getComputedStyle(e);return [s.paddingTop,s.paddingBottom].join(' ');})();
   ov.labelCS=(()=>{const e=document.querySelector('#usage-overview .uh-tok .uh-label');if(!e)return null;const s=getComputedStyle(e);return{display:s.display,justify:s.justifyContent,width:s.width,minW:s.minWidth};})();
   const se=g('#usage-session','#usage-session .uh-tok','#usage-session .uh-tok .uh-label','#usage-session #sTok');
