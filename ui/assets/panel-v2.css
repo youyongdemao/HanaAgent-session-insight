@@ -90,7 +90,7 @@ body[data-surface="widget"] .card:hover{transform:scale(1.025);border-color:colo
 /* ── 模型列表行 ── */
 .w-detail-grid .m-list{display:grid;gap:5px;margin-top:8px}
 .m-list>code{font:500 10.5px/1.5 var(--font-mono);color:var(--text-light);background:color-mix(in srgb,var(--text) 5%,transparent);border-radius:8px;padding:6px 9px;display:block}.m-entry{display:grid;gap:5px;padding:7px 9px;border-radius:9px;background:color-mix(in srgb,var(--text) 5%,transparent)}.m-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.m-head code{font:500 10.5px/1.4 var(--font-mono);color:var(--text-light)}.m-head b{font:600 10px var(--font-mono);color:var(--accent);white-space:nowrap}.w-detail-card .card{--ov-hover-scale:1.016;--ov-press-scale:.97;transform-origin:center;transform:translateZ(0) scale(1);will-change:transform,box-shadow;transition:transform .3s cubic-bezier(.2,.72,.22,1),border-color .24s ease,box-shadow .34s ease,background .32s ease,filter .32s ease}.w-detail-card .card:hover{transform:translateZ(0) scale(var(--ov-hover-scale));border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 5px 20px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:5}.w-detail-card .card:active,.w-detail-card .card.si-press{transform:translateZ(0) scale(var(--ov-press-scale))!important;opacity:1!important;transition:transform .11s cubic-bezier(.3,.05,.65,.2),filter .11s ease;filter:brightness(.985) saturate(.98)}
-@media(max-width:1080px){.layout{grid-template-columns:1fr}.widget{position:static;min-height:0}.hero{grid-template-columns:1fr 1fr}.grid2,.grid3,.detail-grid{grid-template-columns:1fr}.provider-item{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}}
+@media(max-width:1080px){.session-charts{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.widget{position:static;min-height:0}.hero{grid-template-columns:1fr 1fr}.grid2,.grid3,.detail-grid{grid-template-columns:1fr}.provider-item{grid-template-columns:1fr 1fr}.rules{grid-template-columns:1fr}}
 
 /* ── 顶栏操作按钮 ── */
 .top-actions{display:flex;gap:6px;margin-left:auto;margin-right:30px}
@@ -873,6 +873,11 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .chart-legend .cl-item i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
 .w-detail-overlay .w-detail-visual.card,.w-detail-overlay .w-detail-visual{overflow:visible!important;width:100%;min-width:0}
 .w-detail-overlay .w-detail-visual svg{width:100%!important;max-width:100%!important;height:auto;display:block;overflow:visible}
+/* 详情里的逐轮图表按轮次展开：超出卡片宽度就横向滚动，而不是压缩到看不清。
+   详情卡自身有两条 overflow:visible!important（.w-detail-visual 与 .w-detail-card .card），
+   所以这里把选择器写到 0,4,0 并同样加 !important，否则会被它们压回去。 */
+.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll{overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;scrollbar-width:thin}
+.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll svg{width:var(--dw)!important;max-width:none!important;height:auto!important;display:block}
 .w-detail-overlay .w-detail-visual>div{min-width:0;width:100%;overflow:visible}
 .w-detail-overlay .w-detail-card .card{overflow:visible!important}
 /* ── 用量布局：Token消费统计整行 + 左侧两卡竖排 + 供应商排行右列 ── */
@@ -1127,7 +1132,7 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
 .mini-card span{font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mini-card b{font:700 18px/1 var(--font-mono);color:var(--text-light);font-variant-numeric:tabular-nums}
 .session-extra h3{flex:none;margin-bottom:14px}
-.session-charts{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px}
+.session-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:20px}
 .session-charts .chart-card{min-width:0}
 .session-charts .chart{min-height:200px}
 .session-charts .chart-scroll{min-height:200px;overflow-x:auto;overflow-y:hidden;position:relative}
@@ -1265,7 +1270,7 @@ body:not([data-surface="widget"]) #view-api .hero-cost .card>.si-glow-spot,body:
 .widget .w-title,.widget .w-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── 每轮 Token 构成：图例靠右与标题同行，不占整行、不带独立窗格 ── */
-body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-legend{position:absolute;top:14px;right:16px;z-index:5;display:flex;gap:10px;margin:0;padding:0;background:none;backdrop-filter:none;border:0;flex-wrap:nowrap}
+body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-legend{position:absolute;top:20px;right:22px;z-index:5;display:flex;gap:10px;margin:0;padding:0;background:none;backdrop-filter:none;border:0;flex-wrap:nowrap}
 
 /* ── 侧边栏状态栏：卡片最小宽度收窄，宽度不够时自动换行而非挤压 ── */
 body[data-surface="widget"] .ring-state{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
