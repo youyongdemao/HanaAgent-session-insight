@@ -346,7 +346,7 @@ function renderUsageSessions(){const ss=activeSessions();const menu=$("#sessionM
 function positionSessionMenu(){const m=$("#sessionMenu"),t=$("#sessionTrigger");if(!m||!t||m.hidden)return;const r=t.getBoundingClientRect();const vw=window.innerWidth||document.documentElement.clientWidth||0;const desired=Math.max(r.width,560);const w=Math.min(desired,vw-24);m.style.left=Math.round(r.left)+"px";m.style.top=Math.round(r.bottom+6)+"px";m.style.width=Math.round(w)+"px";}
 function toggleSessionMenu(){const m=$("#sessionMenu"),drop=$("#sessionDrop"),t=$("#sessionTrigger");if(!m||!drop)return;if(!m.hidden){closeSessionMenu();return;}m.__siHome=drop;if(m.parentElement!==document.body)document.body.appendChild(m);m.hidden=false;requestAnimationFrame(()=>{positionSessionMenu();m.classList.add("open");if(t)t.classList.add("open");});}
 function closeSessionMenu(){const m=$("#sessionMenu"),t=$("#sessionTrigger");if(m&&!m.hidden){m.classList.remove("open");m.hidden=true;const home=m.__siHome||$("#sessionDrop");if(home&&m.parentElement!==home)home.appendChild(m);m.style.left="";m.style.top="";m.style.width="";}if(t)t.classList.remove("open");}
-function pickSession(file){if(!file){state.sessionStats=null;renderUsageSession();return;}state.userSelectedFile=file;lastRenderedSession=file;closeSessionMenu();const pg=document.getElementById('usage-session');if(pg)pg.classList.add('si-quiet');fetchJson("/api/stats?file="+encodeURIComponent(file)).then(r=>{if(pg)pg.classList.remove('si-quiet');if(state.userSelectedFile!==file)return;if(r&&!r.error){state.sessionStats=r;renderUsageSession();if(pg)requestAnimationFrame(()=>animateNumbers(pg));}}).catch(()=>{}).finally(()=>{requestAnimationFrame(()=>{if(pg)pg.classList.remove('si-quiet');});});renderUsageSessions();}
+function pickSession(file){if(!file){state.sessionStats=null;renderUsageSession();return;}state.userSelectedFile=file;state.manualPickAt=Date.now();lastRenderedSession=file;closeSessionMenu();const pg=document.getElementById('usage-session');if(pg)pg.classList.add('si-quiet');fetchJson("/api/stats?file="+encodeURIComponent(file)).then(r=>{if(pg)pg.classList.remove('si-quiet');if(state.userSelectedFile!==file)return;if(r&&!r.error){state.sessionStats=r;renderUsageSession();if(pg)requestAnimationFrame(()=>animateNumbers(pg));}}).catch(()=>{}).finally(()=>{requestAnimationFrame(()=>{if(pg)pg.classList.remove('si-quiet');});});renderUsageSessions();}
 /* 延迟分布：按容器实测像素作图，viewBox 比例与容器一致，图正好填满卡片剩余高度 */
 let latRO=null,latSig="";
 function drawLatHist(){const box=document.getElementById("latHist");if(!box)return;const hAll=Math.round(box.clientHeight||0);if(hAll<160)return;const lat=state.ledger?.latency?.buckets||{};const lats=[lat.lt1||0,lat["1_3"]||0,lat["3_10"]||0,lat.gt10||0];const lmx=Math.max(...lats,1);const lnames=["<1s","1–3s","3–10s",">10s"];const fmtN=v=>String(Math.round(v));const w=Math.max(320,Math.round(box.clientWidth)||520);const sig=w+"x"+hAll+"|"+lats.join(",");if(sig===latSig)return;latSig=sig;box.innerHTML=bars(lats,{w,h:Math.max(150,hAll-18),format:fmtN,xLabels:i=>lnames[i],xticks:4,yMax:lmx*1.15,fill:"color-mix(in srgb,var(--accent) 58%,transparent)"});}
@@ -857,11 +857,17 @@ async function loadPage(force){
     // 反过来「先拉后定」的话，首屏会先渲染成无逐轮数据、下一轮轮询才补上，签名因此变化、白跳一次。
     const sessPick=resolveSessionPick();
     const sessionChanged=Boolean(sessPick)&&sessPick!==lastRenderedSession;
-    if(sessionChanged){lastRenderedSession=sessPick;playSessionEnter();}
+    if(sessionChanged){lastRenderedSession=sessPick;if(realSwitch)playSessionEnter();}
     if(sessPick){state.userSelectedFile=sessPick;try{const r=await fetchJson("/api/stats?file="+encodeURIComponent(sessPick));state.sessionStats=(r&&!r.error)?r:null;}catch{state.sessionStats=null;}}
     else state.sessionStats=null;
     // 会话切过的时候不静默：让本会话那几张卡重播入场动画，而不是硬切
-    const quiet=!force&&pageBooted&&!sessionChanged;
+    // 但“首轮自己稳定”不算切换：刚启动时 pick 会从列表第一个/活跃会话漂到真实焦点会话一次，
+    // 那不是用户动作。如果按切换处理，第一轮主轮询会把整页当成切换重播一遍完整入场动画（闪一下）。
+    // 判据：只有用户手动选过（pickSession 里落的 manualPickAt）才算真切换。
+    const realSwitch = sessionChanged && Date.now() - (state.manualPickAt || 0) < 20000;
+    const quiet=!force&&pageBooted&&!realSwitch;
+    // 非静默渲染（会重播完整入场动画）在启动之后不该再出现；出现就记一条，便于查。
+    if(!quiet&&pageBooted)reportDiag("ui:enter-render","force="+force+" sessionChanged="+sessionChanged+" realSwitch="+realSwitch+" pick="+(sessPick||"-"));
     const sig=dataSig();
     // 先落 pageBooted 再渲染：渲染里任何一处抱错，不能让本函数永远回到“首次渲染”分支。
     // 否则每次轮询都走非静默路径、在同一处再抱，后面的慢组（余额/计费库）永远排不上，
