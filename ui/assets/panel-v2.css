@@ -1339,13 +1339,13 @@ body:not([data-surface="widget"]) #view-api .hero-cost .card>.si-glow-spot,body:
 /* ── 每轮 Token 构成：图例靠右与标题同行，不占整行、不带独立窗格 ── */
 body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-legend{position:absolute;top:16px;right:16px;z-index:5;display:flex;gap:10px;margin:0;padding:0;background:none;backdrop-filter:none;border:0;flex-wrap:nowrap}
 
-/* ── 侧边栏状态栏：环固定 104px，数据格用 flex 增长。
-   换行交给内容自己决定（数据格 min-width = min-content，数字不拆行），不拍像素阈值：
-   - 一排放得下时，环与数据格的间距就是 gap，不随卡片变宽而扩大；
-   - 放不下时（数字整串宽度 + 环放不进一行）数据格整行叠下去，不被挤压、字也不缩。 ── */
-body[data-surface="widget"] .ring-state{display:flex;flex-wrap:wrap;align-items:center;gap:10px 8px}
+/* ── 侧边栏状态栏：环固定 104px，数据格 flex 增长。
+   间距不钉死也不 1:1 拉开，而是取「卡片宽度的一个小比例」（3.5%，夹在 8～36px）：
+   越宽越松，但比宽度长得慢；多出来的宽度留在卡片右侧，不像 space-between 那样同速拉开。
+   换行仍交给内容决定（min-width = min-content），不拍像素阈值。 ── */
+body[data-surface="widget"] .ring-state{display:flex;flex-wrap:wrap;align-items:center;gap:10px 0}
 body[data-surface="widget"] .ring-state>.w-ring{flex:0 0 104px;width:104px}
-body[data-surface="widget"] .ring-state>.w-overview-data{flex:1 1 auto;min-width:min-content}
+body[data-surface="widget"] .ring-state>.w-overview-data{flex:1 1 auto;min-width:min-content;margin-left:clamp(8px,3.5%,36px)}
 /* 当前轮那一组的列数由格子数量决定（见 panel-v2.js 的 layoutTurnGrid）：auto-fit 会在窄卡片上塞 3 列，第 4 格掉行、空出一块 */
 body[data-surface="widget"] .w-context-side{grid-template-columns:repeat(2,minmax(0,1fr))} body[data-surface="widget"] .w-context-side>div{padding-left:8px;padding-right:8px} body[data-surface="widget"] .w-context-side>div:first-child{padding-left:0}
 body[data-surface="widget"] .w-comp-stats{grid-template-columns:repeat(auto-fit,minmax(56px,1fr))}
