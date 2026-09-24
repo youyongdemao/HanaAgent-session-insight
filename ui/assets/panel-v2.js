@@ -934,11 +934,14 @@ function widgetFlipCount(){return flipCount;}
 // 内联优先级最高，cqw 也已验证是按 .uh-tok 的宽度解析的。
 // 会话页的命中率跟随 Token 用同一字号（对齐 CSS 注释里「同字号、底边对齐」的原意）。
 // 位数取 --digits（渲染时写好的字符串长度）——不能用 textContent，滚动时里面是 0-9 的数字条。
+/** 会话页：本会话 Token 的字号按「容器宽 ÷ 字符数」算，数字总占 1.55×容器宽×字宽那么大，
+ *  与位数无关；配合 CSS 的右对齐，右边缘恒在距分割线 30px 处，与另一侧对称。
+ *  这里不压 84px 上限：上限会让位数少时数字缩回去，右边又空出一截。 */
 function fitHeroNumbers(){
   if(surface==='widget')return;
   const fmt=el=>Math.max(1,Math.min(24,Number(el.style.getPropertyValue('--digits'))||8));
   const tok=document.getElementById('sTok');
-  if(tok){tok.style.fontSize='max(26px,min(84px,calc(160cqw/'+fmt(tok)+')))';
+  if(tok){tok.style.fontSize='max(26px,calc(155cqw/'+fmt(tok)+'))';
     const hit=document.getElementById('sHit');if(hit){const v=getComputedStyle(tok).fontSize;if(v)hit.style.fontSize=v;}}
   const kTok=document.getElementById('kTok');
   if(kTok)kTok.style.fontSize='max(26px,min(84px,calc(160cqw/'+fmt(kTok)+')))';

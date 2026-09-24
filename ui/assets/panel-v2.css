@@ -781,6 +781,9 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
    不参与自身尺寸计算；它在 flex 里又没给 flex 基准，宽度于是塌成 0，
    数字被压到 26px 下限、标签挤出盒外，看上去就像和右边那块叠在一起。 */
 #usage-session .uh-main .uh-tok{flex:1 1 0;min-width:0}
+/* 会话页：本会话 Token 的数字要顶到块的右边缘。数字左对齐时，块右侧那截空档
+   会随位数变长，「分割线到数字右边」就比另一侧宽出一截；撑满之后两侧间隔相等。 */
+#usage-session .uh-main .uh-tok b{display:block;width:100%;text-align:right}
 #usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--text) 20%,transparent),transparent);flex:none}
 /* 最弱：三个小信息 */
 #usage-overview .uh-sub,#usage-session .uh-sub{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
