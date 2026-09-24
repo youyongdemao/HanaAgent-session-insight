@@ -75,7 +75,12 @@ const MASKQ = `(()=>{const od=document.querySelector('.od');if(!od)return null;c
     const pxVals = [...new Set(flat.filter((v) => v.includes("px")).map((v) => v))];
     const emVals = [...new Set(flat.filter((v) => v.includes("em")).map((v) => v))];
     const ints = pxVals.every((v) => Number.isInteger(Number(v.replace(/[^-\d.]/g, ""))));
-    console.log(JSON.stringify({ sawRoll, pxMidRoll: pxVals.slice(0, 8), emMidRoll: emVals.slice(0, 4), allIntegerPx: ints, maskInline: mask && mask.inline, opaqueBand: mask && mask.band, fontSize: mask && mask.fontSize, inkTopPct: mask && mask.inkTopPct, inkBotPct: mask && mask.inkBotPct, inkInsideOpaqueBand: mask && mask.inkFits, glowIsFilter: !!(mask && /drop-shadow/.test(mask.glowFilter || '')), glowTextShadow: mask && mask.glowTextShadow }, null, 1));
+    const where = await ev(cdp, `(()=>{const bad=[];for(const el of document.querySelectorAll('b[id],strong[id]')){const t=(el.textContent||'').trim();
+      if(!/[0-9]/.test(t)||/[一-鿿]/.test(t))continue;
+      if(!el.getClientRects().length)continue;
+      if(!el.children.length)bad.push(el.id||el.tagName);}
+      return {stuckPlain:bad};})()`);
+    console.log(JSON.stringify({ sawRoll, pxMidRoll: pxVals.slice(0, 8), emMidRoll: emVals.slice(0, 4), allIntegerPx: ints, stuckPlain: where && where.stuckPlain, maskInline: mask && mask.inline, opaqueBand: mask && mask.band, fontSize: mask && mask.fontSize, inkTopPct: mask && mask.inkTopPct, inkBotPct: mask && mask.inkBotPct, inkInsideOpaqueBand: mask && mask.inkFits, glowIsFilter: !!(mask && /drop-shadow/.test(mask.glowFilter || '')), glowTextShadow: mask && mask.glowTextShadow }, null, 1));
     ws.close();
   } finally { proc.kill(); srv.close(); await sleep(300); try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {} }
 })();

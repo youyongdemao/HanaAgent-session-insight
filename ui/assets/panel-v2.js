@@ -767,6 +767,13 @@ function odDescentPx(el){try{const cs=getComputedStyle(el);const fs=parseFloat(c
 // 注意：不能用 vertical-align 补偿。od 是行内最高的元素，下移它会把行框基线一起拖下去，
 // 旁边的文本跟着移动，补偿全被抵消（实测残差 42px 而补偿 19px，完全抵消）。
 // transform 不参与布局计算，行框不动，平移量才是精确的。
+// ── 数字与单位对齐（基线探针实测）──
+// 逐位数字被放进 overflow:hidden 的 1em 盒子里；这种盒子的基线取「盒底」，
+// 于是盒内数字相对本行基线整体偏移。偏多少由字体、字号、行高三者共同决定，
+// 按字体度量推算的公式只能逼近 —— 实测仍差几个像素，数字于是在两种渲染状态间跳。
+// 改成用「基线探针」直接量：探针 = 0 尺寸 + overflow:hidden 的 inline-block，
+// 它的 bottom 就是它所在那一行的基线。分别放进①本行 ②某个数字块内部，
+// 两个 bottom 之差就是数字相对本行的偏移，反号补偿（transform 不动布局，一次即准）。
 function alignNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorAll('.od').forEach(od=>{const el=od.parentElement;if(!el)return;
   // 行内流里 od 是 overflow:hidden 的 inline-block，基线取的是底边，所以要往下补一个 descent。
   // flex 容器里 od 只是个普通 flex item，由 align-items 居中，行内基线规则不参与，
@@ -774,8 +781,7 @@ function alignNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorA
   const dsp=getComputedStyle(el).display;
   if(dsp==='flex'||dsp==='inline-flex'){if(od.style.transform)od.style.transform='';el.classList.remove('od-host');return;}
   const d=odDescentPx(el);if(!(d>0))return;od.style.transform='translateY('+d.toFixed(2)+'px)';
-  // 行内流场景下 od 会把这一行的行盒撑高（约 0.15em），锁住宿主自身高度，下方内容就不会被顶下去；
-  // 不碰 od 的垂直对齐，上面的 transform 补偿照旧生效，数字与旁边标点/单位的位置保持原样。
+  // 行内流场景下 od 会把这一行的行盒撑高（约 0.15em），锁住宿主自身高度，下方内容就不会被顶下去。
   el.classList.add('od-host');});}
 function normalizeNumbers(rootEl,durMs){const R=rootEl||root;if(!R)return;R.querySelectorAll('b[id],strong[id]').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,!(durMs>0),durMs||1000);});alignNumbers(R);}
 function isPlainNumber(t){if(!t||t.length>20)return false;if(!/[0-9]/.test(t))return false;if(/[\u4e00-\u9fff]/.test(t))return false;if(/[A-Za-z]/.test(t.replace(/[kKmMbB]/g,'')))return false;return true;}
@@ -999,7 +1005,7 @@ async function loadPage(force){
     if(!quiet||sig!==lastFastSig){lastFastSig=sig;paintQuiet(()=>renderPageAll(quiet),quiet);}
     // 慢组：带外部网络的余额 / 计费库，回来后静默补一次，不挡首屏。
     // 同样按签名判定，且无论渲不渲染都把基准补齐，避免下一轮出现一次多余的全量重绘。
-    Promise.all([fetchJson("/api/balance"+q,12000).then(r=>state.balance=r).catch(()=>state.balance=null),fetchJson("/api/pricing").then(r=>state.pricing=r).catch(()=>state.pricing=null)]).then(()=>{const ss=slowSig();const dirty=!quiet||ss!==lastSlowSig;lastSlowSig=ss;if(dirty)paintQuiet(()=>{renderApiOverview();renderApiDetail();},quiet);}).catch(()=>{}).finally(()=>{pageLoading=false;});
+    Promise.all([fetchJson("/api/balance"+q,12000).then(r=>state.balance=r).catch(()=>state.balance=null),fetchJson("/api/pricing").then(r=>state.pricing=r).catch(()=>state.pricing=null)]).then(()=>{const ss=slowSig();const dirty=!quiet||ss!==lastSlowSig;lastSlowSig=ss;if(dirty)paintQuiet(()=>{renderApiOverview();renderApiDetail();normalizeNumbers(root,0);},quiet);}).catch(()=>{}).finally(()=>{pageLoading=false;});
   }catch(e){pageLoading=false;}
 }
 async function saveRules(provider,payload){try{const r=await pluginApiFetch("/api/rules",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({provider},payload))});const j=await r.json().catch(()=>null);if(j&&j.ok&&state.rules){state.rules=Object.assign({},state.rules,{[provider]:j.saved});}return j;}catch(e){return null;}}
