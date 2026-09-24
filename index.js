@@ -364,7 +364,7 @@ export default defineApp(async (sdk) => {
         const sessionId = await resolveSessionId(sdk, ref);
         if (!sessionId) return c.json({ error: `unknown session: ${ref}` }, 404);
         const [entries, context, sessions] = await Promise.all([
-          fetchSessionUsage(sdk, sessionId),
+          fetchSessionUsage(sdk, sessionId, c.req.query("fast") === "1" ? { limit: 1000, ttlMs: 1200 } : undefined),
           sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null),
           listSessionsCached(sdk).catch(() => []),
         ]);
