@@ -891,6 +891,17 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 48%,transparent);border-radius:99px}
 .w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--accent) 72%,transparent)}
 .w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll svg{width:var(--dw)!important;max-width:none!important;height:auto!important;display:block}
+/* 详情弹层里的逐轮图：只显示图本身，外面不再套一层卡片。
+   y 轴单独一列固定不滚，横向滚动条跟着绘图区走，正好落在 x 轴标签下面、长度只到绘图区宽。 */
+.w-detail-overlay .w-detail-plot{display:flex;align-items:stretch;gap:4px;width:100%;min-width:0;box-sizing:border-box}
+.w-detail-overlay .w-detail-plot .sc-yaxis{flex:none;width:44px;min-width:44px;overflow:visible;color:var(--text-muted)}
+.w-detail-overlay .w-detail-plot .sc-yaxis svg{width:44px;height:auto;overflow:visible;display:block}
+.w-detail-overlay .w-detail-plot .w-detail-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:auto}
+.w-detail-overlay .w-detail-plot .w-detail-scroll svg{width:var(--dw)!important;max-width:none!important;height:auto!important;display:block}
+.w-detail-overlay .w-detail-plot .w-detail-scroll::-webkit-scrollbar{height:8px}
+.w-detail-overlay .w-detail-plot .w-detail-scroll::-webkit-scrollbar-track{background:color-mix(in srgb,var(--text) 7%,transparent);border-radius:99px}
+.w-detail-overlay .w-detail-plot .w-detail-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 48%,transparent);border-radius:99px}
+.w-detail-overlay .w-detail-plot .w-detail-scroll::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--accent) 72%,transparent)}
 .w-detail-overlay .w-detail-visual>div{min-width:0;width:100%;overflow:visible}
 .w-detail-overlay .w-detail-card .card{overflow:visible!important}
 /* ── 用量布局：Token消费统计整行 + 左侧两卡竖排 + 供应商排行右列 ── */

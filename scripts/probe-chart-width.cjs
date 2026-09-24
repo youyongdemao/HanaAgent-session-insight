@@ -117,14 +117,32 @@ const MEASURE = `(()=>{
 
 const ENTER = `(async()=>{const t=document.querySelector('.subtab[data-page="usage-session"]');t.click();await new Promise(r=>setTimeout(r,700));return true;})()`;
 
-const OPEN_MODAL = `(async()=>{const c=document.querySelector('.chart-card[data-chart="sessionStack"]');c.click();await new Promise(r=>setTimeout(r,700));
-  const box=document.querySelector('#wDetailBody .card.w-detail-visual.w-detail-scroll');
-  const card=document.querySelector('#wDetail .w-detail-card');
-  const diff=el=>el?el.offsetHeight-el.clientHeight:null;
-  return {overlayOpen:document.getElementById('wDetail').classList.contains('open'),hasScrollBox:!!box,
-    boxClientW:box?Math.round(box.clientWidth):null,boxScrollW:box?Math.round(box.scrollWidth):null,
-    svgW:box&&box.querySelector('svg')?Math.round(box.querySelector('svg').getBoundingClientRect().width):null,
-    boxBarPx:diff(box),boxBarPxW:box?box.offsetWidth-box.clientWidth:null,cardBarPx:diff(card)};})()`;
+// 详情弹层：四种逐轮图逐个开一遍，量 y 轴列、滚动区、滚动条占位与绘图区宽；最后停在堆叠图上截图
+const OPEN_MODAL = `(async()=>{
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const R=el=>{if(!el)return null;const q=el.getBoundingClientRect();return{x:Math.round(q.x),y:Math.round(q.y),w:Math.round(q.width),h:Math.round(q.height),bottom:Math.round(q.bottom),right:Math.round(q.right)};};
+  const probe=()=>{
+    const plot=document.querySelector('#wDetailBody .w-detail-plot');
+    const yx=plot&&plot.querySelector('.sc-yaxis'), sc=plot&&plot.querySelector('.w-detail-scroll'), svg=sc&&sc.querySelector('svg');
+    return {hasPlot:!!plot,cardsInBody:document.querySelectorAll('#wDetailBody .card').length,
+      yaxis:R(yx),scroll:R(sc),svg:R(svg),svgAttrW:svg?+svg.getAttribute('width'):null,
+      overflowPx:sc?Math.round(sc.scrollWidth-sc.clientWidth):null,barPx:sc?Math.round(sc.offsetHeight-sc.clientHeight):null,
+      axisPinned:!!(yx&&sc&&yx.parentElement===sc.parentElement&&yx.nextElementSibling===sc)};
+  };
+  const out=[];
+  for(const k of ['sessionTokens','sessionCost','sessionStack','sessionCache']){
+    const c=document.querySelector('.chart-card[data-chart="'+k+'"]');
+    if(!c){out.push({k,missing:true});continue;}
+    c.click(); await sleep(650); out.push(Object.assign({k},probe()));
+    document.querySelector('[data-detail-close]').click(); await sleep(300);
+  }
+  const c2=document.querySelector('.chart-card[data-chart="sessionStack"]'); c2.click(); await sleep(700);
+  const sc=document.querySelector('#wDetailBody .w-detail-plot .w-detail-scroll');
+  const mc=document.querySelector('#wDetail .w-detail-card');
+  const mq=mc?mc.getBoundingClientRect():null;
+  return {kinds:out,stack:probe(),scrollRect:R(sc),
+    cardRect:mq?{x:Math.round(mq.x),y:Math.round(mq.y),w:Math.round(mq.width),h:Math.round(mq.height),bottom:Math.round(mq.bottom),right:Math.round(mq.right)}:null};
+})()`;
 
 const GEOM = `(()=>{
   const out={};
@@ -156,14 +174,20 @@ async function runSide(cdp, port, tag) {
   }
   const modal = await ev(cdp, OPEN_MODAL);
   const shot = await cdp.send("Page.captureScreenshot", { format: "png" });
-  // 只看滚动条那一条：按图表容器的矩形裁一条底部带，放大 3 倍
+  // 详情图底部一条带：看滚动条是不是贴着 x 轴标签下方
   let band = null;
-  const rect = await ev(cdp, `(()=>{const b=document.querySelector('#wDetailBody .card.w-detail-visual.w-detail-scroll');if(!b)return null;const r=b.getBoundingClientRect();return {x:r.x,y:r.y,bottom:r.bottom,w:r.width,h:r.height};})()`);
+  const rect = modal && modal.scrollRect;
   if (rect) {
-    const clip = { x: Math.max(0, rect.x - 4), y: Math.max(0, rect.bottom - 26), width: Math.min(1200, rect.w + 8), height: 26, scale: 3 };
+    const clip = { x: Math.max(0, rect.x - 6), y: Math.max(0, rect.bottom - 20), width: Math.min(1200, rect.w + 12), height: 34, scale: 3 };
     band = (await cdp.send("Page.captureScreenshot", { format: "png", clip })).data;
   }
-  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot };
+  let modalShot = null;
+  const cr = modal && modal.cardRect;
+  if (cr) {
+    const clip = { x: Math.max(0, cr.x - 10), y: Math.max(0, cr.y - 10), width: Math.min(1200, cr.w + 20), height: Math.min(1500, cr.h + 20), scale: 1.5 };
+    modalShot = (await cdp.send("Page.captureScreenshot", { format: "png", clip })).data;
+  }
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot };
 }
 
 (async () => {
@@ -217,6 +241,7 @@ async function runSide(cdp, port, tag) {
       out[k].shotFile = f;
       if (out[k].band) { const bf = path.join(SELF, `probe-bar-${k}.png`); fs.writeFileSync(bf, Buffer.from(out[k].band, "base64")); out[k].bandFile = bf; delete out[k].band; }
       if (out[k].cardsShot) { const cf = path.join(SELF, `probe-cards-${k}.png`); fs.writeFileSync(cf, Buffer.from(out[k].cardsShot, "base64")); out[k].cardsFile = cf; delete out[k].cardsShot; }
+      if (out[k].modalShot) { const mf = path.join(SELF, `probe-modal-${k}.png`); fs.writeFileSync(mf, Buffer.from(out[k].modalShot, "base64")); out[k].modalFile = mf; delete out[k].modalShot; }
     }
     console.log(JSON.stringify(out, null, 2));
     ws.close();

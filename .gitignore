@@ -10,3 +10,6 @@ rules.json
 sdk/**/*.map
 sdk/**/*.LEGAL.txt
 sdk/**/THIRD_PARTY_NOTICES.txt
+# 探针/截图产物：可随时重跑生成，不进仓库
+scripts/probe-*.png
+probe-*.png
