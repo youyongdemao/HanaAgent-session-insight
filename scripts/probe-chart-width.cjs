@@ -256,10 +256,16 @@ async function runSide(cdp, port, tag) {
     await ev(cdp, `(()=>{const t=document.querySelector('.subtab[data-page="usage-overview"]');if(t)t.click();return true;})()`);
     await sleep(600);
     const t0 = await ev(cdp, `({n:document.getAnimations().filter(a=>a.playState==='running').length})`);
+    // 给几个图表容器里的第一个子元素打标记：轮询后标记还在 = 没重建 DOM
+    const MARK_IDS = ["tokViz", "cacheViz", "budgetChart", "ctxChart", "costChart", "stackChart", "cacheChart"];
+    const marked = await ev(cdp, `(()=>{let n=0;for(const id of ${JSON.stringify(MARK_IDS)}){const e=document.getElementById(id);if(!e)continue;const c=e.firstElementChild;if(c){c.__probeMark=id;n++;}}return n;})()`);
     LIVE.calls += 7;
     await sleep(11000);
+    const keep = await ev(cdp, `(()=>{const out={};for(const id of ${JSON.stringify(MARK_IDS)}){const e=document.getElementById(id);if(!e){out[id]='missing';continue;}const c=e.firstElementChild;out[id]=!c?'empty':(c.__probeMark===id?'kept':'rebuilt');}return out;})()`);
     pollDiag = await ev(cdp, `(()=>{const list=document.getAnimations().filter(a=>a.playState==='running').map(a=>{const t=a.effect&&a.effect.target;const cls=t&&t.getAttribute&&(t.getAttribute('class')||'');return (a.animationName||a.transitionProperty||'?')+' @ '+(cls||(t&&t.tagName)||'?');});return {running:list.slice(0,24),count:list.length};})()`);
     pollDiag.beforeCount = t0 && t0.n;
+    pollDiag.marked = marked;
+    pollDiag.keep = keep;
   }
   return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload, pollDiag };
 }
