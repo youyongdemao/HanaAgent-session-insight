@@ -796,6 +796,28 @@ function playSessionEnter(){try{for(const id of ['usage-session','usage-overview
 let pageBooted=false,widgetBooted=false,lastFastSig=null,lastSlowSig=null;
 // 会话切换要重播入场动画：记住上一次渲染的会话，变了就不走静默渲染
 let lastRenderedSession=null,lastWidgetSession=null;
+// ── KPI 每秒通道 ──
+// 总览页顶部那六个数字（总量 / 起算日 / 命中率 / 总费用 / 调用数 / 异常）单独 1Hz 刷新，
+// 其余数据仍走 10s 主轮询；服务端 /api/hero-stats 复用主轮询同一份缓存，不会把账本重算十遍。
+// 规矩与轮询一致：不做入场动画，只在数值真变了才写 DOM（odometer 只在值变化时滚）。
+function applyHeroStats(r){
+  if(!r||r.error)return;
+  const put=(id,v)=>{const e=document.getElementById(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};
+  const tok=fmtFullTok(r.tokens);put("kTok",tok);
+  const tokEl=document.getElementById("kTok");if(tokEl)tokEl.style.setProperty("--digits",String(tok.length));
+  put("kCost",fmtCost(r.totalCost));put("kCall",String(r.calls||0));put("kErr",String(r.errors||0));
+  const hit=r.hitRate!=null?Number(r.hitRate)*100:null;
+  put("kHit",hit!=null?fmtPct(hit):"–");setHitClass(document.getElementById("kHit"),hit);
+  const rngEl=document.getElementById("kTokRange");if(rngEl)rngEl.textContent=r.firstDay?"记录自 "+r.firstDay+" 起":"";
+  normalizeNumbers(document.getElementById("usage-overview"),420);
+}
+let heroTickBusy=false;
+async function pollHeroStats(){
+  if(heroTickBusy||document.hidden)return;
+  if(state.view!=="usage"||state.page!=="usage-overview")return;
+  heroTickBusy=true;
+  try{applyHeroStats(await fetchJson("/api/hero-stats",4000));}catch{}finally{heroTickBusy=false;}
+}
 function paintQuiet(fn,quiet){
   if(!quiet)return paintForce(fn);
   // 静默渲染：把这一次新插进来的节点标成静态，之后不再播入场动画。
@@ -1026,7 +1048,7 @@ async function watchProviders(){
 // 这里在首次渲染前等一次字体（封顶 600ms，字体拿不到不阻塞），字体到位后再安静重渲染一次，
 // 让度量重的部分（滚动结构 + 对齐）用真字体重算。
 function fontsReady(ms){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;res();};try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fin);}catch(e){}setTimeout(fin,ms);});}
-async function start(){hana.ready();await fontsReady(600);if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);},{once:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(surface!=='widget')paintQuiet(()=>renderPageAll(true),true);});}}
+async function start(){hana.ready();await fontsReady(600);if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);const ht=setInterval(pollHeroStats,1000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);clearInterval(ht);},{once:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(surface!=='widget')paintQuiet(()=>renderPageAll(true),true);});}}
 start().catch(()=>{if(surface==='widget')renderWidget();else renderPageAll();});
 // 进页面自检一次更新：有新版才弹窗，没有就什么都不做（与设置页共用同一套弹窗）
 initUpdateNotice();

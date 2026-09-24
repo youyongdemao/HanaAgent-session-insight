@@ -21,7 +21,7 @@ const TODAY_KEY = (() => { const d = new Date(); return `${d.getFullYear()}-${St
 const STAMP = { value: "probe-1" };
 const BS_HITS = { value: 0 };
 // 轮询诊断用：改这个值会让 /api/ledger-stats 变化，数据签名随之改变 → 触发一次轮询重绘
-const LIVE = { calls: 39408 };
+const LIVE = { calls: 39408, todayTokens: 351.08e6 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function mkSeries(n, base) {
@@ -86,7 +86,7 @@ function startServer(port, assets) {
       if (api === "active") return json({ dir: "mock", file: SESSION_FILE });
       if (api === "resolve-entry") return json({ file: SESSION_FILE });
       if (api === "sessions") return json({ dir: "mock", sessions: [{ name: SESSION_FILE, title: STATS.title, model: STATS.model, size: 1, mtime: Date.now(), turns: TURNS }] });
-      if (api === "ledger-stats") return json({ days: { [TODAY_KEY]: { tokens: 351.08e6, cost: 16.05, hitRate: 0.99, calls: 2424, err: 1 }, "2026-08-29": { tokens: 2.6e9, cost: 146.4 }, "2026-09-10": { tokens: 2.59e9, cost: 146.5 } }, calls: LIVE.calls, errors: 39, tokens: { input: 5.1e9, output: 9.1e7, cacheHit: 4.9e9, cacheMiss: 1.1e8, hitRate: 0.982 }, coverage: { firstDay: "2026-08-29" }, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
+      if (api === "ledger-stats") return json({ days: { [TODAY_KEY]: { tokens: LIVE.todayTokens, cost: 16.05, hitRate: 0.99, calls: 2424, err: 1 }, "2026-08-29": { tokens: 2.6e9, cost: 146.4 }, "2026-09-10": { tokens: 2.59e9, cost: 146.5 } }, calls: LIVE.calls, errors: 39, tokens: { input: 5.1e9, output: 9.1e7, cacheHit: 4.9e9, cacheMiss: 1.1e8, hitRate: 0.982 }, coverage: { firstDay: "2026-08-29" }, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
       if (api === "total-cost") return json({ totalCost: 16.62 });
       if (api === "rules") return json({});
       if (api === "providers" || api === "local-providers") return json({ providers: [] });
@@ -94,6 +94,7 @@ function startServer(port, assets) {
       if (api === "balance") return json({ balances: [], updatedAt: Date.now() });
       if (api === "pricing") return json({ rows: [], updatedAt: Date.now() });
       if (api === "ui-env") return json({});
+      if (api === "hero-stats") return json({ at: Date.now(), tokens: 2.6e9 + 2.59e9 + LIVE.todayTokens, firstDay: "2026-08-29", calls: LIVE.calls, errors: 39, hitRate: 0.982, totalCost: 16.62 });
       if (api === "update-check") return json({});
       if (api === "build-stamp") { BS_HITS.value++; return json({ stamp: STAMP.value, hits: BS_HITS.value }); }
       return json({ ok: true });
@@ -203,12 +204,33 @@ const HERO = `(()=>{
   return {overview:ov,session:se};
 })()`;
 
+const ANIM_WATCH = `(async()=>{
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const AMBIENT=/^(pulse|segBreathe|segShift|glow|spin|rot360|dotIn|pendingIn|wLegendIn)$/;
+  const hits=[];const t0=performance.now();
+  for(let i=0;i<80;i++){
+    for(const a of document.getAnimations()){
+      if(a.playState!=='running')continue;
+      const n=a.animationName||a.transitionProperty||'?';
+      if(AMBIENT.test(n))continue;
+      const t=Math.round(performance.now()-t0);
+      if(!hits.some(h=>h.n===n&&Math.abs(h.t-t)<400)){
+        const tg=a.effect&&a.effect.target;
+        hits.push({t,n,el:(tg&&tg.id)||(tg&&tg.getAttribute&&tg.getAttribute('class'))||''});
+      }
+    }
+    await sleep(200);
+  }
+  return {hits:hits.slice(0,30),count:hits.length};
+})()`;
+
 async function runSide(cdp, port, tag) {
   await cdp.send("Page.navigate", { url: `http://127.0.0.1:${port}/api/plugins/${ID}/page?hana-theme=midnight` });
   await sleep(2600);
   const fonts = await ev(cdp, FONTS);
   const heroBoot = await ev(cdp, HERO);
   const atBoot = await ev(cdp, MEASURE);
+  const animWatch = await ev(cdp, ANIM_WATCH);
   // 总览 hero 整块截图（看 KPI 数字与「记录自…起」标记的位置）
   let heroShot = null;
   const hr = await ev(cdp, `(()=>{const e=document.querySelector('#usage-overview .usage-hero');if(!e)return null;const q=e.getBoundingClientRect();return {x:q.x,y:q.y,w:q.width,h:q.height};})()`);
@@ -279,7 +301,22 @@ async function runSide(cdp, port, tag) {
     const s1 = await ev(cdp, ODSNAP);
     odAlign = { t0: s0, t3: s1, dBalY: s0 && s1 && s0.bal && s1.bal ? +(s1.bal.y - s0.bal.y).toFixed(1) : null, dChipsY: s0 && s1 && s0.chips && s1.chips ? +(s1.chips.y - s0.chips.y).toFixed(1) : null };
   } catch (e) { odAlign = { err: String(e) }; }
-  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload, pollDiag, odAlign };
+  // KPI 每秒通道：回总览页看 #kTok 多久跟着变（基线没有这条通道，应该一直不变）
+  let heroTick = null;
+  try {
+    await ev(cdp, `(()=>{const t=document.querySelector('.subtab[data-page="usage-overview"]');if(t)t.click();return true;})()`);
+    await sleep(500);
+    const beforeTok = await ev(cdp, `(()=>{const e=document.getElementById('kTok');return e?String(e.dataset.odValue||e.textContent||'').trim():'';})()`);
+    LIVE.todayTokens += 5e6;
+    let ms = null, afterTok = beforeTok;
+    for (let i = 0; i < 14; i++) {
+      await sleep(250);
+      const now = await ev(cdp, `(()=>{const e=document.getElementById('kTok');return e?String(e.dataset.odValue||e.textContent||'').trim():'';})()`);
+      if (now !== beforeTok) { ms = (i + 1) * 250; afterTok = now; break; }
+    }
+    heroTick = { beforeTok, afterTok, ms, changed: ms !== null };
+  } catch (e) { heroTick = { err: String(e) }; }
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload, pollDiag, odAlign, heroTick, animWatch };
 }
 
 (async () => {
