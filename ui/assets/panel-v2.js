@@ -264,7 +264,7 @@ function renderUsageOverview(){
   const totalTok=Object.values(lg?.days||{}).reduce((a,d)=>a+(d.tokens||0),0);const totalCall=lg?.calls||0;const totalErr=lg?.errors||0;
   // 账本明细被宿主裁到最近一段，把覆盖起始日写出来，避免把「窗口内的和」读成「全部历史」
   const cov=lg?.coverage||null;const rngEl=document.getElementById('kTokRange');if(rngEl)rngEl.textContent=cov&&cov.firstDay?'记录自 '+cov.firstDay+' 起':'';
-  set("#kTok",fmtFullTok(totalTok));const kTokEl=document.getElementById("kTok");if(kTokEl)kTokEl.style.setProperty("--digits",String(fmtFullTok(totalTok).length));set("#kCost",fmtCost(tc.totalCost));set("#kCall",String(totalCall));set("#kErr",totalErr?String(totalErr):"0");set("#kHit",lg?.tokens?.hitRate!=null?fmtPct(lg.tokens.hitRate*100):"–");setHitClass($("#kHit"),lg?.tokens?.hitRate!=null?lg.tokens.hitRate*100:null);
+  set("#kTok",fmtFullTok(totalTok));const kTokEl=document.getElementById("kTok");if(kTokEl)kTokEl.style.setProperty("--digits",String(fmtFullTok(totalTok).length));fitHeroNumbers();set("#kCost",fmtCost(tc.totalCost));set("#kCall",String(totalCall));set("#kErr",totalErr?String(totalErr):"0");set("#kHit",lg?.tokens?.hitRate!=null?fmtPct(lg.tokens.hitRate*100):"–");setHitClass($("#kHit"),lg?.tokens?.hitRate!=null?lg.tokens.hitRate*100:null);
   // Token 构成区（输入 / 输出 / 缓存命中 / 未命中 / 命中率）
   const tk=lg?.tokens||{};const tkBox=$("#tokenBody");if(tkBox){const ti=tk.input||0,to=tk.output||0,th=tk.cacheHit||0;const segSum=Math.max(th+ti+to,1);const seg=[[th,"输入（命中缓存）","hit"],[ti,"输入（未命中缓存）","in"],[to,"输出","out"]];const hr=tk.hitRate!=null?(tk.hitRate*100).toFixed(1):"–";tkBox.innerHTML=`<div class="tok-comp"><div class="tok-track">${seg.map(([val,lab,cls])=>{const raw=val/segSum*100;if(raw<=0.05)return"";const pct=Math.max(3.5,Math.min(100,raw));return `<i class="t-${cls}" data-w="${pct.toFixed(2)}" style="width:0%" title="${lab} ${fmtTokens(val)}"></i>`;}).join("")}</div><div class="tok-legend"><span class="t-hit"><i></i>输入（命中缓存） <b>${fmtTokens(th)}</b></span><span class="t-in"><i></i>输入（未命中缓存） <b>${fmtTokens(ti)}</b></span><span class="t-out"><i></i>输出 <b>${fmtTokens(to)}</b></span><em>命中率 <b>${hr}%</b></em></div></div>`;requestAnimationFrame(()=>{tkBox.querySelectorAll(".tok-track i").forEach((el,i)=>setTimeout(()=>{el.style.width=el.dataset.w+"%";},i*70));});}
   // 日历热力图
@@ -328,7 +328,7 @@ function renderUsageSession(){
   requestAnimationFrame(()=>{$$('.scroll-chart .chart-scroll').forEach(el=>{el.scrollLeft=el.scrollWidth-el.clientWidth;});});
   const cacheHit=Math.max(0,Number(st.sumCacheRead)||0),cacheMiss=Math.max(0,Number(st.sumInput)||0),outputTok=Math.max(0,(Number(st.sumOutput)||0)+(Number(st.sumReasoning)||0)),inputTok=cacheHit+cacheMiss,ioTotal=inputTok+outputTok||1,cacheTotal=cacheHit+cacheMiss||1,inputPct=inputTok/ioTotal*100,outputPct=outputTok/ioTotal*100,hitPct=cacheHit/cacheTotal*100,missPct=cacheMiss/cacheTotal*100;
   const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};
-  set("#sTok",fmtFullTok(st.sessionTokens));const sTokEl=document.getElementById("sTok");if(sTokEl)sTokEl.style.setProperty("--digits",String(fmtFullTok(st.sessionTokens).length));set("#sHit",hits.length?fmtPct(hits.reduce((a,b)=>a+b,0)/hits.length):"–");setHitClass($("#sHit"),hits.length?hits.reduce((a,b)=>a+b,0)/hits.length:null);set("#sCost",fmtCost(st.sessionCostCny));set("#sTurn",String(ser.length));set("#sCtx",fmtPct(st.contextPercent));
+  set("#sTok",fmtFullTok(st.sessionTokens));const sTokEl=document.getElementById("sTok");if(sTokEl)sTokEl.style.setProperty("--digits",String(fmtFullTok(st.sessionTokens).length));fitHeroNumbers();set("#sHit",hits.length?fmtPct(hits.reduce((a,b)=>a+b,0)/hits.length):"–");setHitClass($("#sHit"),hits.length?hits.reduce((a,b)=>a+b,0)/hits.length:null);set("#sCost",fmtCost(st.sessionCostCny));set("#sTurn",String(ser.length));set("#sCtx",fmtPct(st.contextPercent));
   set("#sInPct",inputPct.toFixed(1)+"%");set("#sOutPct",outputPct.toFixed(1)+"%");set("#sHitPct",hitPct.toFixed(1)+"%");set("#sMissPct",missPct.toFixed(1)+"%");
   const inBar=$("#sInBar"),outBar=$("#sOutBar"),hitBar=$("#sHitBar"),missBar=$("#sMissBar");if(inBar)inBar.style.width=inputPct+"%";if(outBar)outBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";
   const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const provs=Array.isArray(st.providers)&&st.providers.length?st.providers:[{provider:st.provider||"unknown",tokens:st.sessionTokens||0,turns:st.turns||0,models:[]}];/* 卡片本体按「模型」排：把供应商聚合里带的模型维度展平（后端已给出每个供应商下各模型的 token） */const modelRows=[];for(const p of provs){const ms=Array.isArray(p.models)&&p.models.length?p.models:[{model:st.model||"unknown",tokens:Number(p.tokens)||0}];for(const m of ms)modelRows.push({key:"m:"+String(m.model||"unknown"),label:String(m.model||"unknown"),tokens:Number(m.tokens)||0});}modelRows.sort((a,b)=>b.tokens-a.tokens);const totalUsed=modelRows.reduce((a,m)=>a+(Number(m.tokens)||0),0)||1;const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const pb=$("#sProviderBody");if(pb){patchProviderRows(pb,modelRows.map((m,i)=>({key:m.key,label:m.label,pct:(Number(m.tokens)||0)/totalUsed*100,color:colors[i%colors.length]})));}
@@ -917,6 +917,20 @@ function syncWidgetGap(){
 }
 let wGapPrev=null,flipCount=0;
 function widgetFlipCount(){return flipCount;}
+// 页面上大号数字：按位数在容器内自适应（位数多就缩小），保证它不会被抽出自己那一栏。
+// CSS 里那条 max/min + cqw 的规则实测未生效（同样声明写成内联则正确），所以这里直接写内联：
+// 内联优先级最高，cqw 也已验证是按 .uh-tok 的宽度解析的。
+// 会话页的命中率跟着 Token 用同一个字号（CSS 注释里原本的意图：同字号、底边对齐）。
+// 位数取 --digits（渲染时写好的完整字符串长度）；不能用 textContent，滚动时里面是 0-9 的数字条。
+function fitHeroNumbers(){
+  if(surface==='widget')return;
+  const fmt=el=>Math.max(1,Math.min(24,Number(el.style.getPropertyValue('--digits'))||8));
+  const tok=document.getElementById('sTok');
+  if(tok){tok.style.fontSize='max(26px,min(84px,calc(160cqw/'+fmt(tok)+')))';
+    const hit=document.getElementById('sHit');if(hit){const v=getComputedStyle(tok).fontSize;if(v)hit.style.fontSize=v;}}
+  const kTok=document.getElementById('kTok');
+  if(kTok)kTok.style.fontSize='max(26px,min(84px,calc(160cqw/'+fmt(kTok)+')))';
+}
 let widgetGapRO=null;
 function watchWidgetGap(){
   if(surface!=='widget'||typeof ResizeObserver==='undefined')return;
@@ -1127,7 +1141,7 @@ async function loadWidgetBlocks(){
 // 设置页保存后通过 localStorage 广播（同源 iframe 会收到 storage 事件），卡片不需轮询就能跟着变。
 if(surface==='widget'){window.addEventListener('storage',e=>{if(e.key==='si-widget-layout')loadWidgetBlocks();});
   // 卡片宽度是用户拖的，宽度变了要重算列数与详情头部的一行/两行
-  window.addEventListener('resize',()=>{layoutTurnGrid();layoutTurnHead();});}
+  window.addEventListener('resize',()=>{layoutTurnGrid();layoutTurnHead();fitHeroNumbers();});}
 
 const shell=surface==='widget'?widgetShell():pageShell();
 root.style.minHeight='100vh';root.innerHTML=shell;
