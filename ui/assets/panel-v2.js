@@ -832,6 +832,8 @@ function applyWidgetTotals(st){
   const s2=st.series,hitAvg=s2.length?s2.reduce((a,x)=>a+(Number(x.hit)||0),0)/s2.length:null;
   put("wHitAvg",hitAvg!=null?fmtPct(hitAvg):"–");setHitClass(document.getElementById("wHitAvg"),hitAvg);
   normalizeNumbers(document.querySelector(".widget"),420);
+  // 数字位数变了，内容需求跟着变，重判一次升/叠放
+  try{syncWidgetGap();}catch(e){}
 }
 let wTotalsBusy=false;
 async function pollWidgetTotals(){
@@ -840,31 +842,64 @@ async function pollWidgetTotals(){
   try{
     const f=activeSessionFile;
     applyWidgetTotals(await fetchJson(f?"/api/stats?fast=1&file="+encodeURIComponent(f):"/api/stats?fast=1",4000));
+    // 数字变了，内容需求也跟着变（位数多的数字要更宽），重新判一次升/叠放
+    syncWidgetGap();
   }catch{}finally{wTotalsBusy=false;}
 }
-// ── 卡片环与数据格的间距：量成 px 写内联，过渡才生效 ──
+// ── 升/叠放 + 间距：一律量成 px 写内联，过渡才生效 ──
 // 为什么不能在 CSS 里直接过渡：百分比 margin 的 computed 值不会随容器宽度变化，
 // 所以卡片拉宽时浏览器认为“值没变”，transition 永远不触发（实测两种触发方式都是瞬间到位）。
 // 改成用 ResizeObserver 量出卡片宽度、换算成 px 写进内联样式，
 // CSS 里的 transition:margin-left 就能真正跑起来（拖动时是柔和的跟随）。
+//
+// 排布（一排 / 叠放）也在这里决定：不拍“多少 px 就换行”这种跟内容无关的阈值，
+// 而是算内容需求 need = 环宽 + 间距下限 + 数字实际宽度，卡片可用宽度小于 need 才叠放。
+// 于是切换点会随数字位数自己动：数字短就可以更窄才换行，让右半部分一直贴到卡片右边缘。
+// 回切留 6px 余量，免得在边界上反复翻。
+function wTextW(el){if(!el)return 0;try{const r=document.createRange();r.selectNodeContents(el);return r.getBoundingClientRect().width||0;}catch(e){return el.scrollWidth||0;}}
+// 数字变短时，真正卡住宽度的会是下排两个子格（它们的标题不折行），
+// 所以内容需求取「上排数字」与「下排两子格」中更宽的那个，免得自然折行先发生、而叠放样式没跟上。
+function widgetNeed(){
+  const card=document.querySelector('.widget .ring-state');
+  if(!card)return null;
+  const ring=card.querySelector('.w-ring'),tok=card.querySelector('#wTokTotal'),cs=getComputedStyle(card);
+  const padX=(parseFloat(cs.paddingLeft)||0)+(parseFloat(cs.paddingRight)||0);
+  const avail=Math.max(0,card.clientWidth-padX);
+  let textW=0;
+  if(tok){const ods=tok.querySelectorAll('.od');
+    if(ods.length){const a=ods[0].getBoundingClientRect(),b=ods[ods.length-1].getBoundingClientRect();textW=b.right-a.left;}
+    else textW=wTextW(tok);}
+  let subW=0;
+  const side=card.querySelectorAll('.w-context-side>div');
+  if(side.length>=2){for(const d of side){const s=d.querySelector('span'),b=d.querySelector('b');subW+=Math.max(wTextW(s),wTextW(b));}subW+=18;}
+  const ringW=ring?ring.offsetWidth:104;
+  return {avail,need:Math.round(ringW)+12+Math.round(Math.max(textW,subW))+10};
+}
 function syncWidgetGap(){
   if(surface!=='widget')return;
-  const w=document.querySelector('.widget');const card=w&&w.querySelector('.ring-state');const data=card&&card.querySelector('.w-overview-data');
+  const card=document.querySelector('.widget .ring-state');
+  const data=card&&card.querySelector('.w-overview-data'),ring=card&&card.querySelector('.w-ring');
   if(!card||!data)return;
-  const ring=card.querySelector('.w-ring');
-  const cw=w.clientWidth,inner=Math.max(0,cw-28);
-  // 阈值与基线必须和 CSS 里的一致（@container 350px / calc(20% - 60px)），两处不同步就会打架
-  const stacked=cw<=350;
-  const gap=stacked?0:Math.max(12,Math.round(inner*0.2-60));
-  // ── 横竖切换的过渡（FLIP）──
-  // flex-direction 变了没法用 CSS 过渡，所以：拿上一次记录的两块矩形，
-  // 先把它们反推回旧位置（无过渡），下一帧再过渡到新位置（transform 归零）。
-  if(ring&&wGapPrev&&wGapPrev.stacked!==stacked){
-    const r0=wGapPrev.ring,d0=wGapPrev.data,r1=ring.getBoundingClientRect(),d1=data.getBoundingClientRect();
-    const dx=Math.round(r0.x-r1.x),dy=Math.round(r0.y-r1.y),ex=Math.round(d0.x-d1.x),ey=Math.round(d0.y-d1.y);
+  const m=widgetNeed();if(!m)return;
+  const wasStacked=card.dataset.stacked==='1';
+  const stacked=wasStacked?m.avail<m.need+6:m.avail<m.need;
+  const flip=stacked!==wasStacked;
+  const before=flip&&ring?{r:ring.getBoundingClientRect(),d:data.getBoundingClientRect()}:null;
+  if(flip)card.dataset.stacked=stacked?'1':'';
+  // 间距：卡片越宽越松，斜率 20%、基线 -60px、下限 12px（与 CSS 里那套数值一致）
+  const gap=stacked?0:Math.max(12,Math.round(m.avail*0.2-60));
+  if(flip){ring.style.transition='none';data.style.transition='none';}
+  data.style.marginLeft=gap+'px';
+  if(flip&&before&&ring){
+    // ── 横竖切换的过渡（FLIP）──
+    // flex-direction 变了没法用 CSS 过渡，所以：先记下旧布局里两块的位置，
+    // 改完排布强制重排拿到新位置，再把它们反推回旧位置（无过渡），下一帧过渡到新位置（transform 归零）。
+    void card.offsetHeight;
+    const a=ring.getBoundingClientRect(),b=data.getBoundingClientRect();
+    const dx=Math.round(before.r.x-a.x),dy=Math.round(before.r.y-a.y);
+    const ex=Math.round(before.d.x-b.x),ey=Math.round(before.d.y-b.y);
     if(dx||dy||ex||ey){
       try{
-        ring.style.transition='none';data.style.transition='none';
         ring.style.transform=`translate(${dx}px,${dy}px)`;
         data.style.transform=`translate(${ex}px,${ey}px)`;
         requestAnimationFrame(()=>{
@@ -878,8 +913,7 @@ function syncWidgetGap(){
       }catch(e){}
     }
   }
-  data.style.marginLeft=gap+'px';
-  if(ring)wGapPrev={stacked,ring:ring.getBoundingClientRect(),data:data.getBoundingClientRect()};
+  wGapPrev={stacked};
 }
 let wGapPrev=null,flipCount=0;
 function widgetFlipCount(){return flipCount;}

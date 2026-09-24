@@ -1346,16 +1346,13 @@ body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-leg
 body[data-surface="widget"] .ring-state{display:flex;flex-wrap:wrap;align-items:center;gap:10px 0}
 body[data-surface="widget"] .ring-state>.w-ring{flex:0 0 104px;width:104px}
 body[data-surface="widget"] .ring-state>.w-overview-data{flex:1 1 auto;min-width:min-content;margin-left:max(12px,calc(20% - 60px));transition:margin-left .28s cubic-bezier(.22,.72,.28,1)}
-/* 叠放态（卡片放不下两列）：圆环居中、各区数值居中，标题保持左对齐不动。
-   换行本身是内容驱动的（没拍阈值），后中这里用容器宽度作条件，两者会有一个窄窗口不重合。 */
-body[data-surface="widget"] .widget{container-type:inline-size}
-@container (max-width: 350px){
-  body[data-surface="widget"] .ring-state{flex-direction:column;justify-content:center;gap:10px}
-  body[data-surface="widget"] .ring-state>.w-overview-data{margin-left:0;width:100%}
-  body[data-surface="widget"] #wTokTotal,body[data-surface="widget"] #wHitAvg,body[data-surface="widget"] #wCost{display:block;width:100%;text-align:center}
-  /* 两个子格的标题也居中（令牌那个标题保持不动）：否则格子里是“上左、下中”的错位感 */
-  body[data-surface="widget"] .w-context-side>div>span{display:block;text-align:center}
-}
+/* 叠放态（卡片真的放不下两列）：圆环居中、各区数值居中，两个子格标题也居中（令牌标题保持左对齐）。
+   什么时候切叠放由 panel-v2.js 按内容需求算出来（环宽 + 间距下限 + 数字实际宽度），
+   写在 .ring-state[data-stacked="1"] 上，所以这里不再用容器宽度拍一个跟内容无关的阈值。 */
+body[data-surface="widget"] .ring-state[data-stacked="1"]{flex-direction:column;justify-content:center;gap:10px}
+body[data-surface="widget"] .ring-state[data-stacked="1"]>.w-overview-data{margin-left:0;width:100%}
+body[data-surface="widget"] .ring-state[data-stacked="1"] #wTokTotal,body[data-surface="widget"] .ring-state[data-stacked="1"] #wHitAvg,body[data-surface="widget"] .ring-state[data-stacked="1"] #wCost{display:block;width:100%;text-align:center}
+body[data-surface="widget"] .ring-state[data-stacked="1"] .w-context-side>div>span{display:block;text-align:center}
 /* 当前轮那一组的列数由格子数量决定（见 panel-v2.js 的 layoutTurnGrid）：auto-fit 会在窄卡片上塞 3 列，第 4 格掉行、空出一块 */
 body[data-surface="widget"] .w-context-side{grid-template-columns:repeat(2,minmax(0,1fr))} body[data-surface="widget"] .w-context-side>div{padding-left:8px;padding-right:8px} body[data-surface="widget"] .w-context-side>div:first-child{padding-left:0}
 body[data-surface="widget"] .w-comp-stats{grid-template-columns:repeat(auto-fit,minmax(56px,1fr))}
