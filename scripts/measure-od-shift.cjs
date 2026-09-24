@@ -68,7 +68,7 @@ const MEASURE = `(() => {
 // 与 odometer() 生成的内联样式一致：每个数字一个 inline-block，内含 0-9 的竖条
 const TO_ANIMATED = `(() => {
   const el = document.getElementById('tBal');
-  const str = '¥141.19';
+  const str = '¥313.09';
   el.style.whiteSpace = 'nowrap';
   const MASK = '-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%)';
   const frag = document.createDocumentFragment();
@@ -159,23 +159,40 @@ class CDP {
     await c.send("Emulation.setDeviceMetricsOverride", { width: 1500, height: 1200, deviceScaleFactor: 1, mobile: false });
     await c.send("Page.navigate", { url: `http://127.0.0.1:${PORT}/` });
     await sleep(1200);
-    await c.eval(`document.getElementById('tBal').textContent='¥141.19'`);
+    await c.eval(`const b=document.getElementById('tBal');b.textContent='¥313.09';b.classList.add('od-host')`);
     await sleep(80);
     const idle = await c.eval(MEASURE);
     const idleBase = await c.eval(BASELINE);
     let idleShot = null;
     if (!fs.existsSync(SHOT_DIR)) fs.mkdirSync(SHOT_DIR, { recursive: true });
     {
-      const clip = await c.eval(`(()=>{const b=document.getElementById('tBal').getBoundingClientRect();return {x:b.x-4,y:b.y-10,width:b.width+8,height:b.height+22,scale:1}})()`);
+      const clip = await c.eval(`(()=>{const b=document.getElementById('tBal').getBoundingClientRect();return {x:b.x-4,y:b.y-12,width:b.width+8,height:b.height+24,scale:3}})()`);
       idleShot = (await c.send("Page.captureScreenshot", { format: "png", clip })).data;
       fs.writeFileSync(path.join(SHOT_DIR, FIX + "-idle.png"), Buffer.from(idleShot, "base64"));
     }
     await c.eval(TO_ANIMATED);
+    // 模拟真实页面的 alignNumbers：用 transform 把滚动盒下移一个 descent，使数字与旁边标点对齐
+    const align = await c.eval(`(() => {
+  const el = document.getElementById('tBal');
+  const cs = getComputedStyle(el);
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = (cs.fontStyle||'normal') + ' ' + (cs.fontWeight||'400') + ' ' + (cs.fontSize||'16px') + ' ' + (cs.fontFamily||'monospace');
+  const m = ctx.measureText('0');
+  const a = m.fontBoundingBoxAscent, d = m.fontBoundingBoxDescent;
+  const fs = parseFloat(cs.fontSize) || 16;
+  const dd = (fs - (a + d)) / 2 + d;
+  const dsp = getComputedStyle(el).display;
+  el.querySelectorAll('.od').forEach((od) => {
+    if (dsp === 'flex' || dsp === 'inline-flex') od.style.transform = '';
+    else if (dd > 0) od.style.transform = 'translateY(' + dd.toFixed(2) + 'px)';
+  });
+  return { descent: +dd.toFixed(2), display: dsp, hosts: el.classList.contains('od-host'), hostHeight: cs.height };
+})()`);
     await sleep(120);
     const anim = await c.eval(MEASURE);
     const animBase = await c.eval(BASELINE);
     {
-      const clip = await c.eval(`(()=>{const b=document.getElementById('tBal').getBoundingClientRect();return {x:b.x-4,y:b.y-10,width:b.width+8,height:b.height+22,scale:1}})()`);
+      const clip = await c.eval(`(()=>{const b=document.getElementById('tBal').getBoundingClientRect();return {x:b.x-4,y:b.y-12,width:b.width+8,height:b.height+24,scale:3}})()`);
       const s = (await c.send("Page.captureScreenshot", { format: "png", clip })).data;
       fs.writeFileSync(path.join(SHOT_DIR, FIX + "-anim.png"), Buffer.from(s, "base64"));
     }
@@ -183,7 +200,19 @@ class CDP {
     for (const k of Object.keys(idle)) {
       d[k] = { top: +(anim[k].top - idle[k].top).toFixed(3), height: +(anim[k].height - idle[k].height).toFixed(3), bottom: +(anim[k].bottom - idle[k].bottom).toFixed(3) };
     }
-    const out = { fix: FIX, idle, anim, delta: d, baseline: { idle: idleBase, anim: animBase, diff: +(animBase.baseline - idleBase.baseline).toFixed(3) }, fontSize: await c.eval(`getComputedStyle(document.getElementById('tBal')).fontSize`), lineHeight: await c.eval(`getComputedStyle(document.getElementById('tBal')).lineHeight`) };
+    const out = { fix: FIX, idle, anim, delta: d, align, baseline: { idle: idleBase, anim: animBase, diff: +(animBase.baseline - idleBase.baseline).toFixed(3) }, fonts: await c.eval(`(() => {
+  const b = document.getElementById('tBal');
+  const od = b.querySelector('.od');
+  const dd = od && od.querySelector('.od-d');
+  const cs = (el) => el ? getComputedStyle(el) : null;
+  return {
+    rootMono: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+    b: cs(b).fontFamily,
+    bFont: cs(b).font,
+    od: od ? cs(od).fontFamily : null,
+    odD: dd ? cs(dd).fontFamily : null,
+  };
+})()`), fontSize: await c.eval(`getComputedStyle(document.getElementById('tBal')).fontSize`), lineHeight: await c.eval(`getComputedStyle(document.getElementById('tBal')).lineHeight`) };
     fs.writeFileSync(OUT_JSON, JSON.stringify(out, null, 2));
     console.log(JSON.stringify(out, null, 2));
     ws.close();

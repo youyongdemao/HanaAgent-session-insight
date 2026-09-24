@@ -720,8 +720,11 @@ function alignNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorA
   // flex 容器里 od 只是个普通 flex item，由 align-items 居中，行内基线规则不参与，
   // 再叠这层补偿就会把数字压低、旁边的单位符号看着浮到数字上面。
   const dsp=getComputedStyle(el).display;
-  if(dsp==='flex'||dsp==='inline-flex'){if(od.style.transform)od.style.transform='';return;}
-  const d=odDescentPx(el);if(!(d>0))return;od.style.transform='translateY('+d.toFixed(2)+'px)';});}
+  if(dsp==='flex'||dsp==='inline-flex'){if(od.style.transform)od.style.transform='';el.classList.remove('od-host');return;}
+  const d=odDescentPx(el);if(!(d>0))return;od.style.transform='translateY('+d.toFixed(2)+'px)';
+  // 行内流场景下 od 会把这一行的行盒撑高（约 0.15em），锁住宿主自身高度，下方内容就不会被顶下去；
+  // 不碰 od 的垂直对齐，上面的 transform 补偿照旧生效，数字与旁边标点/单位的位置保持原样。
+  el.classList.add('od-host');});}
 function normalizeNumbers(rootEl,animate){const R=rootEl||root;if(!R)return;R.querySelectorAll('b[id],strong[id]').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,!animate);});alignNumbers(R);}
 function isPlainNumber(t){if(!t||t.length>20)return false;if(!/[0-9]/.test(t))return false;if(/[\u4e00-\u9fff]/.test(t))return false;if(/[A-Za-z]/.test(t.replace(/[kKmMbB]/g,'')))return false;return true;}
 function animateNumbers(rootEl){if(!rootEl)return;rootEl.querySelectorAll('b,strong').forEach(el=>{if(el.closest('svg')||el.children.length)return;/* 当前轮详情头部是自己排版的，滚动动画会把数字换成绝对定位的数字条、内在宽度归零，把布局挤断 */if(el.closest('.w-turn-head'))return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t);});alignNumbers(rootEl);}
