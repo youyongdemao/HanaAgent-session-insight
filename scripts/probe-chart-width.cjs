@@ -20,6 +20,8 @@ const TODAY_KEY = (() => { const d = new Date(); return `${d.getFullYear()}-${St
 // 前端指纹：探针中途会改它，验证「页面自己发现代码变了就刷新」这条链路
 const STAMP = { value: "probe-1" };
 const BS_HITS = { value: 0 };
+// 轮询诊断用：改这个值会让 /api/ledger-stats 变化，数据签名随之改变 → 触发一次轮询重绘
+const LIVE = { calls: 39408 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function mkSeries(n, base) {
@@ -84,7 +86,7 @@ function startServer(port, assets) {
       if (api === "active") return json({ dir: "mock", file: SESSION_FILE });
       if (api === "resolve-entry") return json({ file: SESSION_FILE });
       if (api === "sessions") return json({ dir: "mock", sessions: [{ name: SESSION_FILE, title: STATS.title, model: STATS.model, size: 1, mtime: Date.now(), turns: TURNS }] });
-      if (api === "ledger-stats") return json({ days: { [TODAY_KEY]: { tokens: 351.08e6, cost: 16.05, hitRate: 0.99, calls: 2424, err: 1 }, "2026-08-29": { tokens: 2.6e9, cost: 146.4 }, "2026-09-10": { tokens: 2.59e9, cost: 146.5 } }, calls: 39408, errors: 39, tokens: { input: 5.1e9, output: 9.1e7, cacheHit: 4.9e9, cacheMiss: 1.1e8, hitRate: 0.982 }, coverage: { firstDay: "2026-08-29" }, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
+      if (api === "ledger-stats") return json({ days: { [TODAY_KEY]: { tokens: 351.08e6, cost: 16.05, hitRate: 0.99, calls: 2424, err: 1 }, "2026-08-29": { tokens: 2.6e9, cost: 146.4 }, "2026-09-10": { tokens: 2.59e9, cost: 146.5 } }, calls: LIVE.calls, errors: 39, tokens: { input: 5.1e9, output: 9.1e7, cacheHit: 4.9e9, cacheMiss: 1.1e8, hitRate: 0.982 }, coverage: { firstDay: "2026-08-29" }, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
       if (api === "total-cost") return json({ totalCost: 16.62 });
       if (api === "rules") return json({});
       if (api === "providers" || api === "local-providers") return json({ providers: [] });
@@ -247,7 +249,19 @@ async function runSide(cdp, port, tag) {
   await sleep(15000);
   const t1 = await ev(cdp, "performance.timeOrigin");
   const selfReload = { before: t0, after: t1, reloaded: t0 !== t1, hits: BS_HITS.value, routeProbe };
-  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload };
+  // 轮询诊断：改数据 → 等一次轮询重绘 → 看还有哪些动画在跑（“轮询时不该有任何入场动画”）
+  const pollKind = process.argv.includes("--poll-diag");
+  let pollDiag = null;
+  if (pollKind) {
+    await ev(cdp, `(()=>{const t=document.querySelector('.subtab[data-page="usage-overview"]');if(t)t.click();return true;})()`);
+    await sleep(600);
+    const t0 = await ev(cdp, `({n:document.getAnimations().filter(a=>a.playState==='running').length})`);
+    LIVE.calls += 7;
+    await sleep(11000);
+    pollDiag = await ev(cdp, `(()=>{const list=document.getAnimations().filter(a=>a.playState==='running').map(a=>{const t=a.effect&&a.effect.target;const cls=t&&t.getAttribute&&(t.getAttribute('class')||'');return (a.animationName||a.transitionProperty||'?')+' @ '+(cls||(t&&t.tagName)||'?');});return {running:list.slice(0,24),count:list.length};})()`);
+    pollDiag.beforeCount = t0 && t0.n;
+  }
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload, pollDiag };
 }
 
 (async () => {
