@@ -1355,6 +1355,13 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .
    供应商行不再整块重建：已有的行只改属性/文本，让 width 的过渡真正生效；
    只有新出现的行才播入场动画。数字滚动由 JS 在切换会话时重新触发。 */
 .w-detail-provider-bar i{transition:width .5s var(--ease),background .3s linear}
+/* ── 详情卡里的模型子项：挂在所属供应商下面，缩进一级 ── */
+.w-detail-sub{margin:9px 0 1px 12px;padding-left:10px;display:grid;gap:6px;border-left:1px solid color-mix(in srgb,var(--text) 12%,transparent)}
+.w-detail-sub-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;min-width:0}
+.w-detail-sub-row>i{width:6px;height:6px;border-radius:50%;background:var(--bar,var(--accent));opacity:.8}
+.w-detail-sub-row>span{font:500 11px var(--font-mono);color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.w-detail-sub-row>em{font:400 10.5px var(--font-mono);font-style:normal;color:var(--text-muted)}
+.w-detail-sub-row>b{font:500 11px var(--font-mono);color:var(--text-light);min-width:46px;text-align:right}
 @keyframes siProviderEnter{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
 #sProviderBody>.si-rise{animation:siProviderEnter .42s var(--ease) both}
 /* ── 实时预览：供应商份额环改成属性更新 ──
