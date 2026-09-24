@@ -35,7 +35,19 @@ const STATS = {
   sumInput: 900000, sumOutput: 340000, sumCacheRead: 700000, sumReasoning: 0,
   series: mkSeries(TURNS, 62000), providers: [{ provider: "deepseek", tokens: 1240000, turns: TURNS, models: [{ model: "deepseek-v3.2", tokens: 1240000 }] }],
 };
-const HTML = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/api/plugins/${ID}/assets/panel-v2.css"></head><body data-hana-theme="dark" data-surface="page"><div id="root" data-surface="page"></div><script type="module" src="/api/plugins/${ID}/assets/panel-v2.js"></script></body></html>`;
+// 探针默认用宿主内置暗色主题 midnight 的调色板（设置里主题=auto、系统暗色时就是它）。
+// 不然插件样式里的 var(--accent)/var(--bg) 取不到值，截图会退化成黑块。
+const THEME_CSS = (() => {
+  try {
+    const base = "D:/AI/Hanako/artifacts/renderer";
+    for (const d of fs.readdirSync(base).sort().reverse()) {
+      const p = path.join(base, d, "themes", "midnight.css");
+      if (fs.existsSync(p)) return fs.readFileSync(p, "utf8");
+    }
+  } catch {}
+  return "";
+})();
+const HTML = `<!doctype html><html data-theme="midnight"><head><meta charset="utf-8"><link rel="stylesheet" href="/theme.css"><link rel="stylesheet" href="/api/plugins/${ID}/assets/panel-v2.css"></head><body data-hana-theme="midnight" data-surface="page"><div id="root" data-surface="page"></div><script type="module" src="/api/plugins/${ID}/assets/panel-v2.js"></script></body></html>`;
 
 function startServer(port, assets) {
   const srv = http.createServer((req, res) => {
@@ -43,6 +55,7 @@ function startServer(port, assets) {
     const p = u.pathname;
     const send = (t, b) => { res.writeHead(200, { "Content-Type": t, "Cache-Control": "no-store" }); res.end(b); };
     const json = (o) => send("application/json", JSON.stringify(o));
+    if (p === "/theme.css") return send("text/css", THEME_CSS);
     if (p === `/api/plugins/${ID}/page`) return send("text/html; charset=utf-8", HTML);
     // 静态资源：panel-v2.* 用本次对比的副本，其余（theme-sync/sdk/update-notice...）取仓库原文件
     const m = p.match(new RegExp(`^/api/plugins/${ID}/assets/(.+)$`));
@@ -130,7 +143,7 @@ const GEOM = `(()=>{
 const SHOT_CARDS = `(async()=>{const g=document.querySelector('.session-charts');if(!g)return null;g.scrollIntoView({block:'start'});await new Promise(r=>setTimeout(r,300));const r=g.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})()`;
 
 async function runSide(cdp, port, tag) {
-  await cdp.send("Page.navigate", { url: `http://127.0.0.1:${port}/api/plugins/${ID}/page?hana-theme=dark` });
+  await cdp.send("Page.navigate", { url: `http://127.0.0.1:${port}/api/plugins/${ID}/page?hana-theme=midnight` });
   await sleep(2600);
   const atBoot = await ev(cdp, MEASURE);
   await ev(cdp, ENTER);
@@ -161,8 +174,11 @@ async function runSide(cdp, port, tag) {
   const oldCss = path.join(TMP, "panel-old.css");
   fs.copyFileSync(PANEL, newJs);
   fs.copyFileSync(CSS, newCss);
-  fs.writeFileSync(oldJs, execSync("git show HEAD:ui/assets/panel-v2.js", { cwd: REPO, maxBuffer: 64 * 1024 * 1024 }));
-  fs.writeFileSync(oldCss, execSync("git show HEAD:ui/assets/panel-v2.css", { cwd: REPO, maxBuffer: 64 * 1024 * 1024 }));
+  // 对比基线：默认 HEAD；HEAD 已包含本次改动时用 --rev <commit> 指向改动前那一版
+  const revIdx = process.argv.indexOf("--rev");
+  const BASE_REV = revIdx > -1 ? process.argv[revIdx + 1] : "HEAD";
+  fs.writeFileSync(oldJs, execSync(`git show ${BASE_REV}:ui/assets/panel-v2.js`, { cwd: REPO, maxBuffer: 64 * 1024 * 1024 }));
+  fs.writeFileSync(oldCss, execSync(`git show ${BASE_REV}:ui/assets/panel-v2.css`, { cwd: REPO, maxBuffer: 64 * 1024 * 1024 }));
 
   const srvNew = await startServer(8801, { "panel-v2.js": newJs, "panel-v2.css": newCss });
   const srvOld = await startServer(8802, { "panel-v2.js": oldJs, "panel-v2.css": oldCss });
@@ -189,10 +205,10 @@ async function runSide(cdp, port, tag) {
     await new Promise((r, j) => { ws.addEventListener("open", r); ws.addEventListener("error", j); });
     const cdp = new CDP(ws);
     await cdp.send("Page.enable"); await cdp.send("Runtime.enable");
-    await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1200, height: 900, deviceScaleFactor: 1, mobile: false });
+    await cdp.send("Emulation.setDeviceMetricsOverride", { width: 1200, height: 1500, deviceScaleFactor: 1, mobile: false });
 
     const out = {};
-    out.baseline = await runSide(cdp, 8802, "HEAD");
+    out.baseline = await runSide(cdp, 8802, `${BASE_REV}`);
     out.current = await runSide(cdp, 8801, "worktree");
     for (const k of ["baseline", "current"]) {
       const s = out[k].shot; delete out[k].shot;
