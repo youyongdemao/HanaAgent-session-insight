@@ -842,6 +842,28 @@ async function pollWidgetTotals(){
     applyWidgetTotals(await fetchJson(f?"/api/stats?fast=1&file="+encodeURIComponent(f):"/api/stats?fast=1",4000));
   }catch{}finally{wTotalsBusy=false;}
 }
+// ── 卡片环与数据格的间距：量成 px 写内联，过渡才生效 ──
+// 为什么不能在 CSS 里直接过渡：百分比 margin 的 computed 值不会随容器宽度变化，
+// 所以卡片拉宽时浏览器认为“值没变”，transition 永远不触发（实测两种触发方式都是瞬间到位）。
+// 改成用 ResizeObserver 量出卡片宽度、换算成 px 写进内联样式，
+// CSS 里的 transition:margin-left 就能真正跑起来（拖动时是柔和的跟随）。
+function syncWidgetGap(){
+  if(surface!=='widget')return;
+  const w=document.querySelector('.widget');const card=w&&w.querySelector('.ring-state');const data=card&&card.querySelector('.w-overview-data');
+  if(!card||!data)return;
+  const cw=w.clientWidth,inner=Math.max(0,cw-28);
+  const gap=cw<=380?0:Math.max(12,Math.round(inner*0.2-48));
+  data.style.marginLeft=gap+'px';
+}
+let widgetGapRO=null;
+function watchWidgetGap(){
+  if(surface!=='widget'||typeof ResizeObserver==='undefined')return;
+  const w=document.querySelector('.widget');if(!w)return;
+  syncWidgetGap();
+  if(widgetGapRO)widgetGapRO.disconnect();
+  widgetGapRO=new ResizeObserver(()=>syncWidgetGap());
+  widgetGapRO.observe(w);
+}
 function paintQuiet(fn,quiet){
   if(!quiet)return paintForce(fn);
   // 静默渲染：把这一次新插进来的节点标成静态，之后不再播入场动画。
@@ -1078,7 +1100,7 @@ async function watchProviders(){
 // 这里在首次渲染前等一次字体（封顶 600ms，字体拿不到不阻塞），字体到位后再安静重渲染一次，
 // 让度量重的部分（滚动结构 + 对齐）用真字体重算。
 function fontsReady(ms){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;res();};try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fin);}catch(e){}setTimeout(fin,ms);});}
-async function start(){hana.ready();await fontsReady(600);if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000),wt=setInterval(pollWidgetTotals,1000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);clearInterval(wt);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);const ht=setInterval(pollHeroStats,1000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);clearInterval(ht);},{once:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(surface!=='widget')paintQuiet(()=>renderPageAll(true),true);});}}
+async function start(){hana.ready();await fontsReady(600);if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();watchWidgetGap();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000),wt=setInterval(pollWidgetTotals,1000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);clearInterval(wt);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);const ht=setInterval(pollHeroStats,1000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);clearInterval(ht);},{once:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(surface!=='widget')paintQuiet(()=>renderPageAll(true),true);});}}
 start().catch(()=>{if(surface==='widget')renderWidget();else renderPageAll();});
 // 进页面自检一次更新：有新版才弹窗，没有就什么都不做（与设置页共用同一套弹窗）
 initUpdateNotice();
