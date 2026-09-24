@@ -813,7 +813,9 @@ function applyHeroStats(r){
 }
 let heroTickBusy=false;
 async function pollHeroStats(){
-  if(heroTickBusy||document.hidden)return;
+  // 不再看 document.hidden：宿主 iframe 可能一直报 hidden，那会把这个每秒通道自己捻死
+  // （主轮询本来就没这个守卫）。只跳“总览不是当前页”那种确实没必要刷的情况。
+  if(heroTickBusy)return;
   if(state.view!=="usage"||state.page!=="usage-overview")return;
   heroTickBusy=true;
   try{applyHeroStats(await fetchJson("/api/hero-stats",4000));}catch{}finally{heroTickBusy=false;}
