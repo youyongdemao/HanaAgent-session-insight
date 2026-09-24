@@ -548,12 +548,12 @@ body:not([data-surface="widget"]) #api-detail .provider-model-rank.si-release,bo
 
 /* 主数据区重新建立体块层级：总余额为主视觉，总消耗降一级 */
 body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:minmax(190px,.72fr) minmax(300px,1.28fr);gap:clamp(28px,4vw,62px);min-height:178px;padding:30px clamp(24px,3vw,42px);background:linear-gradient(145deg,color-mix(in srgb,var(--bg-card) 34%,transparent),color-mix(in srgb,var(--bg-card) 16%,transparent))!important;border:1px solid color-mix(in srgb,var(--text) 8%,transparent)!important;border-radius:20px!important;box-shadow:inset 0 1px 0 var(--si-glass-hi),0 8px 28px rgba(0,0,0,.12)!important}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child{opacity:.78}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child .ah-num{font-size:clamp(36px,4vw,52px);color:color-mix(in srgb,var(--text-light) 82%,var(--text-muted));text-shadow:none}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child{padding-left:clamp(4px,1vw,16px)}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(56px,6.4vw,82px);filter:drop-shadow(0 5px 28px color-mix(in srgb,var(--si-green) 26%,transparent))}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num.low,.ah-num.low{color:var(--si-red-soft);filter:drop-shadow(0 0 18px var(--si-red-soft-glow)) drop-shadow(0 5px 30px color-mix(in srgb,var(--si-red-soft) 30%,transparent))}
-@media(max-width:720px){body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:1fr;gap:22px}.hero-pricing .api-hero .ah-block:last-child{padding-left:0}}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost{opacity:.78}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-num{font-size:clamp(36px,4vw,52px);color:color-mix(in srgb,var(--text-light) 82%,var(--text-muted));text-shadow:none}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance{padding-left:clamp(4px,1vw,16px)}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-num{font-size:clamp(56px,6.4vw,82px);filter:drop-shadow(0 5px 28px color-mix(in srgb,var(--si-green) 26%,transparent))}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-num.low,.ah-num.low{color:var(--si-red-soft);filter:drop-shadow(0 0 18px var(--si-red-soft-glow)) drop-shadow(0 5px 30px color-mix(in srgb,var(--si-red-soft) 30%,transparent))}
+@media(max-width:720px){body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:1fr;gap:22px}.hero-pricing .api-hero .ah-block-balance{padding-left:0}}
 
 /* 独立阈值提醒卡 */
 .threshold-panel{margin-top:20px}
@@ -582,20 +582,20 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero,body:not([data-surface
 /* 主位顺序：总余额左、分隔线中、总消耗右 */
 body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:minmax(0,1.25fr) 1px minmax(180px,.75fr);gap:clamp(26px,3.2vw,48px)}
 body:not([data-surface="widget"]) .hero-pricing{column-gap:48px}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child{grid-column:1;grid-row:1;align-items:flex-start;text-align:left;padding-left:0}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance{grid-column:1;grid-row:1;align-items:flex-start;text-align:left;padding-left:0}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-divider{display:block!important;grid-column:2;grid-row:1;width:1px;height:72%;align-self:center;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--text) 20%,transparent),transparent)}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child{grid-column:3;grid-row:1;align-items:flex-start;text-align:left;opacity:.76}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child .ah-num{font-size:clamp(34px,3.8vw,52px);font-weight:400;letter-spacing:-.045em;color:color-mix(in srgb,var(--text-light) 62%,var(--text-muted));text-shadow:none;opacity:.78}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(56px,6.4vw,82px);letter-spacing:-.065em}
-.ah-token-block{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:18px}.ah-token-block .ah-label{font-size:10.5px;letter-spacing:.14em;color:var(--text-muted)}.ah-token-num,.hero-pricing .api-hero .ah-block:first-child .ah-num{font:400 clamp(34px,3.8vw,52px)/1 var(--font-mono);letter-spacing:-.045em;color:color-mix(in srgb,var(--text-light) 78%,var(--text-muted));white-space:nowrap;text-shadow:none}
-@media(max-width:720px){body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:1fr;gap:22px}body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child,body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child{grid-column:1;grid-row:auto}body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-divider{display:none!important}}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost{grid-column:3;grid-row:1;align-items:flex-start;text-align:left;opacity:.76}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-num{font-size:clamp(34px,3.8vw,52px);font-weight:400;letter-spacing:-.045em;color:color-mix(in srgb,var(--text-light) 62%,var(--text-muted));text-shadow:none;opacity:.78}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-num{font-size:clamp(56px,6.4vw,82px);letter-spacing:-.065em}
+.ah-token-block{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-top:18px}.ah-token-block .ah-label{font-size:10.5px;letter-spacing:.14em;color:var(--text-muted)}.ah-token-num,.hero-pricing .api-hero .ah-block-cost .ah-num{font:400 clamp(34px,3.8vw,52px)/1 var(--font-mono);letter-spacing:-.045em;color:color-mix(in srgb,var(--text-light) 78%,var(--text-muted));white-space:nowrap;text-shadow:none}
+@media(max-width:720px){body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:1fr;gap:22px}body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance,body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost{grid-column:1;grid-row:auto}body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-divider{display:none!important}}
 
 /* 主数据区紧凑对齐：总余额左、总消耗右，并与资讯卡留出明确空隙 */
 body:not([data-surface="widget"]) .hero-pricing{grid-template-columns:minmax(0,1fr) minmax(300px,.62fr);column-gap:48px;width:100%;max-width:100%;min-width:0}
 body:not([data-surface="widget"]) .hero-pricing .api-hero{width:100%;max-width:100%;align-items:start;grid-template-columns:minmax(0,480px) 1px minmax(180px,220px);gap:18px}
 body:not([data-surface="widget"]) .hero-pricing .pricing-side{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child,body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child{align-self:start}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:first-child .ah-num{font-weight:500}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance,body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost{align-self:start}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-num{font-weight:500}
 @media(max-width:1200px){body:not([data-surface="widget"]) .hero-pricing{grid-template-columns:1fr;row-gap:28px}body:not([data-surface="widget"]) .hero-pricing .api-hero{max-width:none}}
 
 
@@ -1429,7 +1429,7 @@ body:not([data-surface="widget"]) #usage-session .session-trigger>.si-border-glo
    这里显式声明不裁切（宽度不够时宁可溢出到边界），并给字号留一点余量。 */
 .hero-pricing,.hero-pricing .api-hero,.hero-pricing .api-hero .ah-block{overflow:visible}
 .hero-pricing .api-hero .ah-num,.hero-pricing .api-hero .ah-token-num{overflow:visible}
-body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block:last-child .ah-num{font-size:clamp(44px,5.8vw,74px)}
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-num{font-size:clamp(44px,5.8vw,74px)}
 /* provider lamp semantics: green=readable, pink=local model, bright red=has API but read failed, gray=no balance API */
 :root{--si-pink:#ff4fd8;--si-pink-glow:color-mix(in srgb,#ff4fd8 72%,transparent);--si-red-bright:#ff3b30}
 .pv-dot.local{background:var(--si-pink);box-shadow:0 0 9px var(--si-pink-glow)}
