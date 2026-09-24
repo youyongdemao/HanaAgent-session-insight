@@ -45,7 +45,8 @@ const MASKQ = `(()=>{const od=document.querySelector('.od');if(!od)return null;c
   const fbAsc=(mx.fontBoundingBoxAscent!=null?mx.fontBoundingBoxAscent:asc),fbDesc=(mx.fontBoundingBoxDescent!=null?mx.fontBoundingBoxDescent:desc);
   const contentH=fbAsc+fbDesc,half=(fs-contentH)/2;const baseY=half+fbAsc;
   const inkTop=(baseY-asc)/fs,inkBot=(baseY+desc)/fs;
-  return {mask:cs.webkitMaskImage||cs.maskImage,inline:(od.getAttribute('style')||'').match(/mask-image[^;]*/)?.[0]||null,band:(od.getAttribute('style')||'').match(/rgb\\(0, 0, 0\\) [\\d.]+%/g),fontSize:fs,inkTopPct:+(inkTop*100).toFixed(1),inkBotPct:+(inkBot*100).toFixed(1),inkFits:inkTop>=0.06&&inkBot<=0.94};})()`;
+  return {mask:cs.webkitMaskImage||cs.maskImage,inline:(od.getAttribute('style')||'').match(/mask-image[^;]*/)?.[0]||null,band:(od.getAttribute('style')||'').match(/rgb\\(0, 0, 0\\) [\\d.]+%/g),fontSize:fs,inkTopPct:+(inkTop*100).toFixed(1),inkBotPct:+(inkBot*100).toFixed(1),inkFits:inkTop>=0.06&&inkBot<=0.94,
+    glowFilter:getComputedStyle(el).filter,glowTextShadow:getComputedStyle(el).textShadow};})()`;
 (async () => {
   await new Promise((r) => srv.listen(8873, "127.0.0.1", r));
   const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "si-od-"));
@@ -74,7 +75,7 @@ const MASKQ = `(()=>{const od=document.querySelector('.od');if(!od)return null;c
     const pxVals = [...new Set(flat.filter((v) => v.includes("px")).map((v) => v))];
     const emVals = [...new Set(flat.filter((v) => v.includes("em")).map((v) => v))];
     const ints = pxVals.every((v) => Number.isInteger(Number(v.replace(/[^-\d.]/g, ""))));
-    console.log(JSON.stringify({ sawRoll, pxMidRoll: pxVals.slice(0, 8), emMidRoll: emVals.slice(0, 4), allIntegerPx: ints, maskInline: mask && mask.inline, opaqueBand: mask && mask.band, fontSize: mask && mask.fontSize, inkTopPct: mask && mask.inkTopPct, inkBotPct: mask && mask.inkBotPct, inkInsideOpaqueBand: mask && mask.inkFits }, null, 1));
+    console.log(JSON.stringify({ sawRoll, pxMidRoll: pxVals.slice(0, 8), emMidRoll: emVals.slice(0, 4), allIntegerPx: ints, maskInline: mask && mask.inline, opaqueBand: mask && mask.band, fontSize: mask && mask.fontSize, inkTopPct: mask && mask.inkTopPct, inkBotPct: mask && mask.inkBotPct, inkInsideOpaqueBand: mask && mask.inkFits, glowIsFilter: !!(mask && /drop-shadow/.test(mask.glowFilter || '')), glowTextShadow: mask && mask.glowTextShadow }, null, 1));
     ws.close();
   } finally { proc.kill(); srv.close(); await sleep(300); try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {} }
 })();
