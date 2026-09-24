@@ -57,27 +57,29 @@ async function ev(c, expression) { const r = await c.send("Runtime.evaluate", { 
     const cdp = new CDP(ws);
     await cdp.send("Runtime.enable"); await cdp.send("Page.enable");
     const rows = [];
-    for (const w of [400, 600, 800, 1000, 1200]) {
+    for (const w of [300, 340, 360, 400, 600, 1000]) {
       await cdp.send("Emulation.setDeviceMetricsOverride", { width: w, height: 900, deviceScaleFactor: 1, mobile: false });
       await cdp.send("Page.navigate", { url: `http://127.0.0.1:8871/api/plugins/${ID}/page` });
       await sleep(2200);
       const g = await ev(cdp, `(()=>{const q=s=>{const e=document.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width};};const ring=q('.w-ring'),data=q('.w-overview-data'),card=q('.ring-state'),lab=q('.w-token-main>span');const oneRow=Math.abs(ring.y-data.y)<12;return {cardW:Math.round(card.w),gap:oneRow?Math.round(data.x-(ring.x+ring.w)):null,oneRow,labelX:Math.round(lab.x),font:getComputedStyle(document.querySelector('#wTokTotal')).fontSize,transition:getComputedStyle(document.querySelector('.w-overview-data')).transitionProperty};})()`);
-      // 渐变曲线：把视口宽度推大 200px，每 45ms 量一次间距，看它是否在 ~300ms 内平滑升到新值
+      // 渐变曲线：把视口宽度推大 150px，每 45ms 量一次间距（验证“拉开时是否平滑跟过去”）
       let ramp = null;
       if (w === 600) {
-        // 两种触发都试：① 模拟器改视口宽 ② 直接改卡片宽度（内联），区分“没生效”与“测法触不动”
-        await cdp.send("Emulation.setDeviceMetricsOverride", { width: 900, height: 900, deviceScaleFactor: 1, mobile: false });
-        const seqA = [];
-        for (let i = 0; i < 9; i++) { await sleep(45); seqA.push(await ev(cdp, `(()=>{const r=document.querySelector('.w-ring').getBoundingClientRect();const a=document.querySelector('.w-overview-data').getBoundingClientRect();return Math.round(a.x-(r.x+r.width));})()`)); }
-        await ev(cdp, `(()=>{document.querySelector('.ring-state').style.width='520px';return true;})()`);
-        const seqB = [];
-        for (let i = 0; i < 9; i++) { await sleep(45); seqB.push(await ev(cdp, `(()=>{const r=document.querySelector('.w-ring').getBoundingClientRect();const a=document.querySelector('.w-overview-data').getBoundingClientRect();return Math.round(a.x-(r.x+r.width));})()`)); }
-        ramp = { viaViewport: seqA, viaWidth: seqB, stepMs: 45 };
-        // 直接改内联 margin（不经过应用逻辑）验证“px margin 过渡本身是否跑得起来”
-        await ev(cdp, `(()=>{document.querySelector('.w-overview-data').style.marginLeft='220px';return true;})()`);
-        const seqC = [];
-        for (let i = 0; i < 9; i++) { await sleep(45); seqC.push(await ev(cdp, `(()=>{const r=document.querySelector('.w-ring').getBoundingClientRect();const a=document.querySelector('.w-overview-data').getBoundingClientRect();return Math.round(a.x-(r.x+r.width));})()`)); }
-        ramp.directMargin = seqC;
+        await cdp.send("Emulation.setDeviceMetricsOverride", { width: 750, height: 900, deviceScaleFactor: 1, mobile: false });
+        const seq = [];
+        for (let i = 0; i < 9; i++) { await sleep(45); seq.push(await ev(cdp, `(()=>{const r=document.querySelector('.w-ring').getBoundingClientRect();const a=document.querySelector('.w-overview-data').getBoundingClientRect();return Math.round(a.x-(r.x+r.width));})()`)); }
+        ramp = { seq, stepMs: 45 };
+      }
+      // FLIP 检验：在 400 档跨过 350 阈值（不重新加载页面，否则计数器会重置），看切换动画逻辑有没有触发
+      if (w === 400) {
+        const c0 = await ev(cdp, `Number(window.__hanakoWidgetFlips||0)`);
+        await cdp.send("Emulation.setDeviceMetricsOverride", { width: 300, height: 900, deviceScaleFactor: 1, mobile: false });
+        await sleep(800);
+        const c1 = await ev(cdp, `Number(window.__hanakoWidgetFlips||0)`);
+        await cdp.send("Emulation.setDeviceMetricsOverride", { width: 500, height: 900, deviceScaleFactor: 1, mobile: false });
+        await sleep(800);
+        const c2 = await ev(cdp, `Number(window.__hanakoWidgetFlips||0)`);
+        rows.push({ flipTest: true, toStacked: c1 - c0, backToOneRow: c2 - c1, fired: c2 > c0 });
       }
       rows.push({ win: w, cardW: g.cardW, layout: g.oneRow ? "one-row" : "stacked", gap: g.gap, labelX: g.labelX, font: g.font, transition: g.transition, ramp });
     }

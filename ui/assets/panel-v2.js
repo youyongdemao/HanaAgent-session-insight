@@ -851,10 +851,38 @@ function syncWidgetGap(){
   if(surface!=='widget')return;
   const w=document.querySelector('.widget');const card=w&&w.querySelector('.ring-state');const data=card&&card.querySelector('.w-overview-data');
   if(!card||!data)return;
+  const ring=card.querySelector('.w-ring');
   const cw=w.clientWidth,inner=Math.max(0,cw-28);
-  const gap=cw<=380?0:Math.max(12,Math.round(inner*0.2-48));
+  // 阈值与基线必须和 CSS 里的一致（@container 350px / calc(20% - 60px)），两处不同步就会打架
+  const stacked=cw<=350;
+  const gap=stacked?0:Math.max(12,Math.round(inner*0.2-60));
+  // ── 横竖切换的过渡（FLIP）──
+  // flex-direction 变了没法用 CSS 过渡，所以：拿上一次记录的两块矩形，
+  // 先把它们反推回旧位置（无过渡），下一帧再过渡到新位置（transform 归零）。
+  if(ring&&wGapPrev&&wGapPrev.stacked!==stacked){
+    const r0=wGapPrev.ring,d0=wGapPrev.data,r1=ring.getBoundingClientRect(),d1=data.getBoundingClientRect();
+    const dx=Math.round(r0.x-r1.x),dy=Math.round(r0.y-r1.y),ex=Math.round(d0.x-d1.x),ey=Math.round(d0.y-d1.y);
+    if(dx||dy||ex||ey){
+      try{
+        ring.style.transition='none';data.style.transition='none';
+        ring.style.transform=`translate(${dx}px,${dy}px)`;
+        data.style.transform=`translate(${ex}px,${ey}px)`;
+        requestAnimationFrame(()=>{
+          ring.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
+          data.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
+          ring.style.transform='';data.style.transform='';
+          setTimeout(()=>{ring.style.transition='';data.style.transition='';},400);
+        });
+        flipCount++;
+        try{window.__hanakoWidgetFlips=flipCount;}catch(e){}
+      }catch(e){}
+    }
+  }
   data.style.marginLeft=gap+'px';
+  if(ring)wGapPrev={stacked,ring:ring.getBoundingClientRect(),data:data.getBoundingClientRect()};
 }
+let wGapPrev=null,flipCount=0;
+function widgetFlipCount(){return flipCount;}
 let widgetGapRO=null;
 function watchWidgetGap(){
   if(surface!=='widget'||typeof ResizeObserver==='undefined')return;

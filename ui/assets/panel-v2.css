@@ -1345,11 +1345,11 @@ body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-leg
    换行仍交给内容决定（min-width = min-content），不拍像素阈值。 ── */
 body[data-surface="widget"] .ring-state{display:flex;flex-wrap:wrap;align-items:center;gap:10px 0}
 body[data-surface="widget"] .ring-state>.w-ring{flex:0 0 104px;width:104px}
-body[data-surface="widget"] .ring-state>.w-overview-data{flex:1 1 auto;min-width:min-content;margin-left:max(12px,calc(20% - 48px));transition:margin-left .28s cubic-bezier(.22,.72,.28,1)}
+body[data-surface="widget"] .ring-state>.w-overview-data{flex:1 1 auto;min-width:min-content;margin-left:max(12px,calc(20% - 60px));transition:margin-left .28s cubic-bezier(.22,.72,.28,1)}
 /* 叠放态（卡片放不下两列）：圆环居中、各区数值居中，标题保持左对齐不动。
    换行本身是内容驱动的（没拍阈值），后中这里用容器宽度作条件，两者会有一个窄窗口不重合。 */
 body[data-surface="widget"] .widget{container-type:inline-size}
-@container (max-width: 380px){
+@container (max-width: 350px){
   body[data-surface="widget"] .ring-state{flex-direction:column;justify-content:center;gap:10px}
   body[data-surface="widget"] .ring-state>.w-overview-data{margin-left:0;width:100%}
   body[data-surface="widget"] #wTokTotal,body[data-surface="widget"] #wHitAvg,body[data-surface="widget"] #wCost{display:block;width:100%;text-align:center}
