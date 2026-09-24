@@ -113,12 +113,34 @@ const OPEN_MODAL = `(async()=>{const c=document.querySelector('.chart-card[data-
     svgW:box&&box.querySelector('svg')?Math.round(box.querySelector('svg').getBoundingClientRect().width):null,
     boxBarPx:diff(box),boxBarPxW:box?box.offsetWidth-box.clientWidth:null,cardBarPx:diff(card)};})()`;
 
+const GEOM = `(()=>{
+  const out={};
+  const card=document.querySelector('#usage-session .chart-card');
+  if(!card)return {missing:true};
+  const sc=card.querySelector('.scroll-chart'), yx=card.querySelector('.sc-yaxis'), cs=card.querySelector('.chart-scroll'), svg=cs&&cs.querySelector('svg');
+  const r=el=>el?((x)=>({x:Math.round(x.x),y:Math.round(x.y),w:Math.round(x.width),h:Math.round(x.height),bottom:Math.round(x.bottom),right:Math.round(x.right)}))(el.getBoundingClientRect()):null;
+  out.card=r(card);out.h3=r(card.querySelector('h3'));out.scrollChart=r(sc);out.yaxis=r(yx);out.chartScroll=r(cs);out.svg=r(svg);
+  const ccs=getComputedStyle(card),css=getComputedStyle(sc||card);
+  out.cardPad=[ccs.paddingTop,ccs.paddingRight,ccs.paddingBottom,ccs.paddingLeft].join(' ');
+  out.scrollMin=css.minHeight;
+  if(svg){const bb=(sel)=>{const n=svg.querySelector(sel);if(!n)return null;const b=n.getBBox();return {x:+b.x.toFixed(1),y:+b.y.toFixed(1),w:+b.width.toFixed(1),h:+b.height.toFixed(1)};};out.svgViewBox=svg.getAttribute('viewBox');out.lines=svg.querySelectorAll('.si-line').length;out.pathBox=bb('.si-line');out.gridBox=bb('.grid-line');out.textBox=bb('text');}
+  return out;
+})()`;
+
+const SHOT_CARDS = `(async()=>{const g=document.querySelector('.session-charts');if(!g)return null;g.scrollIntoView({block:'start'});await new Promise(r=>setTimeout(r,300));const r=g.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})()`;
+
 async function runSide(cdp, port, tag) {
   await cdp.send("Page.navigate", { url: `http://127.0.0.1:${port}/api/plugins/${ID}/page?hana-theme=dark` });
   await sleep(2600);
   const atBoot = await ev(cdp, MEASURE);
   await ev(cdp, ENTER);
   const afterEnter = await ev(cdp, MEASURE);
+  const geom = await ev(cdp, GEOM);
+  const cardsRect = await ev(cdp, SHOT_CARDS);
+  let cardsShot = null;
+  if (cardsRect && cardsRect.w) {
+    cardsShot = (await cdp.send("Page.captureScreenshot", { format: "png", clip: { x: Math.max(0, cardsRect.x - 6), y: Math.max(0, cardsRect.y - 6), width: Math.min(1200, cardsRect.w + 12), height: Math.min(880, cardsRect.h + 12), scale: 1.4 } })).data;
+  }
   const modal = await ev(cdp, OPEN_MODAL);
   const shot = await cdp.send("Page.captureScreenshot", { format: "png" });
   // 只看滚动条那一条：按图表容器的矩形裁一条底部带，放大 3 倍
@@ -128,7 +150,7 @@ async function runSide(cdp, port, tag) {
     const clip = { x: Math.max(0, rect.x - 4), y: Math.max(0, rect.bottom - 26), width: Math.min(1200, rect.w + 8), height: 26, scale: 3 };
     band = (await cdp.send("Page.captureScreenshot", { format: "png", clip })).data;
   }
-  return { tag, atBoot, afterEnter, modal, rect, shot: shot.data, band };
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot };
 }
 
 (async () => {
@@ -178,6 +200,7 @@ async function runSide(cdp, port, tag) {
       fs.writeFileSync(f, Buffer.from(s, "base64"));
       out[k].shotFile = f;
       if (out[k].band) { const bf = path.join(SELF, `probe-bar-${k}.png`); fs.writeFileSync(bf, Buffer.from(out[k].band, "base64")); out[k].bandFile = bf; delete out[k].band; }
+      if (out[k].cardsShot) { const cf = path.join(SELF, `probe-cards-${k}.png`); fs.writeFileSync(cf, Buffer.from(out[k].cardsShot, "base64")); out[k].cardsFile = cf; delete out[k].cardsShot; }
     }
     console.log(JSON.stringify(out, null, 2));
     ws.close();

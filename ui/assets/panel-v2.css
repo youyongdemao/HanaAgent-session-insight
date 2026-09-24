@@ -1146,7 +1146,13 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
 .mini-card b{font:700 18px/1 var(--font-mono);color:var(--text-light);font-variant-numeric:tabular-nums}
 .session-extra h3{flex:none;margin-bottom:14px}
 .session-charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:20px}
-.session-charts .chart-card{min-width:0}
+/* 逐轮图卡片：图表本体向卡片边缘靠（原来左右各 18px 内边距 + 一列 60px y 轴，绘图区离左缘 92px，
+   底部还空出一条）。卡片内边距收到 12px，标题用 padding 拉回 18px 跟全页其他卡对齐；
+   图表区高度收到 SVG 本体高（188px），不再留 12px 空高。 */
+.session-charts .chart-card{min-width:0;padding:14px 12px 10px}
+.session-charts .chart-card>h3{padding-left:6px;padding-right:6px}
+.session-charts .scroll-chart{min-height:188px}
+.session-charts .scroll-chart .chart-scroll{min-height:188px}
 .session-charts .chart{min-height:200px}
 .session-charts .chart-scroll{min-height:200px;overflow-x:auto;overflow-y:hidden;position:relative}
 .session-charts .chart-scroll svg{width:auto;max-width:none;height:auto}
@@ -1154,8 +1160,8 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
 .session-charts .chart-scroll::-webkit-scrollbar-track{background:transparent}
 .session-charts .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 22%,transparent);border-radius:4px}
 .scroll-chart{display:flex;align-items:stretch;gap:6px;min-height:200px}
-.scroll-chart .sc-yaxis{flex:none;width:60px;min-width:60px;overflow:visible;color:var(--text-muted)}
-.scroll-chart .sc-yaxis svg{width:60px;height:auto;overflow:visible}
+.scroll-chart .sc-yaxis{flex:none;width:52px;min-width:52px;overflow:visible;color:var(--text-muted)}
+.scroll-chart .sc-yaxis svg{width:52px;height:auto;overflow:visible}
 .scroll-chart .chart-scroll{flex:1;min-width:0;min-height:200px;overflow-x:auto;overflow-y:hidden;position:relative}
 .scroll-chart .chart-scroll svg{width:auto;max-width:none;height:auto}
 .scroll-chart .scl-wrap{display:flex;flex-direction:column;min-width:0}
@@ -1283,7 +1289,7 @@ body:not([data-surface="widget"]) #view-api .hero-cost .card>.si-glow-spot,body:
 .widget .w-title,.widget .w-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── 每轮 Token 构成：图例靠右与标题同行，不占整行、不带独立窗格 ── */
-body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-legend{position:absolute;top:20px;right:22px;z-index:5;display:flex;gap:10px;margin:0;padding:0;background:none;backdrop-filter:none;border:0;flex-wrap:nowrap}
+body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-legend{position:absolute;top:16px;right:16px;z-index:5;display:flex;gap:10px;margin:0;padding:0;background:none;backdrop-filter:none;border:0;flex-wrap:nowrap}
 
 /* ── 侧边栏状态栏：卡片最小宽度收窄，宽度不够时自动换行而非挤压 ── */
 body[data-surface="widget"] .ring-state{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
