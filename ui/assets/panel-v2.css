@@ -683,6 +683,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* 事件时间线增强字段 */
 #usage-overview #usageEvents .event-row{grid-template-columns:42px 1fr auto auto auto auto}
 #usage-overview #usageEvents .event-row .ev-dur{font:400 10px var(--font-mono);color:var(--text-muted);white-space:nowrap}
+/* 插件自身的诊断条目：与模型调用区分开，只有时间 + 一行说明 */
+#usage-overview #usageEvents .event-row.diag-row{grid-template-columns:46px 1fr}
+#usage-overview #usageEvents .event-row.diag-row .ev-body b{color:var(--si-red)}
+#usage-overview #usageEvents .event-row.diag-row .ev-body span{color:var(--text-light)}
 #usage-overview #usageEvents .event-row .ev-hr{font:400 10px var(--font-mono);color:var(--si-green);white-space:nowrap}
 
 /* 今日费用卡微调 */
