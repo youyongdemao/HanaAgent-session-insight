@@ -28,6 +28,11 @@ function num(value) {
 // 未命中输入统一走 usage-parser 的 missInputOf（口径单一来源）
 const missTokensOf = missInputOf;
 
+/** 会话文件名形如 2026-09-25T06-55-11-238Z_01a0d5a1-4586-....jsonl。
+ *  前端的会话引用就是它，用来区分「根本不存在的会话」和「还没落盘的新会话」。 */
+const SESSION_FILE_RE = /^\d{4}-\d{2}-\d{2}T[\d:.\-]+Z_[0-9a-f\-]+\.jsonl$/i;
+const isSessionFileName = (ref) => SESSION_FILE_RE.test(String(ref ?? ""));
+
 function summarizeUsage(entries) {
   let totalTokens = 0;
   let sessionRequests = 0;
@@ -361,7 +366,20 @@ export default defineApp(async (sdk) => {
         if (!ref) return c.json({ error: "no sessions found" }, 404);
       }
       try {
-        const sessionId = await resolveSessionId(sdk, ref);
+        let sessionId = await resolveSessionId(sdk, ref);
+        // 新建会话刚建好时，会话列表的 15 秒缓存里还没有它，照缓存查必然落空：绕开缓存再查一次。
+        if (!sessionId) sessionId = await resolveSessionId(sdk, ref, { fresh: true });
+        // 还是没有：新会话在第一轮之前根本没有会话文件，这是「还没有用量」，不是请求出错。
+        // 回一个空壳让面板显示 0，别弹红色的请求失败提示。非会话文件名的引用仍然按未知会话处理。
+        if (!sessionId && isSessionFileName(ref)) {
+          const shell = buildSessionStats([], null);
+          shell.file = baseName(ref);
+          shell.sessionId = null;
+          shell.title = null;
+          shell.source = "pending";
+          shell.pending = true;
+          return c.json(shell);
+        }
         if (!sessionId) return c.json({ error: `unknown session: ${ref}` }, 404);
         const [entries, context, sessions] = await Promise.all([
           fetchSessionUsage(sdk, sessionId, c.req.query("fast") === "1" ? { limit: 1000, ttlMs: 1200 } : undefined),
