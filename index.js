@@ -1,7 +1,7 @@
 // Session Insight v2 App — 服务端入口
 // 数据源全部走宿主公开 API：session:list / session:context / usage:list / provider:credentials
 import { dirname, join } from "node:path";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
 import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
@@ -323,6 +323,22 @@ export default defineApp(async (sdk) => {
     registerLaunchRoutes(app, ctx, { writeConfig: (key, value) => writeAppConfig(sdk, key, value) });
 
     app.get("/health", (c) => c.json({ ok: true, app: "session-insight-v2" }));
+
+    // 前端资源指纹：面板页面自己盯着它，一变就自动刷新。
+    // 以后我这边同步完代码，已经打开的面板不用用户手动刷。
+    app.get("/api/build-stamp", async (c) => {
+      const stampOf = async (p) => {
+        try {
+          const s = await stat(p);
+          return `${s.size}-${Math.round(s.mtimeMs)}`;
+        } catch {
+          return "-";
+        }
+      };
+      const base = join(APP_DIR, "ui", "assets");
+      const stamp = `${await stampOf(join(base, "panel-v2.js"))}|${await stampOf(join(base, "panel-v2.css"))}`;
+      return c.json({ stamp });
+    });
 
     app.get("/api/sessions", async (c) => {
       try {

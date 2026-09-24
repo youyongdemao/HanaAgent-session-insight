@@ -15,6 +15,9 @@ const CSS = path.join(REPO, "ui", "assets", "panel-v2.css");
 const PANEL = path.join(REPO, "ui", "assets", "panel-v2.js");
 const ID = "session-insight";
 const TURNS = 200;
+// 前端指纹：探针中途会改它，验证「页面自己发现代码变了就刷新」这条链路
+const STAMP = { value: "probe-1" };
+const BS_HITS = { value: 0 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function mkSeries(n, base) {
@@ -88,6 +91,7 @@ function startServer(port, assets) {
       if (api === "pricing") return json({ rows: [], updatedAt: Date.now() });
       if (api === "ui-env") return json({});
       if (api === "update-check") return json({});
+      if (api === "build-stamp") { BS_HITS.value++; return json({ stamp: STAMP.value, hits: BS_HITS.value }); }
       return json({ ok: true });
     }
     if (p === "/api/sessions/messages") return json({ messages: [] });
@@ -127,6 +131,7 @@ const OPEN_MODAL = `(async()=>{
     return {hasPlot:!!plot,cardsInBody:document.querySelectorAll('#wDetailBody .card').length,
       yaxis:R(yx),scroll:R(sc),svg:R(svg),svgAttrW:svg?+svg.getAttribute('width'):null,
       overflowPx:sc?Math.round(sc.scrollWidth-sc.clientWidth):null,barPx:sc?Math.round(sc.offsetHeight-sc.clientHeight):null,
+      sx:sc?Math.round(sc.scrollLeft):null,sxMax:sc?Math.round(sc.scrollWidth-sc.clientWidth):null,xTicks:svg?svg.querySelectorAll('.axis-text').length:null,
       axisPinned:!!(yx&&sc&&yx.parentElement===sc.parentElement&&yx.nextElementSibling===sc)};
   };
   const out=[];
@@ -154,6 +159,7 @@ const GEOM = `(()=>{
   const ccs=getComputedStyle(card),css=getComputedStyle(sc||card);
   out.cardPad=[ccs.paddingTop,ccs.paddingRight,ccs.paddingBottom,ccs.paddingLeft].join(' ');
   out.scrollMin=css.minHeight;
+  out.xTicks=svg?svg.querySelectorAll('.axis-text').length:null;
   if(svg){const bb=(sel)=>{const n=svg.querySelector(sel);if(!n)return null;const b=n.getBBox();return {x:+b.x.toFixed(1),y:+b.y.toFixed(1),w:+b.width.toFixed(1),h:+b.height.toFixed(1)};};out.svgViewBox=svg.getAttribute('viewBox');out.lines=svg.querySelectorAll('.si-line').length;out.pathBox=bb('.si-line');out.gridBox=bb('.grid-line');out.textBox=bb('text');}
   return out;
 })()`;
@@ -197,7 +203,16 @@ async function runSide(cdp, port, tag) {
     const clip = { x: Math.max(0, cr.x - 10), y: Math.max(0, cr.y - 10), width: Math.min(1200, cr.w + 20), height: Math.min(1500, cr.h + 20), scale: 1.5 };
     modalShot = (await cdp.send("Page.captureScreenshot", { format: "png", clip })).data;
   }
-  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, fonts };
+  // 自刷新链路：先把详情关掉（开着时是故意不刷的）→ 改指纹 → 等一轮轮询 → 页面应该自己 reload
+  await ev(cdp, `(()=>{const b=document.querySelector('[data-detail-close]');if(b)b.click();return true;})()`);
+  await sleep(500);
+  const routeProbe = await ev(cdp, `fetch("/api/apps/session-insight-v2/routes/api/build-stamp").then(r=>r.text()).then(t=>t.slice(0,140)).catch(e=>"ERR "+String(e))`);
+  const t0 = await ev(cdp, "performance.timeOrigin");
+  STAMP.value = "probe-2-" + Date.now();
+  await sleep(15000);
+  const t1 = await ev(cdp, "performance.timeOrigin");
+  const selfReload = { before: t0, after: t1, reloaded: t0 !== t1, hits: BS_HITS.value, routeProbe };
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, fonts, selfReload };
 }
 
 (async () => {
