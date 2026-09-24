@@ -752,11 +752,17 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .uh-tok{min-width:236px}
 #usage-overview .uh-primary b,#usage-session .uh-primary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text-light));font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--accent) 38%,transparent)}
 /* 总消耗 Token 显示全部位数：字号按字符数在容器内自适应（等宽字号宽约 0.6em），留 4% 余量 */
-#usage-overview .uh-primary b{font-size:max(26px,min(84px,calc(160cqw/var(--digits,8))));white-space:nowrap}
+/* 总消耗 Token 显示全部位数：字号按字符数在容器内自适应（等宽字号宽约 0.6em），留 4% 余量。
+   同时整体上提：等宽字形内容高约 1.32em，莶进 1em 行盒后基线落在盒子 86% 处，
+   字形天生靠下（标签底到字形顶 21px），这里只做视觉位移，不动流式布局，
+   免得把下排（命中率 + 三卡）一起带跑。 */
+#usage-overview .uh-primary b{font-size:max(26px,min(84px,calc(160cqw/var(--digits,8))));white-space:nowrap;transform:translateY(-.15em)}
 /* 次重：平均缓存命中率 */
 #usage-overview .uh-secondary b,#usage-session .uh-secondary b{font:400 clamp(36px,4.2vw,56px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--green) 46%,transparent)}
 /* 会话页：命中率与本会话 Token 同字号、数字底边对齐 */
 #usage-session .uh-secondary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums}
+/* 会话页两个大数字也一样上提（按字号 .15em，同字号所以底边仍然齐） */
+#usage-session .uh-primary b,#usage-session .uh-secondary b{transform:translateY(-.15em)}
 #usage-overview .uh-secondary b.low,#usage-session .uh-secondary b.low{color:var(--si-red-soft);text-shadow:0 0 16px var(--si-red-soft-glow)}
 #usage-overview .today-stats .ts-hit b.low{color:var(--si-red-soft);text-shadow:0 0 12px var(--si-red-soft-glow)}
 .model-detail-row code.md-hit.low{color:var(--si-red-soft);text-shadow:0 0 10px var(--si-red-soft-glow)}
