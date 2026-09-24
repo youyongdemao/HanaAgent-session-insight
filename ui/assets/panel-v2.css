@@ -1340,18 +1340,18 @@ body:not([data-surface="widget"]) #view-api .hero-cost .card>.si-glow-spot,body:
 body:not([data-surface="widget"]) #usage-session .panel>.scl-legend.pe-fixed-legend{position:absolute;top:16px;right:16px;z-index:5;display:flex;gap:10px;margin:0;padding:0;background:none;backdrop-filter:none;border:0;flex-wrap:nowrap}
 
 /* ── 侧边栏状态栏：环固定 104px，数据格 flex 增长。
-   间距不钉死也不 1:1 拉开，而是取「卡片宽度的一个小比例」（3.5%，夹在 8～36px）：
-   越宽越松，但比宽度长得慢；多出来的宽度留在卡片右侧，不像 space-between 那样同速拉开。
+   间距取「卡片宽度的 3.5%，下限 10px，没有上限」（B 方案）：越宽越松，且一直松下去，
+   不设上限，所以不会出现「到了某个宽度就固定死、右半变成 1:1 跟跑」。
    换行仍交给内容决定（min-width = min-content），不拍像素阈值。 ── */
 body[data-surface="widget"] .ring-state{display:flex;flex-wrap:wrap;align-items:center;gap:10px 0}
 body[data-surface="widget"] .ring-state>.w-ring{flex:0 0 104px;width:104px}
-body[data-surface="widget"] .ring-state>.w-overview-data{flex:1 1 auto;min-width:min-content;margin-left:clamp(8px,3.5%,36px)}
+body[data-surface="widget"] .ring-state>.w-overview-data{flex:1 1 auto;min-width:min-content;margin-left:max(10px,3.5%)}
 /* 叠放态（卡片放不下两列）：圆环居中、各区数值居中，标题保持左对齐不动。
    换行本身是内容驱动的（没拍阈值），后中这里用容器宽度作条件，两者会有一个窄窗口不重合。 */
 body[data-surface="widget"] .widget{container-type:inline-size}
 @container (max-width: 380px){
-  body[data-surface="widget"] .ring-state{justify-content:center}
-  body[data-surface="widget"] .ring-state>.w-overview-data{margin-left:0}
+  body[data-surface="widget"] .ring-state{flex-direction:column;justify-content:center;gap:10px}
+  body[data-surface="widget"] .ring-state>.w-overview-data{margin-left:0;width:100%}
   body[data-surface="widget"] #wTokTotal,body[data-surface="widget"] #wHitAvg,body[data-surface="widget"] #wCost{display:block;width:100%;text-align:center}
 }
 /* 当前轮那一组的列数由格子数量决定（见 panel-v2.js 的 layoutTurnGrid）：auto-fit 会在窄卡片上塞 3 列，第 4 格掉行、空出一块 */
