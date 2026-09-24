@@ -773,6 +773,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .model-detail-row code.md-hit.low{color:var(--si-red-soft);text-shadow:0 0 10px var(--si-red-soft-glow)}
 #wHitAvg.low,#wHitRound.low{color:var(--si-red-soft);text-shadow:0 0 12px var(--si-red-soft-glow)}
 #usage-session .uh-main .uh-tok,#usage-session .uh-main .uh-side{align-self:start}
+/* 会话页两块平分宽度。.uh-tok 是 container-type:inline-size，而 contain:inline-size 让内容
+   不参与自身尺寸计算；它在 flex 里又没给 flex 基准，宽度于是塌成 0，
+   数字被压到 26px 下限、标签挤出盒外，看上去就像和右边那块叠在一起。 */
+#usage-session .uh-main .uh-tok{flex:1 1 0;min-width:0}
 #usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--text) 20%,transparent),transparent);flex:none}
 /* 最弱：三个小信息 */
 #usage-overview .uh-sub,#usage-session .uh-sub{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
