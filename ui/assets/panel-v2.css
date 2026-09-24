@@ -1149,19 +1149,19 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
 /* 逐轮图卡片：图表本体向卡片边缘靠（原来左右各 18px 内边距 + 一列 60px y 轴，绘图区离左缘 92px，
    底部还空出一条）。卡片内边距收到 12px，标题用 padding 拉回 18px 跟全页其他卡对齐；
    图表区高度收到 SVG 本体高（188px），不再留 12px 空高。 */
-.session-charts .chart-card{min-width:0;padding:14px 12px 10px}
-.session-charts .chart-card>h3{padding-left:6px;padding-right:6px}
-.session-charts .scroll-chart{min-height:188px}
-.session-charts .scroll-chart .chart-scroll{min-height:188px}
+.session-charts .chart-card{min-width:0;padding:14px 10px 6px}
+.session-charts .chart-card>h3{padding-left:8px;padding-right:6px}
+.session-charts .scroll-chart{min-height:214px}
+.session-charts .scroll-chart .chart-scroll{min-height:214px}
 .session-charts .chart{min-height:200px}
 .session-charts .chart-scroll{min-height:200px;overflow-x:auto;overflow-y:hidden;position:relative}
 .session-charts .chart-scroll svg{width:auto;max-width:none;height:auto}
 .session-charts .chart-scroll::-webkit-scrollbar{height:8px}
 .session-charts .chart-scroll::-webkit-scrollbar-track{background:transparent}
 .session-charts .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 22%,transparent);border-radius:4px}
-.scroll-chart{display:flex;align-items:stretch;gap:6px;min-height:200px}
-.scroll-chart .sc-yaxis{flex:none;width:52px;min-width:52px;overflow:visible;color:var(--text-muted)}
-.scroll-chart .sc-yaxis svg{width:52px;height:auto;overflow:visible}
+.scroll-chart{display:flex;align-items:stretch;gap:4px;min-height:200px}
+.scroll-chart .sc-yaxis{flex:none;width:44px;min-width:44px;overflow:visible;color:var(--text-muted)}
+.scroll-chart .sc-yaxis svg{width:44px;height:auto;overflow:visible}
 .scroll-chart .chart-scroll{flex:1;min-width:0;min-height:200px;overflow-x:auto;overflow-y:hidden;position:relative}
 .scroll-chart .chart-scroll svg{width:auto;max-width:none;height:auto}
 .scroll-chart .scl-wrap{display:flex;flex-direction:column;min-width:0}
