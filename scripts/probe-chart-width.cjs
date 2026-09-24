@@ -160,9 +160,19 @@ const GEOM = `(()=>{
 
 const SHOT_CARDS = `(async()=>{const g=document.querySelector('.session-charts');if(!g)return null;g.scrollIntoView({block:'start'});await new Promise(r=>setTimeout(r,300));const r=g.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};})()`;
 
+// 标尺字号与缩放调查：SVG 若被 CSS 拉伸（width:100%），实际字号 = 声明字号 × 缩放
+const FONTS = `(()=>{
+  const list=['#ctxChart','#tokViz','#cacheViz','#budgetChart','#providerCostLine','#usage-overview #taskCat'];
+  const out=[];
+  const add=(name,svg)=>{if(!svg)return;const r=svg.getBoundingClientRect();const vb=(svg.getAttribute('viewBox')||'').split(/\\s+/);const vbW=+vb[2]||0;const t=svg.querySelector('.axis-text');const fs2=t?parseFloat(getComputedStyle(t).fontSize):null;const scale=vbW?r.width/vbW:1;out.push({name,rectW:Math.round(r.width),vbW:vbW||null,scale:+scale.toFixed(3),declared:fs2,effective:fs2?+(fs2*scale).toFixed(2):null});};
+  for(const s of list)add(s,document.querySelector(s+' svg'));
+  return out;
+})()`;
+
 async function runSide(cdp, port, tag) {
   await cdp.send("Page.navigate", { url: `http://127.0.0.1:${port}/api/plugins/${ID}/page?hana-theme=midnight` });
   await sleep(2600);
+  const fonts = await ev(cdp, FONTS);
   const atBoot = await ev(cdp, MEASURE);
   await ev(cdp, ENTER);
   const afterEnter = await ev(cdp, MEASURE);
@@ -187,7 +197,7 @@ async function runSide(cdp, port, tag) {
     const clip = { x: Math.max(0, cr.x - 10), y: Math.max(0, cr.y - 10), width: Math.min(1200, cr.w + 20), height: Math.min(1500, cr.h + 20), scale: 1.5 };
     modalShot = (await cdp.send("Page.captureScreenshot", { format: "png", clip })).data;
   }
-  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot };
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, fonts };
 }
 
 (async () => {

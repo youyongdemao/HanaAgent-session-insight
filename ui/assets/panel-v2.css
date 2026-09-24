@@ -23,7 +23,7 @@ button{font:inherit;color:inherit}.shell{max-width:1220px;margin:0 auto;padding:
 .glass{background:linear-gradient(180deg,color-mix(in srgb,var(--bg-card) 56%,transparent),color-mix(in srgb,var(--bg-card) 31%,transparent));border:1px solid var(--si-glass-border);border-radius:var(--r-lg);box-shadow:inset 0 1px 0 var(--si-glass-hi);backdrop-filter:blur(18px) saturate(1.45)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:10px}.hero{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}.card{position:relative;overflow:hidden;border-radius:var(--r-md);background:linear-gradient(180deg,color-mix(in srgb,var(--bg-card) 44%,transparent),color-mix(in srgb,var(--bg-card) 26%,transparent));border:1px solid color-mix(in srgb,var(--text) 7%,transparent);box-shadow:inset 0 1px 0 var(--si-glass-hi);transition:transform .12s ease,box-shadow .16s,border-color .16s,background .16s;cursor:pointer}.metric{padding:13px 14px}.card:hover{transform:translateY(-2px) scale(1.02);border-color:color-mix(in srgb,var(--accent) 42%,transparent);box-shadow:0 4px 18px var(--si-glow),inset 0 1px 0 var(--si-glass-hi);z-index:4}.card:active{transform:scale(.97)}.card.active,.card.selected{border-color:color-mix(in srgb,var(--accent) 62%,transparent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 10px 28px var(--si-glow),inset 0 1px 0 var(--si-glass-hi)}.metric span{display:block;font-size:11.5px;color:var(--text-muted)}.metric b{display:block;margin-top:4px;font:600 20px/1.15 var(--font-mono);font-variant-numeric:tabular-nums}.metric em{font-style:normal;color:var(--green);font-size:10.5px;margin-top:3px;display:block}
 .grid2{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;margin-bottom:20px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px}.panel{padding:18px;min-width:0}.panel h3{font-size:13px;font-weight:500;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between}.panel h3 small{font:400 11px var(--font-mono);color:var(--text-muted)}.chart{min-height:180px}.chart-card{position:relative;overflow:hidden;cursor:pointer}.chart-card:hover{border-color:color-mix(in srgb,var(--accent) 42%,transparent);box-shadow:0 4px 18px var(--si-glow),inset 0 1px 0 var(--si-glass-hi)}
-svg{display:block;width:100%;height:auto;overflow:visible}.grid-line{stroke:color-mix(in srgb,var(--text) 7%,transparent);stroke-width:1}.axis-text{fill:var(--text-muted);font:10px var(--font-mono)}
+svg{display:block;width:100%;height:auto;overflow:visible}.grid-line{stroke:color-mix(in srgb,var(--text) 7%,transparent);stroke-width:1}.axis-line{stroke:color-mix(in srgb,var(--text) 26%,transparent);stroke-width:1}.axis-text{fill:var(--text-muted);font:10px var(--font-mono)}
 /* 今日统计详情里那两张 24 小时折线图：图按容器宽出图、轴区也留得宽，标签可以放大 */
 .td-feature-main .axis-text,.td-hit-trend .axis-text{font:14px var(--font-mono)}.si-line{stroke-dasharray:1;stroke-dashoffset:1;animation:drawLine .88s var(--ease) forwards}.si-area{opacity:0;animation:fadeIn .55s .2s ease forwards}.si-bar{transform-box:fill-box;transform-origin:bottom;transform:scaleY(0);animation:barGrow .52s var(--ease) forwards}.si-sect{animation:sectSweep .8s var(--ease) forwards}@keyframes drawLine{to{stroke-dashoffset:0}}@keyframes fadeIn{to{opacity:1}}@keyframes barGrow{to{transform:scaleY(1)}}@keyframes sectSweep{to{stroke-dashoffset:var(--to)}}
 .heat{display:grid;grid-template-columns:repeat(18,1fr);gap:4px}.heat i{aspect-ratio:1;border-radius:4px;background:color-mix(in srgb,var(--accent) 8%,transparent);cursor:pointer;transition:transform .15s,box-shadow .18s,background .18s;position:relative;--glow-n:0}.heat i:hover{transform:scale(1.18);background:color-mix(in srgb,var(--accent) 55%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--bg-card) 90%,transparent),0 0 18px color-mix(in srgb,var(--accent) 55%,transparent),0 0 34px color-mix(in srgb,var(--accent) 30%,transparent);z-index:5}.heat i:hover~.heat i,.heat i:hover+i{opacity:.55}.heat i.l1{background:color-mix(in srgb,var(--accent) 22%,transparent)}.heat i.l2{background:color-mix(in srgb,var(--accent) 40%,transparent)}.heat i.l3{background:color-mix(in srgb,var(--accent) 60%,transparent)}.heat i.l4{background:color-mix(in srgb,var(--accent) 82%,transparent)}.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;color:var(--text-muted);font-size:11px}.legend span{display:inline-flex;gap:5px;align-items:center}.legend i{width:8px;height:8px;border-radius:3px}
@@ -894,8 +894,9 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* 详情弹层里的逐轮图：只显示图本身，外面不再套一层卡片。
    y 轴单独一列固定不滚，横向滚动条跟着绘图区走，正好落在 x 轴标签下面、长度只到绘图区宽。 */
 .w-detail-overlay .w-detail-plot{display:flex;align-items:stretch;gap:4px;width:100%;min-width:0;box-sizing:border-box}
-.w-detail-overlay .w-detail-plot .sc-yaxis{flex:none;width:44px;min-width:44px;overflow:visible;color:var(--text-muted)}
-.w-detail-overlay .w-detail-plot .sc-yaxis svg{width:44px;height:auto;overflow:visible;display:block}
+.w-detail-overlay .w-detail-plot .sc-yaxis{flex:none;width:50px;min-width:50px;overflow:visible;color:var(--text-muted)}
+.w-detail-overlay .w-detail-plot .sc-yaxis svg{width:50px;height:auto;overflow:visible;display:block}
+.w-detail-overlay .w-detail-plot .axis-text{font:12.4px var(--font-mono)}
 .w-detail-overlay .w-detail-plot .w-detail-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:auto}
 .w-detail-overlay .w-detail-plot .w-detail-scroll svg{width:var(--dw)!important;max-width:none!important;height:auto!important;display:block}
 .w-detail-overlay .w-detail-plot .w-detail-scroll::-webkit-scrollbar{height:8px}
@@ -1161,6 +1162,9 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
    底部还空出一条）。卡片内边距收到 12px，标题用 padding 拉回 18px 跟全页其他卡对齐；
    图表区高度收到 SVG 本体高（188px），不再留 12px 空高。 */
 .session-charts .chart-card{min-width:0;padding:14px 10px 6px}
+/* 逐轮图的坐标标注对齐「折线/热力切换卡」里折线图的观感：那张图的 SVG 被 CSS 拉宽 1.236 倍，
+   声明 10px 实际渲染 12.36px，所以这里直接写 12.4px（y 轴那列同时加宽到 50px 承接大字号）。 */
+.session-charts .axis-text{font:12.4px var(--font-mono)}
 .session-charts .chart-card>h3{padding-left:8px;padding-right:6px}
 .session-charts .scroll-chart{min-height:214px}
 .session-charts .scroll-chart .chart-scroll{min-height:214px}
@@ -1171,8 +1175,8 @@ body:not([data-surface="widget"]) #usage-session .session-composition:hover>.si-
 .session-charts .chart-scroll::-webkit-scrollbar-track{background:transparent}
 .session-charts .chart-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--text) 22%,transparent);border-radius:4px}
 .scroll-chart{display:flex;align-items:stretch;gap:4px;min-height:200px}
-.scroll-chart .sc-yaxis{flex:none;width:44px;min-width:44px;overflow:visible;color:var(--text-muted)}
-.scroll-chart .sc-yaxis svg{width:44px;height:auto;overflow:visible}
+.scroll-chart .sc-yaxis{flex:none;width:50px;min-width:50px;overflow:visible;color:var(--text-muted)}
+.scroll-chart .sc-yaxis svg{width:50px;height:auto;overflow:visible}
 .scroll-chart .chart-scroll{flex:1;min-width:0;min-height:200px;overflow-x:auto;overflow-y:hidden;position:relative}
 .scroll-chart .chart-scroll svg{width:auto;max-width:none;height:auto}
 .scroll-chart .scl-wrap{display:flex;flex-direction:column;min-width:0}
