@@ -865,7 +865,14 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-overlay{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--bg,#f8f4ed) 40%,transparent);backdrop-filter:blur(10px);opacity:0;transition:opacity .2s ease;pointer-events:none}
 .w-detail-overlay.open{opacity:1;pointer-events:auto}
 .w-detail-overlay[hidden]{display:none}
-.w-detail-overlay .w-detail-card{overflow-x:hidden;overflow-y:auto;width:min(960px,calc(100vw - 24px));padding:35px 24px 26px;transform:scale(.95);transform-origin:center;transition:transform .24s var(--ease)}.w-detail-overlay .w-detail-card::-webkit-scrollbar{width:0;height:0;display:none}.w-detail-overlay .w-detail-card{scrollbar-width:none}
+.w-detail-overlay .w-detail-card{overflow-x:hidden;overflow-y:auto;width:min(960px,calc(100vw - 24px));padding:35px 24px 26px;transform:scale(.95);transform-origin:center;transition:transform .24s var(--ease)}
+/* 详情卡自己的滚动条原来是 none：滚轮能滚、却找不到条（系统开着「自动隐藏滚动条」时更明显）。
+   改成常驻的细条，用 ::-webkit-scrollbar 画，这样不随空闲淡出。 */
+.w-detail-overlay .w-detail-card{scrollbar-width:auto;scrollbar-color:auto}
+.w-detail-overlay .w-detail-card::-webkit-scrollbar{width:8px;height:8px}
+.w-detail-overlay .w-detail-card::-webkit-scrollbar-track{background:color-mix(in srgb,var(--text) 7%,transparent)}
+.w-detail-overlay .w-detail-card::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 48%,transparent);border-radius:99px}
+.w-detail-overlay .w-detail-card::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--accent) 72%,transparent)}
 .w-detail-overlay.open .w-detail-card{transform:none}
 /* ── 图表图例：堆叠图（每轮 Token 构成 / Token 构成）说明每个色块代表什么 ── */
 .chart-legend{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;margin:0 0 12px 2px;font:10px var(--font-mono);color:var(--text-muted)}
@@ -876,7 +883,13 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* 详情里的逐轮图表按轮次展开：超出卡片宽度就横向滚动，而不是压缩到看不清。
    详情卡自身有两条 overflow:visible!important（.w-detail-visual 与 .w-detail-card .card），
    所以这里把选择器写到 0,4,0 并同样加 !important，否则会被它们压回去。 */
-.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll{overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;scrollbar-width:thin}
+/* 逐轮图表横向展开的容器：scrollbar-width 一旦不是 auto，::-webkit-scrollbar 就整条失效、
+   退回系统原生滚动条（会被系统「自动隐藏滚动条」淡掉）。这里改回 auto 再自己画条。 */
+.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll{overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:auto}
+.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll::-webkit-scrollbar{height:8px}
+.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll::-webkit-scrollbar-track{background:color-mix(in srgb,var(--text) 7%,transparent);border-radius:99px}
+.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--accent) 48%,transparent);border-radius:99px}
+.w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--accent) 72%,transparent)}
 .w-detail-overlay .w-detail-card .card.w-detail-visual.w-detail-scroll svg{width:var(--dw)!important;max-width:none!important;height:auto!important;display:block}
 .w-detail-overlay .w-detail-visual>div{min-width:0;width:100%;overflow:visible}
 .w-detail-overlay .w-detail-card .card{overflow:visible!important}
