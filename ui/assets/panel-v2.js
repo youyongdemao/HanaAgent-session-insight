@@ -785,7 +785,10 @@ function alignNumbers(rootEl){const R=rootEl||root;if(!R)return;R.querySelectorA
   const d=odDescentPx(el);if(!(d>0))return;od.style.transform='translateY('+d.toFixed(2)+'px)';
   // 行内流场景下 od 会把这一行的行盒撑高（约 0.15em），锁住宿主自身高度，下方内容就不会被顶下去。
   el.classList.add('od-host');});}
-function normalizeNumbers(rootEl,durMs){const R=rootEl||root;if(!R)return;R.querySelectorAll('b[id],strong[id]').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t,!(durMs>0),durMs||1000);});alignNumbers(R);}
+function normalizeNumbers(rootEl,durMs){const R=rootEl||root;if(!R)return;R.querySelectorAll('b[id],strong[id]').forEach(el=>{if(el.closest('svg')||el.children.length)return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;
+  // 刚从占位（–/空）变成数字：这一刻要播转轮进场动画。
+  // 不然静默刷新路径会把它直接落位，看上去就是「–」原地跳成了数字。
+  const fresh=!el.dataset.odValue;odometer(el,t,!(durMs>0||fresh),durMs||1000);});alignNumbers(R);}
 function isPlainNumber(t){if(!t||t.length>20)return false;if(!/[0-9]/.test(t))return false;if(/[\u4e00-\u9fff]/.test(t))return false;if(/[A-Za-z]/.test(t.replace(/[kKmMbB]/g,'')))return false;return true;}
 function animateNumbers(rootEl){if(!rootEl)return;rootEl.querySelectorAll('b,strong').forEach(el=>{if(el.closest('svg')||el.children.length)return;/* 当前轮详情头部是自己排版的，滚动动画会把数字换成绝对定位的数字条、内在宽度归零，把布局挤断 */if(el.closest('.w-turn-head'))return;if(!el.getClientRects().length)return;const t=(el.textContent||'').trim();if(!isPlainNumber(t))return;odometer(el,t);});alignNumbers(rootEl);}
 let numEnter=true;
