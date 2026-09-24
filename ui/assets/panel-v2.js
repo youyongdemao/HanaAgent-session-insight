@@ -727,7 +727,9 @@ async function runLocalLaunch(pid, btn, baseLabel) {
 }
 
 /* ── 数字转轮：纯数字文本逐位滚动到目标（与 v1.2 版同款效果） ── */
-function odometer(el,target,instant){el.style.whiteSpace='nowrap';const str=String(target),digits=[],frag=document.createDocumentFragment();const MASK='-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 6%,#000 94%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 6%,#000 94%,transparent 100%)';const isD=ch=>ch>='0'&&ch<='9';
+function odometer(el,target,instant){el.style.whiteSpace='nowrap';const str=String(target),digits=[],frag=document.createDocumentFragment();// 上下渐隐遮罩的形状写在 CSS 变量 --od-mask（panel-v2.css 的 :root）里，
+  // 调深浅、换曲线都不用碰这段滚轮逻辑。两个前缀都要写：只写 mask-image 在旧内核上不生效。
+  const MASK='-webkit-mask-image:var(--od-mask);mask-image:var(--od-mask)';const isD=ch=>ch>='0'&&ch<='9';
   // 父元素若有负字距，滚动盒的内容宽会比字符本身窄，数字右侧会被裁。
   // 用 padding 把宽度补回来，再用负 margin 抵消占位：水平间距和垂直位置都不变。
   const _lsPx=parseFloat(getComputedStyle(el).letterSpacing);const _lsFix=isFinite(_lsPx)&&_lsPx<0;

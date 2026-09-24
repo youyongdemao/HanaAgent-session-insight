@@ -1370,6 +1370,11 @@ body[data-surface="widget"] .widget>*{min-width:0}
 body[data-surface="widget"] .w-quota-meta span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── 数字转轮：强制继承宿主字号/字体/字重/颜色，并消除宿主 span 规则带来的 margin / 行高干扰 ── */
+/* 转轮上下渐隐的形状（--od-mask）。它是一个完整的遮罩值，所以在 CSS 里就能调深浅、
+   换曲线，不用改滚轮逻辑。数字墨迹在 1em 盒里大约占 18%~85%，所以渐变在 15% 处
+   必须回到全不透明：否则滚动落地、遮罩被摘掉那一刻，数字边缘会“由虚突然变实”。
+   曲线故意做成下凹的：靠边黑得更快（边缘才看得出渐隐），但 15% 之后立刻全实。 */
+:root{--od-mask:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.1) 4%,rgba(0,0,0,.62) 9%,#000 15%,#000 85%,rgba(0,0,0,.62) 91%,rgba(0,0,0,.1) 96%,transparent 100%)}
 .od *{font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;color:inherit!important;margin:0!important;padding:0!important}
 .od{font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;color:inherit!important;margin:0!important;padding:0 var(--od-pad-r,0px) 0 0!important;margin-right:calc(-1 * var(--od-pad-r,0px))!important}
 .od{display:inline-block!important;height:1em!important;line-height:1em!important}
