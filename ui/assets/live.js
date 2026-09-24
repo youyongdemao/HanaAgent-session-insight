@@ -102,7 +102,7 @@ function reportHeight() {
 function renderShell() {
   const want = layout.order.filter((id) => layout.on.includes(id) && RENDER[id]);
   if (!want.length) {
-    row.innerHTML = '<span class="lv-empty">未选择显示项，请在 Session Insight 设置里勾选</span>';
+    row.innerHTML = '<span class="lv-empty">未选择显示项，请在会话用量设置里勾选</span>';
     requestAnimationFrame(reportHeight);
     return;
   }
