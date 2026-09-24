@@ -725,6 +725,15 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .usage-hero{margin-top:10px}
 #usage-session .usage-hero{min-height:132px;padding:16px 8px 12px;margin-bottom:10px;gap:18px}
 #usage-overview .uh-main,#usage-session .uh-main{display:flex;align-items:stretch;gap:30px}
+/* 总览 hero：上排整行放总量数字（位数按容器宽自适应字号），下排命中率 + 三张小卡同行 */
+#usage-overview .uh-main{display:grid;grid-template-rows:auto auto;row-gap:14px;align-content:start}
+#usage-overview .uh-tok{container-type:inline-size}
+#usage-overview .uh-hitrow{display:flex;align-items:center;gap:38px;min-width:0}
+#usage-overview .uh-hitrow .uh-mini{flex:1;min-width:0}
+#usage-overview .uh-hitrow .uh-hit{flex:none}
+#usage-overview .uh-hitrow .uh-hit b{flex:none;display:block;height:auto}
+/* 行高自适应，百分比高度撑不开分隔线，这里给固定高 */
+#usage-overview .uh-hitrow .uh-divider{height:58px;align-self:center}
 #usage-overview .uh-side,#usage-session .uh-side{display:grid;gap:20px;min-width:0;flex:1;align-content:space-between}
 #usage-overview .uh-side{display:flex;flex-direction:column}
 #usage-overview .uh-hit{flex:1;display:flex;flex-direction:column;align-self:stretch}
@@ -736,6 +745,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* 给标题行留出宽度：右上角的「记录自 … 起」要和标题拉开距离才看得出是右对齐 */
 #usage-overview .uh-tok{min-width:236px}
 #usage-overview .uh-primary b,#usage-session .uh-primary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text-light));font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--accent) 38%,transparent)}
+/* 总消耗 Token 显示全部位数：字号按字符数在容器内自适应（等宽字号宽约 0.6em），留 4% 余量 */
+#usage-overview .uh-primary b{font-size:max(26px,min(84px,calc(160cqw/var(--digits,8))));white-space:nowrap}
 /* 次重：平均缓存命中率 */
 #usage-overview .uh-secondary b,#usage-session .uh-secondary b{font:400 clamp(36px,4.2vw,56px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--green) 46%,transparent)}
 /* 会话页：命中率与本会话 Token 同字号、数字底边对齐 */
@@ -753,7 +764,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .uh-sub span:nth-child(1) b,#usage-session .uh-sub span:nth-child(1) b{color:var(--accent)}
 #usage-overview .uh-sub span:nth-child(3) b,#usage-session .uh-sub span:nth-child(3) b{color:var(--si-red)}
 @media(max-width:920px){#usage-overview .usage-hero,#usage-session .usage-hero{grid-template-columns:1fr}}
-@media(max-width:720px){#usage-overview .uh-main{flex-direction:column;align-items:flex-start;gap:18px}#usage-overview .uh-divider{width:100%;height:1px}}
+@media(max-width:720px){#usage-overview .uh-main{flex-direction:column;align-items:flex-start;gap:18px}#usage-overview .uh-hitrow{flex-wrap:wrap;gap:16px;width:100%}#usage-overview .uh-hitrow .uh-mini{flex:1 1 100%}#usage-overview .uh-divider{width:100%;height:1px}}
 /* ── 排行卡：命中率副标 ── */
 .rank-row span{display:grid;gap:2px;min-width:0}
 .rank-row span em{font-style:normal;font-size:9.5px;color:var(--green);font-weight:400;font-family:var(--font-mono)}
