@@ -710,6 +710,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #sessionMenu .session-item-model{flex:none;font-size:10px;color:var(--text-muted);white-space:nowrap}
 #sessionMenu .session-item-meta{flex:none;font-size:10px;color:var(--text-muted);white-space:nowrap}
 #sessionMenu .session-empty{padding:14px;color:var(--text-muted);font-size:12px;text-align:center}
+#sessionMenu .session-group{padding:10px 10px 5px;font:500 10px var(--font-mono);color:var(--text-muted);letter-spacing:.08em}
+#sessionMenu .session-group:first-child{padding-top:2px}
 
 
 /* ── 用量总览：面板间距与标题 ── */

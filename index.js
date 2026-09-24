@@ -326,7 +326,8 @@ export default defineApp(async (sdk) => {
 
     app.get("/api/sessions", async (c) => {
       try {
-        const lifecycle = c.req.query("lifecycle") ?? "all";
+        // 默认只给未归档的：归档会话留在档案里，不进工作台的下拉列表
+        const lifecycle = c.req.query("lifecycle") ?? "active";
         const sessions = await listSessions(sdk, { lifecycle });
         return c.json({ sessions, count: sessions.length });
       } catch (error) {
