@@ -1021,7 +1021,12 @@ async function watchProviders(){
   if(r&&Array.isArray(r.balances))state.balance=r;
   renderApiOverview();renderApiDetail();
 }
-async function start(){hana.ready();if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);},{once:true});}}
+// 字体就绪再上滚动结构：od 的垂直补偿是“实测当前字体下沉量”算出来的，
+// 字体没到位时量的是后备字体，量出来的偏移自然不一样——纯文本态与滚动结构态就会差一截。
+// 这里在首次渲染前等一次字体（封顶 600ms，字体拿不到不阻塞），字体到位后再安静重渲染一次，
+// 让度量重的部分（滚动结构 + 对齐）用真字体重算。
+function fontsReady(ms){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;res();};try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fin);}catch(e){}setTimeout(fin,ms);});}
+async function start(){hana.ready();await fontsReady(600);if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);},{once:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(surface!=='widget')paintQuiet(()=>renderPageAll(true),true);});}}
 start().catch(()=>{if(surface==='widget')renderWidget();else renderPageAll();});
 // 进页面自检一次更新：有新版才弹窗，没有就什么都不做（与设置页共用同一套弹窗）
 initUpdateNotice();

@@ -267,7 +267,19 @@ async function runSide(cdp, port, tag) {
     pollDiag.marked = marked;
     pollDiag.keep = keep;
   }
-  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload, pollDiag };
+  // 数字位置一致性：进 API 页后立刻量一次「总余额」及其上下邻居的位置，3 秒后再量一次，
+  // 两者应一致（字体未到位时的后备字体度量会让位置差一截）。
+  const ODSNAP = `(()=>{const g=id=>{const e=document.getElementById(id);if(!e)return null;const q=e.getBoundingClientRect();return {y:+q.y.toFixed(1),h:+q.height.toFixed(1),b:+(q.y+q.height).toFixed(1)};};return {bal:g('tBal'),label:(()=>{const e=document.querySelector('#api-overview .ah-block:last-child .ah-label');if(!e)return null;const q=e.getBoundingClientRect();return {y:+q.y.toFixed(1),b:+(q.y+q.height).toFixed(1)};})(),chips:g('tBalSub'),odCount:document.querySelectorAll('#tBal .od').length,fontReady:document.fonts?document.fonts.status:'-'};})()`;
+  let odAlign = null;
+  try {
+    await ev(cdp, `(()=>{const n=document.querySelector('.nav [data-view="api"]');if(n)n.click();return true;})()`);
+    await sleep(400);
+    const s0 = await ev(cdp, ODSNAP);
+    await sleep(3000);
+    const s1 = await ev(cdp, ODSNAP);
+    odAlign = { t0: s0, t3: s1, dBalY: s0 && s1 && s0.bal && s1.bal ? +(s1.bal.y - s0.bal.y).toFixed(1) : null, dChipsY: s0 && s1 && s0.chips && s1.chips ? +(s1.chips.y - s0.chips.y).toFixed(1) : null };
+  } catch (e) { odAlign = { err: String(e) }; }
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload, pollDiag, odAlign };
 }
 
 (async () => {

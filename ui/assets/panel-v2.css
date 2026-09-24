@@ -159,7 +159,7 @@ body:not([data-surface="widget"]) .api-hero.si-press,body:not([data-surface="wid
 .ah-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .ah-label{font-size:10.5px;letter-spacing:.18em;color:var(--text-muted)}
 .ah-chip{font:9.5px var(--font-mono);padding:2px 8px;border-radius:999px;border:1px solid var(--si-glass-border);background:color-mix(in srgb,var(--bg-card) 60%,transparent);color:var(--text-muted)}
-.ah-num{font:700 clamp(40px,4.6vw,60px)/1.05 var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--text-light);text-shadow:0 4px 28px var(--si-glow);white-space:nowrap}
+.ah-num{font:700 clamp(40px,4.6vw,60px)/1 var(--font-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--text-light);text-shadow:0 4px 28px var(--si-glow);white-space:nowrap}
 .ah-bal{color:var(--green)}
 .ah-foot{display:flex;align-items:center;gap:16px;margin-top:12px}
 .ah-sub{margin-top:0;font:10.5px var(--font-mono);color:var(--text-muted);font-style:normal;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis}
