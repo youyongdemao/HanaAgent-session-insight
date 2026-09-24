@@ -185,6 +185,12 @@ const HERO = `(()=>{
   ov.hitrow=R(document.querySelector('#usage-overview .uh-hitrow'));
   ov.divider=R(document.querySelector('#usage-overview .uh-hitrow .uh-divider'));
   ov.mini=R(document.querySelector('#usage-overview .uh-hitrow .uh-mini'));
+  const T=s=>R(document.querySelector(s));
+  ov.todayPanel=T('#usage-overview .uh-today');
+  ov.todayStats=T('#usage-overview .today-stats');
+  ov.todayMini=T('#usage-overview .ts-mini');
+  ov.todayCard=T('#usage-overview .ts-mini .mini-card');
+  ov.todayPad=(()=>{const e=document.querySelector('#usage-overview .uh-today');if(!e)return null;const s=getComputedStyle(e);return [s.paddingTop,s.paddingBottom].join(' ');})();
   ov.labelCS=(()=>{const e=document.querySelector('#usage-overview .uh-tok .uh-label');if(!e)return null;const s=getComputedStyle(e);return{display:s.display,justify:s.justifyContent,width:s.width,minW:s.minWidth};})();
   const se=g('#usage-session','#usage-session .uh-tok','#usage-session .uh-tok .uh-label','#usage-session #sTok');
   return {overview:ov,session:se};

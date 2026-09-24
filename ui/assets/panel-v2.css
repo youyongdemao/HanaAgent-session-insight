@@ -794,7 +794,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 /* ── 今日数据统计卡（hero 右侧） ── */
 #usage-overview .uh-main{height:100%}
 /* 内容在卡内垂直居中：卡高由左侧 hero 撑起，靠上会让下方空出一截 */
-#usage-overview .uh-today{border-radius:16px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;justify-content:center;height:calc(100% - 5px);align-self:start}
+#usage-overview .uh-today{border-radius:16px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;height:100%;align-self:start}
+/* 面板内容要真的撑到底：中间那层 #todayStatsBody 原本不是 flex 容器，
+   下面 .today-stats 的 flex:1 等于没写，内容被居中、离底 27px。 */
+#usage-overview .uh-today>div{flex:1;display:flex;flex-direction:column;min-height:0}
 #usage-overview .uh-secondary b{font-size:clamp(32px,3.7vw,44px);line-height:1;transform:none;display:inline-block}
 #usage-overview .today-stats{display:flex;flex-direction:column;gap:14px;min-width:0;flex:1}
 #usage-overview .today-stats .ts-main{display:flex;align-items:center;gap:20px;min-width:0;flex-wrap:wrap}
