@@ -1573,3 +1573,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-
 /* 并列的两张构成卡；窗口窄时自动落成一列 */
 .w-detail-pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
 .w-detail-pairs .w-detail-pair { margin-bottom: 0; }
+/* ── 卡片最小宽度（只影响卡片 surface） ──
+   窄到这个宽度就不再让内容继续被压：环与数字的间距、横排/叠放的切换都按这个下限成立。
+   外层容器比它还窄时，卡片按这个宽度横向溢出，而不是把自己挤变形。
+   要调只改这一处（或直接在宿主里覆盖 --si-widget-min）。 */
+body[data-surface="widget"]{min-width:var(--si-widget-min,320px)}
