@@ -82,7 +82,7 @@ function startServer(port, assets) {
       if (api === "active") return json({ dir: "mock", file: SESSION_FILE });
       if (api === "resolve-entry") return json({ file: SESSION_FILE });
       if (api === "sessions") return json({ dir: "mock", sessions: [{ name: SESSION_FILE, title: STATS.title, model: STATS.model, size: 1, mtime: Date.now(), turns: TURNS }] });
-      if (api === "ledger-stats") return json({ days: {}, calls: 120, errors: 1, tokens: {}, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
+      if (api === "ledger-stats") return json({ days: { "2026-08-29": { tokens: 2.6e9, cost: 146.4 }, "2026-09-10": { tokens: 2.59e9, cost: 146.5 } }, calls: 39408, errors: 39, tokens: { input: 5.1e9, output: 9.1e7, cacheHit: 4.9e9, cacheMiss: 1.1e8, hitRate: 0.982 }, coverage: { firstDay: "2026-08-29" }, latency: { buckets: { lt1: 10, "1_3": 20, "3_10": 5, gt10: 1 } }, models: {}, providers: {} });
       if (api === "total-cost") return json({ totalCost: 16.62 });
       if (api === "rules") return json({});
       if (api === "providers" || api === "local-providers") return json({ providers: [] });
@@ -175,13 +175,34 @@ const FONTS = `(()=>{
   return out;
 })()`;
 
+// 两个 hero 的几何：标签行、大数字、hero 本体的位置与间隙
+const HERO = `(()=>{
+  const R=el=>{if(!el)return null;const q=el.getBoundingClientRect();return{y:Math.round(q.y),h:Math.round(q.height),b:Math.round(q.bottom),x:Math.round(q.x),w:Math.round(q.width)};};
+  const g=(root,tok,label,num)=>({hero:R(document.querySelector(root+' .usage-hero')),main:R(document.querySelector(root+' .uh-main')),tok:R(document.querySelector(tok)),label:R(document.querySelector(label)),num:R(document.querySelector(num))});
+  const ov=g('#usage-overview','#usage-overview .uh-tok','#usage-overview .uh-tok .uh-label','#usage-overview #kTok');
+  ov.hit={wrap:R(document.querySelector('#usage-overview .uh-hit')),label:R(document.querySelector('#usage-overview .uh-hit .uh-label')),num:R(document.querySelector('#usage-overview #kHit'))};
+  ov.range=R(document.querySelector('#usage-overview #kTokRange'));
+  ov.labelCS=(()=>{const e=document.querySelector('#usage-overview .uh-tok .uh-label');if(!e)return null;const s=getComputedStyle(e);return{display:s.display,justify:s.justifyContent,width:s.width,minW:s.minWidth};})();
+  const se=g('#usage-session','#usage-session .uh-tok','#usage-session .uh-tok .uh-label','#usage-session #sTok');
+  return {overview:ov,session:se};
+})()`;
+
 async function runSide(cdp, port, tag) {
   await cdp.send("Page.navigate", { url: `http://127.0.0.1:${port}/api/plugins/${ID}/page?hana-theme=midnight` });
   await sleep(2600);
   const fonts = await ev(cdp, FONTS);
+  const heroBoot = await ev(cdp, HERO);
   const atBoot = await ev(cdp, MEASURE);
+  // 总览 hero 整块截图（看 KPI 数字与「记录自…起」标记的位置）
+  let heroShot = null;
+  const hr = await ev(cdp, `(()=>{const e=document.querySelector('#usage-overview .usage-hero');if(!e)return null;const q=e.getBoundingClientRect();return {x:q.x,y:q.y,w:q.width,h:q.height};})()`);
+  if (hr && hr.w) heroShot = (await cdp.send("Page.captureScreenshot", { format: "png", clip: { x: Math.max(0, hr.x - 8), y: Math.max(0, hr.y - 8), width: Math.min(1200, hr.w + 16), height: Math.min(700, hr.h + 16), scale: 2 } })).data;
   await ev(cdp, ENTER);
   const afterEnter = await ev(cdp, MEASURE);
+  const heroSession = await ev(cdp, HERO);
+  let heroSessionShot = null;
+  const sr = await ev(cdp, `(()=>{const e=document.querySelector('#usage-session .usage-hero');if(!e)return null;const q=e.getBoundingClientRect();return {x:q.x,y:q.y,w:q.width,h:q.height};})()`);
+  if (sr && sr.w) heroSessionShot = (await cdp.send("Page.captureScreenshot", { format: "png", clip: { x: Math.max(0, sr.x - 8), y: Math.max(0, sr.y - 8), width: Math.min(1200, sr.w + 16), height: Math.min(400, sr.h + 16), scale: 2 } })).data;
   const geom = await ev(cdp, GEOM);
   const cardsRect = await ev(cdp, SHOT_CARDS);
   let cardsShot = null;
@@ -212,7 +233,7 @@ async function runSide(cdp, port, tag) {
   await sleep(15000);
   const t1 = await ev(cdp, "performance.timeOrigin");
   const selfReload = { before: t0, after: t1, reloaded: t0 !== t1, hits: BS_HITS.value, routeProbe };
-  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, fonts, selfReload };
+  return { tag, atBoot, afterEnter, geom, cardsRect, modal, rect, shot: shot.data, band, cardsShot, modalShot, heroShot, heroSessionShot, fonts, heroBoot, heroSession, selfReload };
 }
 
 (async () => {
@@ -267,6 +288,8 @@ async function runSide(cdp, port, tag) {
       if (out[k].band) { const bf = path.join(SELF, `probe-bar-${k}.png`); fs.writeFileSync(bf, Buffer.from(out[k].band, "base64")); out[k].bandFile = bf; delete out[k].band; }
       if (out[k].cardsShot) { const cf = path.join(SELF, `probe-cards-${k}.png`); fs.writeFileSync(cf, Buffer.from(out[k].cardsShot, "base64")); out[k].cardsFile = cf; delete out[k].cardsShot; }
       if (out[k].modalShot) { const mf = path.join(SELF, `probe-modal-${k}.png`); fs.writeFileSync(mf, Buffer.from(out[k].modalShot, "base64")); out[k].modalFile = mf; delete out[k].modalShot; }
+      if (out[k].heroShot) { const hf = path.join(SELF, `probe-hero-${k}.png`); fs.writeFileSync(hf, Buffer.from(out[k].heroShot, "base64")); out[k].heroFile = hf; delete out[k].heroShot; }
+      if (out[k].heroSessionShot) { const sf = path.join(SELF, `probe-hero-session-${k}.png`); fs.writeFileSync(sf, Buffer.from(out[k].heroSessionShot, "base64")); out[k].heroSessionFile = sf; delete out[k].heroSessionShot; }
     }
     console.log(JSON.stringify(out, null, 2));
     ws.close();

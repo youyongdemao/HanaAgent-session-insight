@@ -381,7 +381,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero.si-release,body:not([d
 #api-detail .pw-row .pc.crit{color:var(--si-red,#C77070)}
 
 /* 总消耗标签后的账本覆盖范围：小字、弱化色，跟在标题后面不抢读数 */
-.uh-label .uh-range{margin-left:8px;font-size:10.5px;font-weight:400;color:var(--text-muted);opacity:.85}
+.uh-label .uh-range{margin-left:auto;font-size:10.5px;font-weight:400;color:var(--text-muted);opacity:.85}
 .model-cost-row .pr-cell:first-child b{color:var(--accent)}
 .model-cost-row .source-col b{white-space:normal;overflow:hidden;text-overflow:clip;font-size:11px;font-weight:400;color:var(--text-muted);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .pr-offpeak{display:block;margin-top:4px;font:9px var(--font-mono);color:var(--text-muted);white-space:nowrap}
@@ -723,16 +723,18 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .usage-hero,#usage-session .usage-hero{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-bottom:18px;padding:4px 2px;align-items:stretch}
 #usage-overview .usage-hero{padding-top:14px}
 #usage-overview .usage-hero{margin-top:10px}
-#usage-session .usage-hero{min-height:150px;padding:16px 8px 12px;margin-bottom:10px;gap:18px}
+#usage-session .usage-hero{min-height:132px;padding:16px 8px 12px;margin-bottom:10px;gap:18px}
 #usage-overview .uh-main,#usage-session .uh-main{display:flex;align-items:stretch;gap:30px}
 #usage-overview .uh-side,#usage-session .uh-side{display:grid;gap:20px;min-width:0;flex:1;align-content:space-between}
 #usage-overview .uh-side{display:flex;flex-direction:column}
 #usage-overview .uh-hit{flex:1;display:flex;flex-direction:column;align-self:stretch}
 #usage-overview .uh-hit .uh-label{flex:none}
 #usage-overview .uh-hit b{flex:1;display:flex;align-items:center;justify-content:flex-start;height:auto}
-#usage-overview .uh-block,#usage-session .uh-block{display:grid;gap:6px;min-width:0}
-#usage-overview .uh-block .uh-label,#usage-session .uh-block .uh-label{font-size:12px;color:var(--text-muted);white-space:nowrap}
+#usage-overview .uh-block,#usage-session .uh-block{display:grid;gap:6px;min-width:0;align-content:start}
+#usage-overview .uh-block .uh-label,#usage-session .uh-block .uh-label{font-size:12px;color:var(--text-muted);white-space:nowrap;display:flex;align-items:baseline;gap:14px;justify-content:space-between}
 /* 最重：总消耗 Token */
+/* 给标题行留出宽度：右上角的「记录自 … 起」要和标题拉开距离才看得出是右对齐 */
+#usage-overview .uh-tok{min-width:236px}
 #usage-overview .uh-primary b,#usage-session .uh-primary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text-light));font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--accent) 38%,transparent)}
 /* 次重：平均缓存命中率 */
 #usage-overview .uh-secondary b,#usage-session .uh-secondary b{font:400 clamp(36px,4.2vw,56px)/1 var(--font-mono);letter-spacing:-.04em;color:var(--green);font-variant-numeric:tabular-nums;text-shadow:0 0 30px color-mix(in srgb,var(--green) 46%,transparent)}
@@ -742,7 +744,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .today-stats .ts-hit b.low{color:var(--si-red-soft);text-shadow:0 0 12px var(--si-red-soft-glow)}
 .model-detail-row code.md-hit.low{color:var(--si-red-soft);text-shadow:0 0 10px var(--si-red-soft-glow)}
 #wHitAvg.low,#wHitRound.low{color:var(--si-red-soft);text-shadow:0 0 12px var(--si-red-soft-glow)}
-#usage-session .uh-main .uh-tok,#usage-session .uh-main .uh-side{align-self:end}
+#usage-session .uh-main .uh-tok,#usage-session .uh-main .uh-side{align-self:start}
 #usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--text) 20%,transparent),transparent);flex:none}
 /* 最弱：三个小信息 */
 #usage-overview .uh-sub,#usage-session .uh-sub{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
