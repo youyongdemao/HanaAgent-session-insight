@@ -182,6 +182,9 @@ const HERO = `(()=>{
   const ov=g('#usage-overview','#usage-overview .uh-tok','#usage-overview .uh-tok .uh-label','#usage-overview #kTok');
   ov.hit={wrap:R(document.querySelector('#usage-overview .uh-hit')),label:R(document.querySelector('#usage-overview .uh-hit .uh-label')),num:R(document.querySelector('#usage-overview #kHit'))};
   ov.range=R(document.querySelector('#usage-overview #kTokRange'));
+  ov.hitrow=R(document.querySelector('#usage-overview .uh-hitrow'));
+  ov.divider=R(document.querySelector('#usage-overview .uh-hitrow .uh-divider'));
+  ov.mini=R(document.querySelector('#usage-overview .uh-hitrow .uh-mini'));
   ov.labelCS=(()=>{const e=document.querySelector('#usage-overview .uh-tok .uh-label');if(!e)return null;const s=getComputedStyle(e);return{display:s.display,justify:s.justifyContent,width:s.width,minW:s.minWidth};})();
   const se=g('#usage-session','#usage-session .uh-tok','#usage-session .uh-tok .uh-label','#usage-session #sTok');
   return {overview:ov,session:se};
