@@ -328,7 +328,7 @@ function renderUsageSession(){
   requestAnimationFrame(()=>{$$('.scroll-chart .chart-scroll').forEach(el=>{el.scrollLeft=el.scrollWidth-el.clientWidth;});});
   const cacheHit=Math.max(0,Number(st.sumCacheRead)||0),cacheMiss=Math.max(0,Number(st.sumInput)||0),outputTok=Math.max(0,(Number(st.sumOutput)||0)+(Number(st.sumReasoning)||0)),inputTok=cacheHit+cacheMiss,ioTotal=inputTok+outputTok||1,cacheTotal=cacheHit+cacheMiss||1,inputPct=inputTok/ioTotal*100,outputPct=outputTok/ioTotal*100,hitPct=cacheHit/cacheTotal*100,missPct=cacheMiss/cacheTotal*100;
   const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};
-  set("#sTok",fmtFullTok(st.sessionTokens));const sTokEl=document.getElementById("sTok");if(sTokEl)sTokEl.style.setProperty("--digits",String(fmtFullTok(st.sessionTokens).length));fitHeroNumbers();set("#sHit",hits.length?fmtPct(hits.reduce((a,b)=>a+b,0)/hits.length):"–");setHitClass($("#sHit"),hits.length?hits.reduce((a,b)=>a+b,0)/hits.length:null);set("#sCost",fmtCost(st.sessionCostCny));set("#sTurn",String(ser.length));set("#sCtx",fmtPct(st.contextPercent));
+  set("#sTok",fmtTokens(st.sessionTokens));const sTokEl=document.getElementById("sTok");if(sTokEl)sTokEl.style.setProperty("--digits",String(fmtTokens(st.sessionTokens).length));fitHeroNumbers();set("#sHit",hits.length?fmtPct(hits.reduce((a,b)=>a+b,0)/hits.length):"–");setHitClass($("#sHit"),hits.length?hits.reduce((a,b)=>a+b,0)/hits.length:null);set("#sCost",fmtCost(st.sessionCostCny));set("#sTurn",String(ser.length));set("#sCtx",fmtPct(st.contextPercent));
   set("#sInPct",inputPct.toFixed(1)+"%");set("#sOutPct",outputPct.toFixed(1)+"%");set("#sHitPct",hitPct.toFixed(1)+"%");set("#sMissPct",missPct.toFixed(1)+"%");
   const inBar=$("#sInBar"),outBar=$("#sOutBar"),hitBar=$("#sHitBar"),missBar=$("#sMissBar");if(inBar)inBar.style.width=inputPct+"%";if(outBar)outBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";
   const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const provs=Array.isArray(st.providers)&&st.providers.length?st.providers:[{provider:st.provider||"unknown",tokens:st.sessionTokens||0,turns:st.turns||0,models:[]}];/* 卡片本体按「模型」排：把供应商聚合里带的模型维度展平（后端已给出每个供应商下各模型的 token） */const modelRows=[];for(const p of provs){const ms=Array.isArray(p.models)&&p.models.length?p.models:[{model:st.model||"unknown",tokens:Number(p.tokens)||0}];for(const m of ms)modelRows.push({key:"m:"+String(m.model||"unknown"),label:String(m.model||"unknown"),tokens:Number(m.tokens)||0});}modelRows.sort((a,b)=>b.tokens-a.tokens);const totalUsed=modelRows.reduce((a,m)=>a+(Number(m.tokens)||0),0)||1;const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const pb=$("#sProviderBody");if(pb){patchProviderRows(pb,modelRows.map((m,i)=>({key:m.key,label:m.label,pct:(Number(m.tokens)||0)/totalUsed*100,color:colors[i%colors.length]})));}
@@ -917,11 +917,12 @@ function syncWidgetGap(){
 }
 let wGapPrev=null,flipCount=0;
 function widgetFlipCount(){return flipCount;}
-// 页面上大号数字：按位数在容器内自适应（位数多就缩小），保证它不会被抽出自己那一栏。
-// CSS 里那条 max/min + cqw 的规则实测未生效（同样声明写成内联则正确），所以这里直接写内联：
+// 页面上大号数字：按位数在容器内自适应（位数多就缩小），保证它不会溢出自己那一栏。
+// 会话页的 Token 用简写（如 345.55M），位数本来就不多，所以字号能保持在接近上限的大小。
+// CSS 里那条 max/min + cqw 的规则实测未生效（同样声明写成内联则正确），所以直接在 JS 里写内联：
 // 内联优先级最高，cqw 也已验证是按 .uh-tok 的宽度解析的。
-// 会话页的命中率跟着 Token 用同一个字号（CSS 注释里原本的意图：同字号、底边对齐）。
-// 位数取 --digits（渲染时写好的完整字符串长度）；不能用 textContent，滚动时里面是 0-9 的数字条。
+// 会话页的命中率跟随 Token 用同一字号（对齐 CSS 注释里「同字号、底边对齐」的原意）。
+// 位数取 --digits（渲染时写好的字符串长度）——不能用 textContent，滚动时里面是 0-9 的数字条。
 function fitHeroNumbers(){
   if(surface==='widget')return;
   const fmt=el=>Math.max(1,Math.min(24,Number(el.style.getPropertyValue('--digits'))||8));
