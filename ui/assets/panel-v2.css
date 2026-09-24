@@ -759,7 +759,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
    数字被逐位放进 .od（overflow:hidden + 遮罩）里，继承来的 text-shadow 会被这个 1em 高的盒子裁掉，
    于是数字的光晕比身边的 ¥ 与分隔符弱得多；滚动时字形一移动，被裁的形状又左右不对称，
    看起来就是“光晕在变、位置也在动”。drop-shadow 作用在整棵子树渲染完之后，不受逐位盒子裁剪。 */
-#usage-overview .uh-primary b,#usage-session .uh-primary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text-light));font-variant-numeric:tabular-nums;filter:drop-shadow(0 0 30px color-mix(in srgb,var(--accent) 38%,transparent))}}
+#usage-overview .uh-primary b,#usage-session .uh-primary b{font:400 clamp(52px,6.5vw,84px)/1 var(--font-mono);letter-spacing:-.05em;color:color-mix(in srgb,var(--accent) 80%,var(--text-light));font-variant-numeric:tabular-nums;filter:drop-shadow(0 0 30px color-mix(in srgb,var(--accent) 38%,transparent))}
 /* 总消耗 Token 显示全部位数：字号按字符数在容器内自适应（等宽字号宽约 0.6em），留 4% 余量 */
 /* 总消耗 Token 显示全部位数：字号按字符数在容器内自适应（等宽字号宽约 0.6em），留 4% 余量。
    同时整体上提：等宽字形内容高约 1.32em，莶进 1em 行盒后基线落在盒子 86% 处，

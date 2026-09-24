@@ -14,3 +14,5 @@ sdk/**/THIRD_PARTY_NOTICES.txt
 scripts/*.png
 scripts/widget-*.png
 probe-*.png
+
+scripts/_shots/
