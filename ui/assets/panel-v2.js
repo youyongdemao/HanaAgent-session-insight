@@ -934,32 +934,34 @@ function widgetFlipCount(){return flipCount;}
 // 内联优先级最高，cqw 也已验证是按 .uh-tok 的宽度解析的。
 // 会话页的命中率跟随 Token 用同一字号（对齐 CSS 注释里「同字号、底边对齐」的原意）。
 // 位数取 --digits（渲染时写好的字符串长度）——不能用 textContent，滚动时里面是 0-9 的数字条。
-/** 会话页：本会话 Token 写全位数，字号要刚好让这一串数字铺满左边那一块：
- *  左边缘与标题同一竖线起笔，右边缘离分割线一个 gap，两侧间隔就相等。
- *  不能直接用 CSS 的 cqw 公式：那式子假设等宽字每个字符占 0.6em，而实际字体在 0.5~0.62em 之间，
- *  窄字体下会白白留下一大截空档。所以用同一套字体量一次「这串数字在 100px 下有多宽」再反推。 */
+/** 会话页：本会话 Token 写全位数，字号恒定：基准按 10 个字符的宽度定，位数不足则左对齐留白，
+ *  超过基准才跟着缩（再长就顶到分割线了）。不按当位数反推字号，否则数字会随位数变大变小。
+ *  字宽比不能假定 0.6em（实际在 0.5~0.62em 之间），所以用同一套字体量一次等宽数字的宽来定。 */
+function tokCharEm(host){
+  const probe=document.createElement('span');
+  probe.style.cssText='position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre;font-size:100px';
+  probe.textContent='0000000000';
+  host.appendChild(probe);
+  const em=probe.getBoundingClientRect().width/(10*100);
+  probe.remove();
+  return em>0.2&&em<1.2?em:0;
+}
 function fitHeroNumbers(){
   if(surface==='widget')return;
   const fmt=el=>Math.max(1,Math.min(24,Number(el.style.getPropertyValue('--digits'))||8));
-  // 直接量这一串数字自己的渲染宽，按比例收敛到块宽。用实测而不用「容器宽÷字符数」的公式，
-  // 是因为公式假设等宽字每字符 0.6em，实际字体在 0.5~0.62em 之间，窄字体下会白白留一大截空档。
-  // 迭代两三次就够：字宽比会随字号有百分之一二的变化。
+  const TOK_BASE=10;   // 字号基准的字符数：相当于「十万级数字」的长度
   const fitTok=el=>{
     if(!el)return;
-    el.style.fontSize='max(26px,min(84px,calc(160cqw/'+fmt(el)+')))';   // 量不到时的兜底
+    const basis=Math.max(TOK_BASE,Math.min(fmt(el),24));
+    el.style.fontSize='max(26px,min(84px,calc(160cqw/'+basis+')))';   // 量不到时的兜底
     const box=el.closest('.uh-tok');
     const bw=box?Math.round(box.clientWidth||0):0;
     if(bw<=0)return;
-    for(let i=0;i<3;i++){
-      const cur=parseFloat(getComputedStyle(el).fontSize)||0;
-      if(!(cur>0))return;
-      const r=document.createRange();r.selectNodeContents(el);
-      const w=r.getBoundingClientRect().width;
-      if(!(w>0))return;
-      const want=Math.max(26,Math.min(140,bw/w*cur*0.998));
-      if(Math.abs(want-cur)<0.6)break;
-      el.style.fontSize=want.toFixed(2)+'px';
-    }
+    const em=tokCharEm(el);
+    if(em<=0)return;
+    // 10 个字符的宽度 = bw 时刚好铺满；1.005 是给舍入留的余量
+    const px=Math.max(26,Math.min(140,bw/(basis*em*1.005)));
+    el.style.fontSize=px.toFixed(2)+'px';
   };
   const tok=document.getElementById('sTok');
   fitTok(tok);
