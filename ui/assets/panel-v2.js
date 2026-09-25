@@ -374,6 +374,9 @@ function renderApiOverview(){
   // 余额适配器和「无官方接口」说明只用来补状态，不再单独产生卡片，避免删了配置还留幽灵卡。
   const cfgList=state.providers?.providers||[];
   const cfgName={};for(const p of cfgList){if(p.name)cfgName[p.id]=p.name;}
+  // 配置即唯一真相源：总余额副行（订阅窗口用量、额度）也只在「宿主仍配着这个供应商」时出现。
+  // 否则账本里的历史记录会把已经删掉的供应商（比如 Codex）一直挂在总余额下面。
+  const cfgIds=new Set(cfgList.map(p=>p.id));
   // 本地部署的供应商（base_url 指向本机）单独一类：它们没有余额概念，灯用亮粉
   const isLocalUrl=u=>/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(String(u||""));
   const localIds=new Set(cfgList.filter(p=>p.local===true||isLocalUrl(p.baseUrl)).map(p=>p.id));
@@ -399,12 +402,12 @@ function renderApiOverview(){
   const curKeys=Object.keys(byCur);
   const primary=curKeys.includes("CNY")?"CNY":curKeys[0];
   const breakRows=balItems.map(b=>{const money=(b.currency==="USD"?"$":"¥")+Number(b.total).toFixed(2);return '<span class="bl-row"><i></i>'+esc(b.name||b.provider)+'<b>'+money+'</b></span>';});
-  const quotaRows=bal.filter(b=>b.status==="ok"&&b.kind==="quota"&&Number.isFinite(Number(b.remainingPercent))).map(b=>'<span class="bl-row"><i></i>'+esc(b.name||b.provider)+'<b>'+esc(b.summary||Number(b.remainingPercent).toFixed(0)+"%")+'</b></span>');
+  const quotaRows=bal.filter(b=>b.status==="ok"&&b.kind==="quota"&&cfgIds.has(b.provider)&&Number.isFinite(Number(b.remainingPercent))).map(b=>'<span class="bl-row"><i></i>'+esc(b.name||b.provider)+'<b>'+esc(b.summary||Number(b.remainingPercent).toFixed(0)+"%")+'</b></span>');
   const others=curKeys.filter(x=>x!==primary).map(x=>'<span class="bl-row"><i></i>'+esc(x)+'<b>'+byCur[x].toFixed(2)+'</b></span>');
   const modes=state.ledger?.billingModes||{},win=state.ledger?.providerWindows||{};
   // 订阅额度类（OAuth / Coding Plan）：钱花在包月上，官方又未必给配额接口，
   // 于是至少把窗口用量摆出来——近 5 小时与近 7 天的 token 与调用数。
-  const subRows=Object.keys(modes).filter(id=>modes[id]==="subscription"&&!bal.some(b=>b.provider===id&&b.kind==="quota"&&b.status==="ok")).map(id=>{
+  const subRows=Object.keys(modes).filter(id=>cfgIds.has(id)&&modes[id]==="subscription"&&!bal.some(b=>b.provider===id&&b.kind==="quota"&&b.status==="ok")).map(id=>{
     const w=win[id];if(!w)return '';
     const nm=cfgName[id]||NAME_CN[id]||id;
     const txt='5h '+fmtTokens(w.h5?.tokens||0)+' · 7d '+fmtTokens(w.d7?.tokens||0);
