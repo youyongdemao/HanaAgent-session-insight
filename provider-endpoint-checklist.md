@@ -34,13 +34,13 @@ node scripts/check-providers.mjs --verify   # 真打各家接口，报告哪些�
 
 ### 2026-09-25 按官方模型目录（model-catalog，33 家）对齐时补入的 21 家
 
-这些家的 `reachable` 目前一律为 `false`：**官方有没有接口**和**插件能不能查**是两件事，插件还没接过它们的查询，标 `true` 只会让界面亮起红灯、却给出一个填了也没用的输入框。
+这些家的 `reachable` 大多仍为 `false`：**官方有没有接口**和**插件能不能查**是两件事，插件还没接过它们的查询，标 `true` 只会让界面亮起红灯、却给出一个填了也没用的输入框。
 
 | 供应商 | 门路 | 鉴权 | 备注 |
 |---|---|---|---|
-| stepfun（阶跃星辰） | `GET https://api.stepfun.com/v1/accounts` | api_key | 官方文档齐备，**最容易接的一家**；返回 balance / total_cash_balance / total_voucher_balance |
-| siliconflow（硅基流动） | `GET /v1/user/info` | api_key | 社区长期在用，**官方 API 文档未收录该条目**，接入时来源标「社区验证」 |
-| openrouter | `GET /api/v1/credits` | 管理密钥 | 唯一直接返回 total_credits / total_usage 的；普通推理 key 会 403 |
+| stepfun（阶跃星辰） | `GET /v1/accounts` | api_key | **已接入**；2026-09-25 实测无 key 返 401（端点存在）、错路径返 404；返回 balance / total_cash_balance / total_voucher_balance |
+| siliconflow（硅基流动） | `GET /v1/user/info` | api_key | **已接入**；无 key 返 401、错路径返 404；字段名以社区可见的 `data.totalBalance` 为主，官方 API 文档未收录该条目 |
+| openrouter | `GET /v1/credits` | 管理密钥 | **已接入**；无 key 返 401、错路径返 404；返回 total_credits / total_usage，可用余额是两者之差，币种 USD |
 | anthropic | 无余额；Admin API `GET /v1/organizations/usage_report/messages` | Admin Key | 报的是历史用量与成本，不是预付余额 |
 | mistral | 无余额；Admin API `GET /v1/admin/usage` | Admin Key | 同上，报表非余额 |
 | fireworks | `GET /v1/accounts/{account_id}/billing/summary` | 账户级 token | 消费汇总，非余额；需 account_id |
