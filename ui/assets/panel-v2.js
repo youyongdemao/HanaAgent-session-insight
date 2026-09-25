@@ -953,15 +953,20 @@ function fitHeroNumbers(){
   const fitTok=el=>{
     if(!el)return;
     const basis=Math.max(TOK_BASE,Math.min(fmt(el),24));
-    el.style.fontSize='max(26px,min(84px,calc(160cqw/'+basis+')))';   // 量不到时的兜底
     const box=el.closest('.uh-tok');
-    const bw=box?Math.round(box.clientWidth||0):0;
-    if(bw<=0)return;
+    const main=el.closest('.uh-main');
+    el.style.fontSize='max(26px,min(84px,calc(160cqw/'+basis+')))';   // 量不到时的兜底
+    const mw=main?Math.round(main.clientWidth||0):0;
+    const half=mw>0?Math.max(60,(mw-61)/2):0;   // 两块平分时的宽度（中间是 30+1+30）
     const em=tokCharEm(el);
-    if(em<=0)return;
-    // 10 个字符的宽度 = bw 时刚好铺满；1.005 是给舍入留的余量
-    const px=Math.max(26,Math.min(140,bw/(basis*em*1.005)));
+    if(half<=0||em<=0)return;
+    // 字号按「10 个字符正好占满半行」定，之后不再随位数变化；1.005 是给舍入留的余量
+    const px=Math.max(26,Math.min(140,half/(basis*em*1.005)));
     el.style.fontSize=px.toFixed(2)+'px';
+    // 块宽跟着数字走：数字右边缘就是块右边缘，两侧到分割线的间隔因此相等
+    const r=document.createRange();r.selectNodeContents(el);
+    const w=Math.ceil(r.getBoundingClientRect().width);
+    if(box&&w>0){box.style.flex='0 0 '+w+'px';box.style.width=w+'px';}
   };
   const tok=document.getElementById('sTok');
   fitTok(tok);
