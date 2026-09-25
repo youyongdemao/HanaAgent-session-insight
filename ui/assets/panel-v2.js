@@ -1064,24 +1064,23 @@ function showProvider(id){state.provider=id;state.providerLedger=null;numEnter=t
 
 function detailRows(rows,list=false){if(!rows.length)return'';const cls=list===true?' w-list':list==='pair'?' w-pair':list==='spaced'?' w-spaced':'';return `<div class="w-detail-grid${cls}">${rows.map(row=>{const [k,v,pct,color]=row,isArr=Array.isArray(v),disp=isArr?'':String(v??'–'),forceWide=row[2]===true||isArr,wide=(disp.length>18||forceWide)?' wide':'',hasBar=!isArr&&typeof pct==='number'&&Number.isFinite(pct);let body='';if(isArr){body=v.length?'<div class="m-list">'+v.map((m,i)=>{if(m&&typeof m==='object'){const pc=Math.max(0,Math.min(100,Number(m.pct)||0));return '<div class="m-entry" style="animation-delay:'+(.12+i*.04).toFixed(2)+'s"><div class="m-head"><code>'+esc(m.name||m.model||'未知模型')+'</code><b>'+pc.toFixed(1)+'%</b></div><div class="track"><i style="width:'+pc+'%"></i></div></div>';}return '<code>'+esc(String(m))+'</code>';}).join('')+'</div>':'<span class="empty">暂无调用记录</span>';}return `<div class="card w-detail-item${wide}${hasBar?' w-detail-provider-item':''} si-rise"><div class="w-detail-item-head"><span>${esc(k)}</span>${isArr?'':'<b>'+esc(disp)+'</b>'}</div>${body}${hasBar?`<div class="w-detail-provider-bar"><i style="--pct:${Math.max(0,Math.min(100,pct))}%;--bar:${color||'var(--accent)'}"></i></div>`:''}</div>`;}).join('')}</div>`;}
 function detailMeter(pct,label,value,marker=null){const p=Math.max(0,Math.min(100,Number(pct)||0));return `<div class="card w-detail-visual si-rise"><div class="w-detail-vhead"><span>${esc(label)}</span><b>${esc(value)}</b></div><div class="w-detail-meter"><i style="width:${p}%"></i>${marker!=null?`<em style="left:${Math.max(0,Math.min(100,marker))}%"></em>`:''}</div></div>`;}
-/** 上下文构成：系统提示词 / 对话内容 / 空闲，每项一行全宽长条，右侧是占比与实际量。
+/** 上下文构成：只画已用部分的构成（系统提示词 / 对话内容），每项一行全宽长条，右侧是占比与实际量。
  *  系统提示词是估算值（宿主只给 systemPrompt 文本，不给 token 数），所以带 ~ 前缀。 */
 function detailContextSplit(st){
-  const win=Number(st?.contextWindow)||0,used=Number(st?.lastWindowTokens)||0,raw=Number(st?.systemPromptTokens);
-  if(!(win>0)||!(used>0))return '';
+  const used=Number(st?.lastWindowTokens)||0,raw=Number(st?.systemPromptTokens);
+  if(!(used>0))return '';
   const sys=Number.isFinite(raw)?Math.max(0,Math.min(raw,used)):null;
-  const conv=Math.max(0,used-(sys??0)),free=Math.max(0,win-used);
+  const conv=Math.max(0,used-(sys??0));
   const parts=[];
   if(sys!=null)parts.push({n:'系统提示词',v:sys,c:'linear-gradient(90deg,color-mix(in srgb,#8a78a8 62%,transparent),#8a78a8)',est:true});
   parts.push({n:'对话内容',v:conv,c:'linear-gradient(90deg,color-mix(in srgb,var(--accent) 55%,transparent),var(--accent))'});
-  parts.push({n:'空闲',v:free,c:'color-mix(in srgb,var(--text) 18%,transparent)'});
   // 占比极小的项给个最小宽度，不然它在条上完全看不见（与详情里其他条同一套观感）
   const rows=parts.map(p=>{
-    const pct=p.v/win*100;
+    const pct=p.v/used*100;
     const w=p.v>0?Math.min(100,Math.max(0.6,pct)):0;
     return `<div class="w-ctx-row"><div class="h"><span>${esc(p.n)}</span><em>${pct.toFixed(1)}%</em><b>${p.est?'~':''}${fmtTokens(p.v)}</b></div><div class="w-detail-meter"><i style="width:${w.toFixed(2)}%;background:${p.c}"></i></div></div>`;
   }).join('');
-  return `<div class="card w-detail-visual si-rise"><div class="w-detail-vhead"><span>上下文构成</span><b>${fmtTokens(used)} / ${fmtTokens(win)}</b></div><div class="w-ctx-rows">${rows}</div></div>`;
+  return `<div class="card w-detail-visual si-rise"><div class="w-detail-vhead"><span>上下文构成</span><b>已用 ${fmtTokens(used)}</b></div><div class="w-ctx-rows">${rows}</div></div>`;
 }
 function detailKpis(items){return `<div class="w-detail-kpis">${items.map(([k,v],i)=>`<div class="card si-rise" style="animation-delay:${(.08+i*.06).toFixed(2)}s"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>`;}
 /** 当前轮详情的头部：Token 最大座左，右侧轮次与费用两项 */
