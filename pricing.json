@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "snapshotAt": "2026-09-23",
+  "snapshotAt": "2026-09-25",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
@@ -7112,6 +7112,706 @@
         "output": 16
       },
       "contextWindow": 65536
+    },
+    "openai-codex::gpt-5.6-sol": {
+      "provider": "openai-codex",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.6-sol",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 136
+      },
+      "contextWindow": 353400,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "cacheWrite": 5,
+          "output": 20
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 8,
+          "inputHit": 0.8,
+          "cacheWrite": 10,
+          "output": 30
+        }
+      ],
+      "usd": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 20
+      },
+      "currency": "USD"
+    },
+    "openai-codex::gpt-5.6-terra": {
+      "provider": "openai-codex",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.6-terra",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 81.6
+      },
+      "contextWindow": 353400,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 2,
+          "inputHit": 0.2,
+          "cacheWrite": 2.5,
+          "output": 12
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "cacheWrite": 5,
+          "output": 18
+        }
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
+    },
+    "openai-codex::gpt-5.6-luna": {
+      "provider": "openai-codex",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.6-luna",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 1.36,
+        "inputHit": 0.14,
+        "output": 8.16
+      },
+      "contextWindow": 353400,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 0.2,
+          "inputHit": 0.02,
+          "cacheWrite": 0.25,
+          "output": 1.2
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 0.4,
+          "inputHit": 0.04,
+          "cacheWrite": 0.5,
+          "output": 1.8
+        }
+      ],
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.2
+      },
+      "currency": "USD"
+    },
+    "openai-codex::gpt-5.5": {
+      "provider": "openai-codex",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.5",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 204
+      },
+      "contextWindow": 272000,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 5,
+          "inputHit": 0.5,
+          "cacheWrite": null,
+          "output": 30
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 10,
+          "inputHit": 1,
+          "cacheWrite": null,
+          "output": 45
+        }
+      ],
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 30
+      },
+      "currency": "USD"
+    },
+    "openai-codex::gpt-5.4": {
+      "provider": "openai-codex",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.4",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 17,
+        "inputHit": 1.7,
+        "output": 102
+      },
+      "contextWindow": 272000,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 2.5,
+          "inputHit": 0.25,
+          "cacheWrite": null,
+          "output": 15
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 5,
+          "inputHit": 0.5,
+          "cacheWrite": null,
+          "output": 22.5
+        }
+      ],
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 0.25,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "openai-codex::gpt-5.4-mini": {
+      "provider": "openai-codex",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.4-mini",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 30.6
+      },
+      "contextWindow": 272000,
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 4.5
+      },
+      "currency": "USD"
+    },
+    "openai-codex::gpt-5.2": {
+      "provider": "openai-codex",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.2",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 11.9,
+        "inputHit": 1.19,
+        "output": 95.2
+      },
+      "contextWindow": 272000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-6-astra": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-6-astra",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 68,
+        "inputHit": 6.8,
+        "output": 340
+      },
+      "contextWindow": 272000,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 10,
+          "inputHit": 1,
+          "cacheWrite": 12.5,
+          "output": 50
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 20,
+          "inputHit": 2,
+          "cacheWrite": 25,
+          "output": 75
+        }
+      ],
+      "usd": {
+        "inputMiss": 10,
+        "inputHit": 1,
+        "output": 50
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-4o": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-4o",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 17,
+        "inputHit": 8.5,
+        "output": 68
+      },
+      "contextWindow": 128000,
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 1.25,
+        "output": 10
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-4.1": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-4.1",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 3.4,
+        "output": 54.4
+      },
+      "contextWindow": 1047576,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 8
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::o3-mini": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::o3-mini",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 7.48,
+        "inputHit": 3.74,
+        "output": 29.92
+      },
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1.1,
+        "inputHit": 0.55,
+        "output": 4.4
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::o4-mini": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::o4-mini",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 7.48,
+        "inputHit": 1.87,
+        "output": 29.92
+      },
+      "contextWindow": 200000,
+      "usd": {
+        "inputMiss": 1.1,
+        "inputHit": 0.275,
+        "output": 4.4
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-5.5": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.5",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 204
+      },
+      "contextWindow": 272000,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 5,
+          "inputHit": 0.5,
+          "cacheWrite": null,
+          "output": 30
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 10,
+          "inputHit": 1,
+          "cacheWrite": null,
+          "output": 45
+        }
+      ],
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 30
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-5.4": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.4",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 17,
+        "inputHit": 1.7,
+        "output": 102
+      },
+      "contextWindow": 272000,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 2.5,
+          "inputHit": 0.25,
+          "cacheWrite": null,
+          "output": 15
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 5,
+          "inputHit": 0.5,
+          "cacheWrite": null,
+          "output": 22.5
+        }
+      ],
+      "usd": {
+        "inputMiss": 2.5,
+        "inputHit": 0.25,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-5.4-mini": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.4-mini",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 30.6
+      },
+      "contextWindow": 272000,
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 4.5
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-5.2": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.2",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 11.9,
+        "inputHit": 1.19,
+        "output": 95.2
+      },
+      "contextWindow": 272000,
+      "usd": {
+        "inputMiss": 1.75,
+        "inputHit": 0.175,
+        "output": 14
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-5.6-sol": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.6-sol",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 136
+      },
+      "contextWindow": 353400,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "cacheWrite": 5,
+          "output": 20
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 8,
+          "inputHit": 0.8,
+          "cacheWrite": 10,
+          "output": 30
+        }
+      ],
+      "usd": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 20
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-5.6-terra": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.6-terra",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "output": 81.6
+      },
+      "contextWindow": 353400,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 2,
+          "inputHit": 0.2,
+          "cacheWrite": 2.5,
+          "output": 12
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "cacheWrite": 5,
+          "output": 18
+        }
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "output": 12
+      },
+      "currency": "USD"
+    },
+    "openai-codex-oauth::gpt-5.6-luna": {
+      "provider": "openai-codex-oauth",
+      "source": "同 openai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 openai::gpt-5.6-luna",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 1.36,
+        "inputHit": 0.14,
+        "output": 8.16
+      },
+      "contextWindow": 353400,
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 0.2,
+          "inputHit": 0.02,
+          "cacheWrite": 0.25,
+          "output": 1.2
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 0.4,
+          "inputHit": 0.04,
+          "cacheWrite": 0.5,
+          "output": 1.8
+        }
+      ],
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.020588,
+        "output": 1.2
+      },
+      "currency": "USD"
+    },
+    "xai-oauth::grok-4.5": {
+      "provider": "xai-oauth",
+      "source": "同 xai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 xai::grok-4.5",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 2.04,
+        "output": 40.8
+      },
+      "contextWindow": 500000,
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 2,
+          "inputHit": 0.3,
+          "output": 6
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 4,
+          "inputHit": 0.6,
+          "output": 12
+        }
+      ],
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.3,
+        "output": 6
+      },
+      "currency": "USD"
+    },
+    "xai-oauth::grok-4.3": {
+      "provider": "xai-oauth",
+      "source": "同 xai 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 xai::grok-4.3",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 8.5,
+        "inputHit": 1.36,
+        "output": 17
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 1.25,
+          "inputHit": 0.2,
+          "output": 2.5
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 2.5,
+          "inputHit": 0.4,
+          "output": 5
+        }
+      ],
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD"
+    },
+    "zhipu-coding::glm-5.3-flash": {
+      "provider": "zhipu-coding",
+      "source": "同 zhipu 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 zhipu::glm-5.3-flash",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 0.8,
+        "inputHit": 0.23,
+        "output": 2.8
+      },
+      "contextWindow": 1000000
+    },
+    "zhipu-coding::glm-5-turbo": {
+      "provider": "zhipu-coding",
+      "source": "同 zhipu 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 zhipu::glm-5-turbo",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 5,
+        "inputHit": 1.2,
+        "output": 22
+      },
+      "contextWindow": 200000,
+      "tiers": [
+        {
+          "condition": "输入长度 [0, 32K)",
+          "inputMiss": 5,
+          "inputHit": 1.2,
+          "output": 22
+        },
+        {
+          "condition": "输入长度 ≥32K",
+          "inputMiss": 7,
+          "inputHit": 1.8,
+          "output": 26
+        }
+      ]
+    },
+    "zhipu-coding::glm-4.6": {
+      "provider": "zhipu-coding",
+      "contextWindow": 1048576,
+      "source": "同 zhipu 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 zhipu::glm-4.6",
+      "sourceUrl": "https://docs.z.ai/guides/overview/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 0.74,
+        "output": 14.8
+      }
+    },
+    "zhipu-coding::glm-4.7": {
+      "provider": "zhipu-coding",
+      "source": "同 zhipu 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 zhipu::glm-4.7",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 2,
+        "inputHit": 0.4,
+        "output": 8
+      },
+      "contextWindow": 200000,
+      "tiers": [
+        {
+          "condition": "输入 [0, 32K)，输出 [0, 0.2K)",
+          "inputMiss": 2,
+          "inputHit": 0.4,
+          "output": 8
+        },
+        {
+          "condition": "输入 [0, 32K)，输出 ≥0.2K",
+          "inputMiss": 3,
+          "inputHit": 0.6,
+          "output": 14
+        },
+        {
+          "condition": "输入 [32K, 200K)",
+          "inputMiss": 4,
+          "inputHit": 0.8,
+          "output": 16
+        }
+      ]
+    },
+    "zhipu-coding::glm-5.3": {
+      "provider": "zhipu-coding",
+      "source": "同 zhipu 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 zhipu::glm-5.3",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 8,
+        "inputHit": 2,
+        "output": 28
+      },
+      "contextWindow": 1000000
+    },
+    "kimi-coding::kimi-k2.6": {
+      "provider": "kimi-coding",
+      "source": "同 moonshot 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 moonshot::kimi-k2.6",
+      "sourceUrl": "https://platform.kimi.com/docs/pricing/chat",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 6.5,
+        "inputHit": 1.1,
+        "output": 27
+      },
+      "contextWindow": 262144
+    },
+    "dashscope-coding::kimi-k2.5": {
+      "provider": "dashscope-coding",
+      "source": "同 dashscope 体系官方价（订阅/套餐通道不按 token 计费，此处按同名模型的官方单价折算，仅供参考）；来源条目 dashscope::kimi-k2.5",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-09-25",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 4,
+        "output": 21
+      },
+      "contextWindow": 262144
     }
   }
 }
