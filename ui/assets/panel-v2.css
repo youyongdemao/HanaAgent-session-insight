@@ -961,7 +961,7 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-overlay .w-detail-plot .sc-yaxis{flex:none;width:50px;min-width:50px;overflow:visible;color:var(--text-muted)}
 .w-detail-overlay .w-detail-plot .sc-yaxis svg{width:50px;height:auto;overflow:visible;display:block}
 .w-detail-overlay .w-detail-plot .axis-text{font:12.4px var(--font-mono)}
-.w-detail-overlay .w-detail-plot .w-detail-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:auto}
+.w-detail-overlay .w-detail-plot .w-detail-scroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:auto;padding-bottom:9px}
 .w-detail-overlay .w-detail-plot .w-detail-scroll svg{width:var(--dw)!important;max-width:none!important;height:auto!important;display:block}
 .w-detail-overlay .w-detail-plot .w-detail-scroll::-webkit-scrollbar{height:8px}
 .w-detail-overlay .w-detail-plot .w-detail-scroll::-webkit-scrollbar-track{background:color-mix(in srgb,var(--text) 7%,transparent);border-radius:99px}
