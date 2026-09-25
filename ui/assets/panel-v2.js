@@ -328,7 +328,7 @@ function renderUsageSession(){
   requestAnimationFrame(()=>{$$('.scroll-chart .chart-scroll').forEach(el=>{el.scrollLeft=el.scrollWidth-el.clientWidth;});});
   const cacheHit=Math.max(0,Number(st.sumCacheRead)||0),cacheMiss=Math.max(0,Number(st.sumInput)||0),outputTok=Math.max(0,(Number(st.sumOutput)||0)+(Number(st.sumReasoning)||0)),inputTok=cacheHit+cacheMiss,ioTotal=inputTok+outputTok||1,cacheTotal=cacheHit+cacheMiss||1,inputPct=inputTok/ioTotal*100,outputPct=outputTok/ioTotal*100,hitPct=cacheHit/cacheTotal*100,missPct=cacheMiss/cacheTotal*100;
   const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};
-  set("#sTok",fmtTokens(st.sessionTokens));const sTokEl=document.getElementById("sTok");if(sTokEl)sTokEl.style.setProperty("--digits",String(fmtTokens(st.sessionTokens).length));fitHeroNumbers();set("#sHit",hits.length?fmtPct(hits.reduce((a,b)=>a+b,0)/hits.length):"–");setHitClass($("#sHit"),hits.length?hits.reduce((a,b)=>a+b,0)/hits.length:null);set("#sCost",fmtCost(st.sessionCostCny));set("#sTurn",String(ser.length));set("#sCtx",fmtPct(st.contextPercent));
+  set("#sTok",fmtFullTok(st.sessionTokens));const sTokEl=document.getElementById("sTok");if(sTokEl)sTokEl.style.setProperty("--digits",String(fmtFullTok(st.sessionTokens).length));fitHeroNumbers();set("#sHit",hits.length?fmtPct(hits.reduce((a,b)=>a+b,0)/hits.length):"–");setHitClass($("#sHit"),hits.length?hits.reduce((a,b)=>a+b,0)/hits.length:null);set("#sCost",fmtCost(st.sessionCostCny));set("#sTurn",String(ser.length));set("#sCtx",fmtPct(st.contextPercent));
   set("#sInPct",inputPct.toFixed(1)+"%");set("#sOutPct",outputPct.toFixed(1)+"%");set("#sHitPct",hitPct.toFixed(1)+"%");set("#sMissPct",missPct.toFixed(1)+"%");
   const inBar=$("#sInBar"),outBar=$("#sOutBar"),hitBar=$("#sHitBar"),missBar=$("#sMissBar");if(inBar)inBar.style.width=inputPct+"%";if(outBar)outBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";
   const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const provs=Array.isArray(st.providers)&&st.providers.length?st.providers:[{provider:st.provider||"unknown",tokens:st.sessionTokens||0,turns:st.turns||0,models:[]}];/* 卡片本体按「模型」排：把供应商聚合里带的模型维度展平（后端已给出每个供应商下各模型的 token） */const modelRows=[];for(const p of provs){const ms=Array.isArray(p.models)&&p.models.length?p.models:[{model:st.model||"unknown",tokens:Number(p.tokens)||0}];for(const m of ms)modelRows.push({key:"m:"+String(m.model||"unknown"),label:String(m.model||"unknown"),tokens:Number(m.tokens)||0});}modelRows.sort((a,b)=>b.tokens-a.tokens);const totalUsed=modelRows.reduce((a,m)=>a+(Number(m.tokens)||0),0)||1;const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const pb=$("#sProviderBody");if(pb){patchProviderRows(pb,modelRows.map((m,i)=>({key:m.key,label:m.label,pct:(Number(m.tokens)||0)/totalUsed*100,color:colors[i%colors.length]})));}
@@ -934,15 +934,36 @@ function widgetFlipCount(){return flipCount;}
 // 内联优先级最高，cqw 也已验证是按 .uh-tok 的宽度解析的。
 // 会话页的命中率跟随 Token 用同一字号（对齐 CSS 注释里「同字号、底边对齐」的原意）。
 // 位数取 --digits（渲染时写好的字符串长度）——不能用 textContent，滚动时里面是 0-9 的数字条。
-/** 会话页：本会话 Token 的字号按「容器宽 ÷ 字符数」算，数字总占 1.55×容器宽×字宽那么大，
- *  与位数无关；配合 CSS 的右对齐，右边缘恒在距分割线 30px 处，与另一侧对称。
- *  这里不压 84px 上限：上限会让位数少时数字缩回去，右边又空出一截。 */
+/** 会话页：本会话 Token 写全位数，字号要刚好让这一串数字铺满左边那一块：
+ *  左边缘与标题同一竖线起笔，右边缘离分割线一个 gap，两侧间隔就相等。
+ *  不能直接用 CSS 的 cqw 公式：那式子假设等宽字每个字符占 0.6em，而实际字体在 0.5~0.62em 之间，
+ *  窄字体下会白白留下一大截空档。所以用同一套字体量一次「这串数字在 100px 下有多宽」再反推。 */
 function fitHeroNumbers(){
   if(surface==='widget')return;
   const fmt=el=>Math.max(1,Math.min(24,Number(el.style.getPropertyValue('--digits'))||8));
+  // 直接量这一串数字自己的渲染宽，按比例收敛到块宽。用实测而不用「容器宽÷字符数」的公式，
+  // 是因为公式假设等宽字每字符 0.6em，实际字体在 0.5~0.62em 之间，窄字体下会白白留一大截空档。
+  // 迭代两三次就够：字宽比会随字号有百分之一二的变化。
+  const fitTok=el=>{
+    if(!el)return;
+    el.style.fontSize='max(26px,min(84px,calc(160cqw/'+fmt(el)+')))';   // 量不到时的兜底
+    const box=el.closest('.uh-tok');
+    const bw=box?Math.round(box.clientWidth||0):0;
+    if(bw<=0)return;
+    for(let i=0;i<3;i++){
+      const cur=parseFloat(getComputedStyle(el).fontSize)||0;
+      if(!(cur>0))return;
+      const r=document.createRange();r.selectNodeContents(el);
+      const w=r.getBoundingClientRect().width;
+      if(!(w>0))return;
+      const want=Math.max(26,Math.min(140,bw/w*cur*0.998));
+      if(Math.abs(want-cur)<0.6)break;
+      el.style.fontSize=want.toFixed(2)+'px';
+    }
+  };
   const tok=document.getElementById('sTok');
-  if(tok){tok.style.fontSize='max(26px,calc(155cqw/'+fmt(tok)+'))';
-    const hit=document.getElementById('sHit');if(hit){const v=getComputedStyle(tok).fontSize;if(v)hit.style.fontSize=v;}}
+  fitTok(tok);
+  if(tok){const hit=document.getElementById('sHit');if(hit){const v=getComputedStyle(tok).fontSize;if(v)hit.style.fontSize=v;}}
   const kTok=document.getElementById('kTok');
   if(kTok)kTok.style.fontSize='max(26px,min(84px,calc(160cqw/'+fmt(kTok)+')))';
 }

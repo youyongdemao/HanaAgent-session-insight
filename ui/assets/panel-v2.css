@@ -723,7 +723,9 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 #usage-overview .usage-hero,#usage-session .usage-hero{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-bottom:18px;padding:4px 2px;align-items:stretch}
 #usage-overview .usage-hero{padding-top:14px}
 #usage-overview .usage-hero{margin-top:10px}
-#usage-session .usage-hero{min-height:132px;padding:16px 8px 12px;margin-bottom:10px;gap:18px}
+#usage-session .usage-hero{min-height:132px;padding:16px 8px 12px;margin-bottom:10px;gap:18px;grid-template-columns:1fr}
+/* 会话页只有一排数字，不需要总览页那套 1.3fr/.7fr 两列：
+   沿用两列的话右半边会空着，两个数字各自只分到约三分之二宽。 */
 #usage-overview .uh-main,#usage-session .uh-main{display:flex;align-items:stretch;gap:30px}
 /* 总览 hero：上排整行放总量数字（位数按容器宽自适应字号），下排命中率 + 三张小卡同行 */
 #usage-overview .uh-main{display:grid;grid-template-rows:auto auto;row-gap:14px;align-content:start}
@@ -781,9 +783,9 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
    不参与自身尺寸计算；它在 flex 里又没给 flex 基准，宽度于是塌成 0，
    数字被压到 26px 下限、标签挤出盒外，看上去就像和右边那块叠在一起。 */
 #usage-session .uh-main .uh-tok{flex:1 1 0;min-width:0}
-/* 会话页：本会话 Token 的数字要顶到块的右边缘。数字左对齐时，块右侧那截空档
-   会随位数变长，「分割线到数字右边」就比另一侧宽出一截；撑满之后两侧间隔相等。 */
-#usage-session .uh-main .uh-tok b{display:block;width:100%;text-align:right}
+/* 会话页：本会话 Token 写全位数，字号由 JS 按容器宽与字符数算，正好铺满左边那一块，
+   左边缘与标题对齐、右边缘离分割线一个 gap，两侧间隔就相等。 */
+#usage-session .uh-main .uh-tok b{display:block;white-space:nowrap}
 #usage-overview .uh-divider,#usage-session .uh-divider{width:1px;align-self:center;height:72%;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--text) 20%,transparent),transparent);flex:none}
 /* 最弱：三个小信息 */
 #usage-overview .uh-sub,#usage-session .uh-sub{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
