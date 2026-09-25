@@ -5,6 +5,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
 import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
+import { PROVIDER_DIRECTORY } from "./lib/provider-directory.js";
 import { registerUpdateRoutes } from "./lib/update-check.js";
 import { registerLaunchRoutes } from "./lib/local-launch.js";
 import {
@@ -416,6 +417,57 @@ export default defineApp(async (sdk) => {
         return c.json(stats);
       } catch (error) {
         return c.json({ error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    // ── 额度查询凭据 ────────────────────────────────
+    // 有些供应商的主 API Key 查不到余额/额度，要另配后台凭据：
+    // OpenAI 的 Admin Key、xAI 的 Management Key + Team ID、火山的 AK/SK。
+    // 只列出用户已经添加的供应商，没添加的不出现。
+    app.get("/api/query-credentials", async (c) => {
+      try {
+        // 活跃供应商直接问宿主拿：只统计真正配了凭据的那些。
+        const listed = await sdk.models.listAvailable().catch(() => null);
+        const modelRows = Array.isArray(listed) ? listed : (listed?.models ?? []);
+        const ids = [...new Set(modelRows.map((m) => m?.provider).filter(Boolean))];
+        const cfg = await readAppConfig(sdk);
+        const rows = [];
+        for (const id of ids) {
+          const q = PROVIDER_DIRECTORY[id]?.query;
+          const keys = q?.keys;
+          if (!Array.isArray(keys) || !keys.length) continue;
+          rows.push({
+            id,
+            name: PROVIDER_DIRECTORY[id]?.name || id,
+            via: q.via || "",
+            keys: keys.map((k) => ({
+              id: k.id,
+              label: k.label,
+              secret: k.secret === true,
+              configured: String(cfg?.[k.id] || "").trim().length > 0,
+            })),
+          });
+        }
+        return c.json({ providers: rows });
+      } catch (error) {
+        return c.json({ providers: [], error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    app.post("/api/query-credentials", async (c) => {
+      try {
+        const body = await c.req.json().catch(() => ({}));
+        const providerId = String(body?.provider || "").trim();
+        const keyId = String(body?.key || "").trim();
+        const allowed = PROVIDER_DIRECTORY[providerId]?.query?.keys || [];
+        if (!allowed.some((k) => k.id === keyId)) {
+          return c.json({ ok: false, message: "未知的凭据项" }, 400);
+        }
+        const value = body?.value == null ? "" : String(body.value).trim();
+        await writeAppConfig(sdk, keyId, value);
+        return c.json({ ok: true, key: keyId, configured: value.length > 0 });
+      } catch (error) {
+        return c.json({ ok: false, message: String(error?.message ?? error) }, 500);
       }
     });
 

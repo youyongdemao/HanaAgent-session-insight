@@ -395,6 +395,111 @@ async function saveLocalProgram(providerId, path) {
 
 loadLocalProviders();
 
+/* ── 额度查询凭据 ──
+   主 API Key 查不到余额的那几家（OpenAI Admin Key、xAI Management Key + Team ID、火山 AK/SK）
+   在这里单独配。后端只返回用户已经添加过的供应商，没添加的不出现。 */
+const credBlockEl = document.getElementById("stCredBlock");
+const credListEl = document.getElementById("stCredList");
+const credStatusEl = document.getElementById("stCredStatus");
+
+function setCredStatus(text, cls = "") {
+  if (!credStatusEl) return;
+  credStatusEl.textContent = text;
+  credStatusEl.className = "st-status" + (cls ? " " + cls : "");
+}
+
+async function saveQueryCredential(providerId, keyId, value, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await apiFetch(
+      "api/query-credentials",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ provider: providerId, key: keyId, value }),
+      },
+      15000
+    );
+    setCredStatus(value ? "已保存" : "已清除", "ok");
+    window.setTimeout(() => {
+      if (credStatusEl && /^已/.test(credStatusEl.textContent)) setCredStatus("");
+    }, 2400);
+    await loadQueryCredentials();
+  } catch (error) {
+    setCredStatus("保存失败：" + String(error?.message || error), "err");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderQueryCredentials(providers) {
+  if (!credBlockEl || !credListEl) return;
+  const rows = [];
+  for (const p of providers || []) for (const k of p.keys || []) rows.push({ p, k });
+  if (!rows.length) {
+    credBlockEl.hidden = true;
+    return;
+  }
+  credBlockEl.hidden = false;
+  credListEl.innerHTML = "";
+
+  for (const { p, k } of rows) {
+    const li = document.createElement("li");
+    li.className = "st-item";
+
+    const main = document.createElement("div");
+    main.className = "st-item-main";
+    const title = document.createElement("div");
+    title.className = "st-item-title";
+    title.textContent = p.name + " · " + k.label;
+    const desc = document.createElement("div");
+    desc.className = "st-item-desc";
+    desc.textContent = k.configured ? "已配置" : (p.via || "未配置");
+    main.append(title, desc);
+
+    const ctl = document.createElement("div");
+    ctl.className = "st-item-ctl";
+
+    const input = document.createElement("input");
+    input.type = k.secret ? "password" : "text";
+    input.className = "st-cred-input";
+    input.autocomplete = "off";
+    input.placeholder = k.configured ? "重新输入以覆盖" : "粘贴 " + k.label;
+
+    const save = document.createElement("button");
+    save.type = "button";
+    save.className = "st-btn st-btn-sm";
+    save.textContent = "保存";
+    save.addEventListener("click", () => saveQueryCredential(p.id, k.id, input.value, save));
+
+    ctl.append(input, save);
+
+    if (k.configured) {
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "st-btn st-btn-sm";
+      clear.textContent = "清除";
+      clear.addEventListener("click", () => saveQueryCredential(p.id, k.id, "", clear));
+      ctl.append(clear);
+    }
+
+    li.append(main, ctl);
+    credListEl.append(li);
+  }
+}
+
+async function loadQueryCredentials() {
+  if (!credBlockEl) return;
+  try {
+    const data = await apiFetch("api/query-credentials", {}, 15000);
+    renderQueryCredentials(data?.providers || []);
+  } catch {
+    /* 读不到就先不显示这一块，不打扰界面设置那边 */
+  }
+}
+
+loadQueryCredentials();
+
 /* ── 关于：版本、检查更新与源码仓库 ── */
 const GITHUB_URL = "https://github.com/youyongdemao";
 const aboutGithubEl = document.getElementById("aboutGithub");

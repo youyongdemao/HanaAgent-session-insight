@@ -262,6 +262,25 @@ body {
 .st-status.ok { color: var(--si-green, #4a6b4a); }
 .st-status.err { color: var(--si-amber, #b58b4b); }
 
+/* ── 额度查询凭据：右侧的凭据输入框 ──
+   跟宿主主题变量走，暗底亮底都不用另配一套色。 */
+.st-cred-input {
+  width: 180px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font: 12px var(--font-mono, ui-monospace, Consolas, monospace);
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+  transition: border-color .18s, background .18s;
+}
+.st-cred-input::placeholder { color: var(--text-muted); opacity: .75; }
+.st-cred-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent, #5b8def) 55%, transparent);
+  background: color-mix(in srgb, var(--accent, #5b8def) 8%, transparent);
+}
+
 /* 关于里的地址就是入口本身；链接样式见上方 .st-item-link */
 /* ── 分组子项 ──
    挂在母项下面的一档：左侧缩进，分隔线跟着内缩，标题弱化一级，和母项区分开。 */
