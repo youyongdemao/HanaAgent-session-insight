@@ -250,6 +250,9 @@ function parseWidgetLayout(raw, { migrateNewBlocks = false } = {}) {
  */
 const appConfig = { data: {}, loaded: false };
 
+// 额度查询凭据的活跃供应商列表缓存（设置页会轮询那个端点，不能每次都调宿主）
+let queryCredCache = { at: 0, ids: [] };
+
 async function readAppConfig(sdk) {
   if (!appConfig.loaded) {
     try {
@@ -426,13 +429,17 @@ export default defineApp(async (sdk) => {
     // 只列出用户已经添加的供应商，没添加的不出现。
     app.get("/api/query-credentials", async (c) => {
       try {
-        // 活跃供应商直接问宿主拿：只统计真正配了凭据的那些。
-        const listed = await sdk.models.listAvailable().catch(() => null);
-        const modelRows = Array.isArray(listed) ? listed : (listed?.models ?? []);
-        const ids = [...new Set(modelRows.map((m) => m?.provider).filter(Boolean))];
+        // 设置页会轮询这个端点跟供应商配置走，但不能每次都去调宿主
+        // （models.listAvailable 是一次 RPC，4 秒一次会撞并发限制），这里压 10 秒缓存。
+        const now = Date.now();
+        if (now - queryCredCache.at > 10000 || !queryCredCache.ids.length) {
+          const listed = await sdk.models.listAvailable().catch(() => null);
+          const modelRows = Array.isArray(listed) ? listed : (listed?.models ?? []);
+          queryCredCache = { at: now, ids: [...new Set(modelRows.map((m) => m?.provider).filter(Boolean))] };
+        }
         const cfg = await readAppConfig(sdk);
         const rows = [];
-        for (const id of ids) {
+        for (const id of queryCredCache.ids) {
           const q = PROVIDER_DIRECTORY[id]?.query;
           const keys = q?.keys;
           if (!Array.isArray(keys) || !keys.length) continue;

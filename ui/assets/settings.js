@@ -298,18 +298,25 @@ function setLocalStatus(text, cls = "") {
   localStatusEl.className = "st-status" + (cls ? " " + cls : "");
 }
 
+/** 两类内容共用一个列表：本地程序路径（program）+ 额度查询凭据（cred）。
+ *  清理时只删自己那一类，任一类有内容就显示这一块。 */
+function clearProviderRows(kind) {
+  if (!localListEl) return;
+  [...localListEl.querySelectorAll('[data-kind="' + kind + '"]')].forEach((el) => el.remove());
+}
+
+function syncProviderBlock() {
+  if (!localBlockEl) return;
+  localBlockEl.hidden = !localListEl || localListEl.children.length === 0;
+}
+
 function renderLocalProviders(providers) {
   if (!localBlockEl || !localListEl) return;
-  if (!Array.isArray(providers) || providers.length === 0) {
-    localBlockEl.hidden = true;
-    return;
-  }
-  localBlockEl.hidden = false;
-  localListEl.innerHTML = "";
-
-  for (const provider of providers) {
+  clearProviderRows("program");
+  for (const provider of providers || []) {
     const li = document.createElement("li");
     li.className = "st-item";
+    li.dataset.kind = "program";
 
     const main = document.createElement("div");
     main.className = "st-item-main";
@@ -346,6 +353,7 @@ function renderLocalProviders(providers) {
     li.append(main, ctl);
     localListEl.append(li);
   }
+  syncProviderBlock();
 }
 
 async function loadLocalProviders() {
@@ -395,17 +403,14 @@ async function saveLocalProgram(providerId, path) {
 
 loadLocalProviders();
 
-/* ── 额度查询凭据 ──
+/* ── 额度查询凭据（并入「供应商设置」同一块）──
    主 API Key 查不到余额的那几家（OpenAI Admin Key、xAI Management Key + Team ID、火山 AK/SK）
    在这里单独配。后端只返回用户已经添加过的供应商，没添加的不出现。 */
-const credBlockEl = document.getElementById("stCredBlock");
-const credListEl = document.getElementById("stCredList");
-const credStatusEl = document.getElementById("stCredStatus");
 
 function setCredStatus(text, cls = "") {
-  if (!credStatusEl) return;
-  credStatusEl.textContent = text;
-  credStatusEl.className = "st-status" + (cls ? " " + cls : "");
+  if (!localStatusEl) return;
+  localStatusEl.textContent = text;
+  localStatusEl.className = "st-status" + (cls ? " " + cls : "");
 }
 
 async function saveQueryCredential(providerId, keyId, value, btn) {
@@ -422,7 +427,7 @@ async function saveQueryCredential(providerId, keyId, value, btn) {
     );
     setCredStatus(value ? "已保存" : "已清除", "ok");
     window.setTimeout(() => {
-      if (credStatusEl && /^已/.test(credStatusEl.textContent)) setCredStatus("");
+      if (localStatusEl && /^已/.test(localStatusEl.textContent)) setCredStatus("");
     }, 2400);
     await loadQueryCredentials();
   } catch (error) {
@@ -433,19 +438,15 @@ async function saveQueryCredential(providerId, keyId, value, btn) {
 }
 
 function renderQueryCredentials(providers) {
-  if (!credBlockEl || !credListEl) return;
+  if (!localListEl) return;
   const rows = [];
   for (const p of providers || []) for (const k of p.keys || []) rows.push({ p, k });
-  if (!rows.length) {
-    credBlockEl.hidden = true;
-    return;
-  }
-  credBlockEl.hidden = false;
-  credListEl.innerHTML = "";
+  clearProviderRows("cred");
 
   for (const { p, k } of rows) {
     const li = document.createElement("li");
     li.className = "st-item";
+    li.dataset.kind = "cred";
 
     const main = document.createElement("div");
     main.className = "st-item-main";
@@ -484,21 +485,51 @@ function renderQueryCredentials(providers) {
     }
 
     li.append(main, ctl);
-    credListEl.append(li);
+    localListEl.append(li);
   }
+  syncProviderBlock();
 }
 
 async function loadQueryCredentials() {
-  if (!credBlockEl) return;
+  if (!localListEl) return;
   try {
     const data = await apiFetch("api/query-credentials", {}, 15000);
-    renderQueryCredentials(data?.providers || []);
+    const providers = data?.providers || [];
+    credSig = credSignature(providers);
+    renderQueryCredentials(providers);
   } catch {
-    /* 读不到就先不显示这一块，不打扰界面设置那边 */
+    /* 读不到就先不显示这一部分，不打扰界面设置那边 */
   }
 }
 
+/* 跟供应商配置走：宿主里增删供应商或改了凭据，这里最多 4 秒跟着变。
+   只比指纹，指纹没变就不重画；万一输入框里还写着没保存的内容，也不去动它。 */
+let credSig = null;
+function credSignature(providers) {
+  return (providers || [])
+    .map((p) => p.id + ":" + (p.keys || []).map((k) => k.id + (k.configured ? "1" : "0")).join(","))
+    .join("|");
+}
+
 loadQueryCredentials();
+
+async function pollQueryCredentials() {
+  if (!localListEl || document.hidden) return;
+  try {
+    const data = await apiFetch("api/query-credentials", {}, 15000);
+    const providers = data?.providers || [];
+    const sig = credSignature(providers);
+    if (sig === credSig) return;
+    const typing = [...localListEl.querySelectorAll("input")].some((i) => i.value.trim());
+    if (typing) return;
+    credSig = sig;
+    renderQueryCredentials(providers);
+  } catch {
+    /* 轮询失败就算了，下一轮再试 */
+  }
+}
+
+window.setInterval(pollQueryCredentials, 4000);
 
 /* ── 关于：版本、检查更新与源码仓库 ── */
 const GITHUB_URL = "https://github.com/youyongdemao";
