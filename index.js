@@ -17,6 +17,7 @@ import {
   fetchLedger,
   resolveSessionId,
   baseName,
+  estPromptTokens,
 } from "./lib/host-data.js";
 import { missInputOf } from "./lib/usage-parser.js";
 
@@ -627,6 +628,7 @@ export default defineApp(async (sdk) => {
                 percent: num(context.contextUsage?.percent),
                 compactThreshold: num(context.compactThreshold),
                 window: num(context.model?.contextWindow),
+                systemPromptTokens: estPromptTokens(context.systemPrompt),
               }
             : null,
         });
