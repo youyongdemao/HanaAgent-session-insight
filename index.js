@@ -451,6 +451,7 @@ export default defineApp(async (sdk) => {
               id: k.id,
               label: k.label,
               secret: k.secret === true,
+              desc: k.desc || q.via || "",
               configured: String(cfg?.[k.id] || "").trim().length > 0,
             })),
           });

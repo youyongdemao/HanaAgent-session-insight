@@ -455,7 +455,7 @@ function renderQueryCredentials(providers) {
     title.textContent = p.name + " · " + k.label;
     const desc = document.createElement("div");
     desc.className = "st-item-desc";
-    desc.textContent = k.configured ? "已配置" : (p.via || "未配置");
+    desc.textContent = k.configured ? "已配置" : (k.desc || p.via || "未配置");
     main.append(title, desc);
 
     const ctl = document.createElement("div");
