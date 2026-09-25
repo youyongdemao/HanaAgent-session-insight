@@ -365,6 +365,22 @@ export default defineApp(async (sdk) => {
         ref = sessions[0]?.sessionId ?? null;
         if (!ref) return c.json({ error: "no sessions found" }, 404);
       }
+      // 刚落盘的新会话：账本里还没有它的用量，会话列表缓存（15s）也还没收录，
+      // 常规路径要先两轮 resolveSessionId、再并发三个 RPC，前端 4s 就超时了。
+      // 20 秒内的新会话直接回空壳，让面板先显示 0，下一轮拿到真实数据。
+      if (isSessionFileName(ref)) {
+        const m = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z_/.exec(String(ref));
+        const born = m ? Date.parse(`${m[1]}T${m[2]}:${m[3]}:${m[4]}.${m[5]}Z`) : NaN;
+        if (Number.isFinite(born) && Date.now() - born < 20000) {
+          const shell = buildSessionStats([], null);
+          shell.file = baseName(ref);
+          shell.sessionId = null;
+          shell.title = null;
+          shell.source = "pending";
+          shell.pending = true;
+          return c.json(shell);
+        }
+      }
       try {
         let sessionId = await resolveSessionId(sdk, ref);
         // 新建会话刚建好时，会话列表的 15 秒缓存里还没有它，照缓存查必然落空：绕开缓存再查一次。
