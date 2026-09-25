@@ -15,7 +15,7 @@ node scripts/check-providers.mjs --verify   # 真打各家接口，报告哪些�
 - **查到**：接口活着，返回了余额或配额数字
 - **未查到**：再分 `reachable=true`（官方有门路，得修配置或改接口路径）和 `reachable=false`（官方本来就没有）
 
-## 当前门路（2026-09-23 核对）
+## 当前门路（2026-09-25 核对）
 
 | 供应商 | 门路 | 鉴权 | 备注 |
 |---|---|---|---|
@@ -31,6 +31,24 @@ node scripts/check-providers.mjs --verify   # 真打各家接口，报告哪些�
 | agnes | 无 | — | 全模态免费额度，无余额概念 |
 | xai-oauth | 无公开接口 | — | Grok 订阅额度只在网页可见；xAI 文档只给 rate limits 说明与控制台入口 |
 | ollama / freetoken | 无 | — | 本地部署 |
+
+### 2026-09-25 按官方模型目录（model-catalog，33 家）对齐时补入的 21 家
+
+这些家的 `reachable` 目前一律为 `false`：**官方有没有接口**和**插件能不能查**是两件事，插件还没接过它们的查询，标 `true` 只会让界面亮起红灯、却给出一个填了也没用的输入框。
+
+| 供应商 | 门路 | 鉴权 | 备注 |
+|---|---|---|---|
+| stepfun（阶跃星辰） | `GET https://api.stepfun.com/v1/accounts` | api_key | 官方文档齐备，**最容易接的一家**；返回 balance / total_cash_balance / total_voucher_balance |
+| siliconflow（硅基流动） | `GET /v1/user/info` | api_key | 社区长期在用，**官方 API 文档未收录该条目**，接入时来源标「社区验证」 |
+| openrouter | `GET /api/v1/credits` | 管理密钥 | 唯一直接返回 total_credits / total_usage 的；普通推理 key 会 403 |
+| anthropic | 无余额；Admin API `GET /v1/organizations/usage_report/messages` | Admin Key | 报的是历史用量与成本，不是预付余额 |
+| mistral | 无余额；Admin API `GET /v1/admin/usage` | Admin Key | 同上，报表非余额 |
+| fireworks | `GET /v1/accounts/{account_id}/billing/summary` | 账户级 token | 消费汇总，非余额；需 account_id |
+| hunyuan（腾讯混元） | 腾讯云 `DescribeAccountBalance` | TC3-HMAC-SHA256（SecretId/Key） | **云账户级**，细分不到混元 |
+| baidu-cloud（百度千帆） | `POST /v1/finance/cash/balance`（billing.baidubce.com） | BCE 签名 AK/SK | **云账户级**，千帆无独立余额接口 |
+| volcengine（火山方舟） | 费用中心 `QueryBalanceAcct` | Signature V4 AK/SK | **云账户级**；编程版用量走 AgentPlan 的 `GetAFPUsage`，另一条通道 |
+| dashscope（阿里云百炼） | 阿里云 BSS `QueryAccountBalance` | RPC 签名 AK/SK | **云账户级**，跟百炼免费额度不是一回事 |
+| dashscope-coding / dashscope-token-plan / kimi-coding / opencode-go / modelscope / groq / together / perplexity / baichuan / infini | 无公开接口 | — | 套餐类与免费额度类：用量只在控制台或 CLI（Kimi 是 `/usage`）看 |
 
 ## 约定
 
