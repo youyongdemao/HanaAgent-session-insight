@@ -2,6 +2,7 @@
 // 数据源全部走宿主公开 API：session:list / session:context / usage:list / provider:credentials
 import { dirname, join } from "node:path";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
 import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
@@ -34,6 +35,18 @@ const missTokensOf = missInputOf;
  *  前端的会话引用就是它，用来区分「根本不存在的会话」和「还没落盘的新会话」。 */
 const SESSION_FILE_RE = /^\d{4}-\d{2}-\d{2}T[\d:.\-]+Z_[0-9a-f\-]+\.jsonl$/i;
 const isSessionFileName = (ref) => SESSION_FILE_RE.test(String(ref ?? ""));
+
+/** /api/stats 慢路径画像：只在总耗时超过阈值时，把各阶段耗时写一行进 diag 日志。
+ *  纯观测，不改任何返回；直写文件而不走 diagLog，免得把面板的「日志」区刷满。 */
+function logSlowStats(sdk, totalMs, marks) {
+  try {
+    const parts = Object.entries(marks).map(([k, v]) => `${k}=${v}ms`).join(" ");
+    appendFileSync(
+      join(sdk.dataDir, "session-insight-diag.log"),
+      `[${new Date().toISOString()}] stats 慢路径｜总 ${totalMs}ms｜${parts}\n`
+    );
+  } catch {}
+}
 
 function summarizeUsage(entries) {
   let totalTokens = 0;
@@ -386,10 +399,21 @@ export default defineApp(async (sdk) => {
           return c.json(shell);
         }
       }
+      // 分阶段计时：只用于慢路径画像，不影响任何返回值
+      const _t0 = Date.now();
+      const _st = {};
+      const _step = async (key, fn) => {
+        const t = Date.now();
+        try {
+          return await fn();
+        } finally {
+          _st[key] = Date.now() - t;
+        }
+      };
       try {
-        let sessionId = await resolveSessionId(sdk, ref);
+        let sessionId = await _step("resolve", () => resolveSessionId(sdk, ref));
         // 新建会话刚建好时，会话列表的 15 秒缓存里还没有它，照缓存查必然落空：绕开缓存再查一次。
-        if (!sessionId) sessionId = await resolveSessionId(sdk, ref, { fresh: true });
+        if (!sessionId) sessionId = await _step("resolveFresh", () => resolveSessionId(sdk, ref, { fresh: true }));
         // 还是没有：新会话在第一轮之前根本没有会话文件，这是「还没有用量」，不是请求出错。
         // 回一个空壳让面板显示 0，别弹红色的请求失败提示。非会话文件名的引用仍然按未知会话处理。
         if (!sessionId && isSessionFileName(ref)) {
@@ -403,17 +427,19 @@ export default defineApp(async (sdk) => {
         }
         if (!sessionId) return c.json({ error: `unknown session: ${ref}` }, 404);
         const [entries, context, sessions] = await Promise.all([
-          fetchSessionUsage(sdk, sessionId, c.req.query("fast") === "1" ? { limit: 1000, ttlMs: 1200 } : undefined),
-          sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null),
-          listSessionsCached(sdk).catch(() => []),
+          _step("usage", () => fetchSessionUsage(sdk, sessionId, c.req.query("fast") === "1" ? { limit: 1000, ttlMs: 1200 } : undefined)),
+          _step("context", () => sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null)),
+          _step("sessions", () => listSessionsCached(sdk).catch(() => [])),
         ]);
         const hit = sessions.find((s) => s.sessionId === sessionId);
         let stats = buildSessionStats(entries, context);
         // 默认走宿主账本；账本窗口（本机目前约二十多天）以外的会话回退到解析会话文件。
         if (entries.length === 0) {
-          const fromFile = await buildStatsFromSessionFile(sdk, hit?.path ?? null);
+          const fromFile = await _step("file", () => buildStatsFromSessionFile(sdk, hit?.path ?? null));
           if (fromFile) stats = fromFile;
         }
+        const _total = Date.now() - _t0;
+        if (_total > 2000) logSlowStats(sdk, _total, _st);
         stats.file = hit?.name ?? (baseName(context?.sessionPath ?? null) || ref);
         stats.sessionId = sessionId;
         stats.title = hit?.title ?? null;
