@@ -45,7 +45,7 @@ const srv = http.createServer((req, res) => {
     if (api === "stats") return json(STATS);
     if (api === "balance") return json(BALANCE);
     if (api === "pricing") return json({});
-    if (api === "ledger-stats") return json({ ok: true, totalCost: 94.25, entries: [], providers: [], days: { "2026-09-26": { tokens: 6430000000, cost: 94.25, calls: 2424, hitRate: 0.99 } } });
+    if (api === "ledger-stats") return json({ ok: true, totalCost: 94.25, entries: [], providers: [], days: { "2026-09-26": { tokens: 6430000000, cost: 94.25, calls: 2424, hitRate: 0.99 } }, subsystems: { session: { tokens: 4210000000, calls: 1600, cost: 60.1 }, utility: { tokens: 1180000000, calls: 520, cost: 18.4 }, memory: { tokens: 620000000, calls: 210, cost: 9.2 }, automation: { tokens: 380000000, calls: 84, cost: 5.1 }, vision: { tokens: 0, calls: 0, cost: 0 } }, timeBuckets: { hour: Array(256).fill(0), day: Array(256).fill(0), week: Array(256).fill(0) }, tokenBuckets: { hour: Array(256).fill(0), day: Array(256).fill(0), week: Array(256).fill(0) } });
     if (api === "sessions") return json({ sessions: [{ name: "a.jsonl", title: "会话 A", model: "deepseek-v3.2", size: 1, mtime: Date.now(), turns: 40 }], count: 1 });
     if (api === "active") return json({ file: "a.jsonl" });
     if (api === "rules") return json({});
