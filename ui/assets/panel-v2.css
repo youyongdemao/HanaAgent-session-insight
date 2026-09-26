@@ -983,15 +983,17 @@ body:not([data-surface="widget"]) #view-api .panel.si-release,body:not([data-sur
 .w-detail-overlay .model-metric-card.model-donut-center .model-donut-split{flex:1;align-content:center;justify-items:center}
 .w-detail-overlay .model-donut-main svg{width:170px!important;max-width:170px!important;height:170px!important;display:block}
 .model-donut-legend{display:grid;gap:8px;min-width:0}
-/* 左边「模型 Token 消耗」行数一多就把整行拉高，右边这张卡会被动变高；
-   图例改成按剩余高度分摊，别让空白全堆在下面。条目少时也自然铺开。 */
-.w-detail-overlay .model-metric-card.model-donut-center .model-donut-legend{align-content:center;display:flex;flex-direction:column;justify-content:space-between;height:100%}
+/* 左边「模型 Token 消耗」行数一多就把整行拉高，右边这张卡会被动变高。
+   图例整块在剩余高度里居中：条目多时上下留白均分，条目少时也不会被推到卡片两端
+   （此前用 space-between，两三个图例会一个贴顶一个贴底）。 */
+.w-detail-overlay .model-metric-card.model-donut-center .model-donut-legend{align-content:center;display:flex;flex-direction:column;justify-content:center;height:100%}
 /* 空白超过阈值时改成上下结构：甜甜圈在上、图例在下并纵向铺开，把高度吃掉 */
 .w-detail-overlay .model-metric-card.model-donut-center.is-tall .model-donut-split{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:22px;align-content:stretch}
 .w-detail-overlay .model-metric-card.model-donut-center.is-tall .model-donut-main{margin:0 auto}
 /* 图例在上下结构里铺满卡宽（单栏）：条目是「色块 + 名称 + 数值右对齐」三列，
-   铺满后名称靠左、数值靠右，拉开的那段距离本身就是对比；挤成两栏反而看不见。 */
-.w-detail-overlay .model-metric-card.model-donut-center.is-tall .model-donut-legend{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-content:space-between;width:100%;height:100%}
+   铺满后名称靠左、数值靠右，拉开的那段距离本身就是对比；挤成两栏反而看不见。
+   纵向同样居中，不随剩余高度把条目拉开。 */
+.w-detail-overlay .model-metric-card.model-donut-center.is-tall .model-donut-legend{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-content:center;width:100%;height:100%}
 .model-donut-legend span{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11px;color:var(--text-light)}
 .model-donut-legend span i{width:10px;height:10px;border-radius:3px}
 .model-donut-legend span em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
