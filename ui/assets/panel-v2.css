@@ -571,6 +571,8 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-num
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance{padding-left:clamp(4px,1vw,16px)}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-num{font-size:clamp(56px,6.4vw,82px);filter:drop-shadow(0 0 2px color-mix(in srgb,var(--si-green) 58%,transparent)) drop-shadow(0 5px 30px color-mix(in srgb,var(--si-green) 34%,transparent))}
 body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-num.low,.ah-num.low{color:var(--si-red-soft);filter:drop-shadow(0 0 18px var(--si-red-soft-glow)) drop-shadow(0 5px 30px color-mix(in srgb,var(--si-red-soft) 30%,transparent))}
+/* 总余额无数据时不显示 74px 的绿色发光短横：「–」占位符在 hero 字号下会被放大成一根发光绿杠，看着像故障或进度条。降成中性灰、去辉光、缩到说明文字的量级。 */
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-num.empty,.ah-num.empty{font-size:clamp(22px,2.4vw,30px);font-weight:400;color:var(--text-muted);letter-spacing:0;filter:none;opacity:1}
 @media(max-width:720px){body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:1fr;gap:22px}.hero-pricing .api-hero .ah-block-balance{padding-left:0}}
 
 /* 独立阈值提醒卡 */
@@ -1616,3 +1618,10 @@ body[data-surface="widget"]{min-width:var(--si-widget-min,320px)}
    于是它和下面那张大卡之间是 0px，比别处都紧。这里补上，最后一块不算。 */
 .w-detail-overlay #wDetailBody>.w-detail-grid{margin-bottom:12px}
 .w-detail-overlay #wDetailBody>.w-detail-grid:last-child{margin-bottom:0}
+
+/* ── 总消耗块两行数字（金额 / Token）视觉完全一致 ──
+   这一条必须留在文件最后：`.ah-block-cost .ah-num` 在文件里被多条同特异性的规则反复覆盖
+   （字号、颜色、透明度各有各的说法），只有靠“后写优先”才能把两行真正锁成一套。
+   改动前实测：金额 500 字重 + 62% 灰 + 柔光 + 自身透明 .78；Token 400 字重 + 78% 灰 + 无柔光。
+   弱化交给父级 .ah-block-cost 的 opacity 统一处理，子级不再各自叠加。 */
+body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-num,body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-token-num{font-size:clamp(34px,3.8vw,52px);font-weight:500;letter-spacing:-.045em;color:color-mix(in srgb,var(--text-light) 78%,var(--text-muted));text-shadow:none;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--accent) 42%,transparent)) drop-shadow(0 4px 28px var(--si-glow));opacity:1}

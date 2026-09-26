@@ -414,8 +414,8 @@ function renderApiOverview(){
     return '<span class="bl-row"><i></i>'+esc(nm)+'<b>'+esc(txt)+'</b></span>';
   }).filter(Boolean);
   const balanceRows=breakRows.concat(others,quotaRows,subRows);const balanceEl=document.getElementById("tBalSub");
-  if(primary){const sym=primary==="CNY"?"¥":"$";const balNum=byCur[primary];const w=Number(balNum);const tBalEl=document.getElementById("tBal");if(tBalEl)tBalEl.textContent=sym+balNum.toFixed(2);if(tBalEl)tBalEl.classList.toggle("low",primary==="CNY"&&Number.isFinite(w)&&w<10);if(balanceEl)balanceEl.innerHTML=balanceRows.join("")||'<span class="bl-row"><i></i>暂无可统计余额</span>';}
-  else{set("#tBal","–");if(balanceEl)balanceEl.innerHTML=(quotaRows.concat(subRows).join(""))||'<span class="bl-row"><i></i>无可统计余额</span>';}
+  if(primary){const sym=primary==="CNY"?"¥":"$";const balNum=byCur[primary];const w=Number(balNum);const tBalEl=document.getElementById("tBal");if(tBalEl){tBalEl.textContent=sym+balNum.toFixed(2);tBalEl.classList.remove("empty");}if(tBalEl)tBalEl.classList.toggle("low",primary==="CNY"&&Number.isFinite(w)&&w<10);if(balanceEl)balanceEl.innerHTML=balanceRows.join("")||'<span class="bl-row"><i></i>暂无可统计余额</span>';}
+  else{const tb=document.getElementById("tBal");if(tb){tb.textContent="–";tb.classList.add("empty");}if(balanceEl)balanceEl.innerHTML=(quotaRows.concat(subRows).join(""))||'<span class="bl-row"><i></i>无可统计余额</span>';}
   const balTip=bal.filter(b=>b.status==="ok"&&b.kind==="balance"&&b.total!=null).map(b=>b.name+" "+b.summary).join(" · ");
   const tCost=document.getElementById("tCost");if(tCost&&balTip)tCost.title=balTip;
   renderPricingTable();
