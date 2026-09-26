@@ -374,15 +374,21 @@ export default defineApp(async (sdk) => {
       }
     });
 
-    app.get("/api/stats", async (c) => {
+    async function computeStats(c) {
+      // 快通道（卡片上那三个数字每秒跟一次）只走账本，不碰上下文和会话列表：
+      // 那两步是本机实测最慢的宿主 RPC（context 最长量到过 28 秒），每秒一次的通道扛不住。
+      const fast = c.req.query("fast") === "1";
       // 与 v1 对齐：不带任何会话参数时，用最近（列表第一个）那个会话
       let ref =
         c.req.query("session") ?? c.req.query("file") ?? c.req.query("sessionId") ?? null;
       if (!ref) {
         const sessions = await listSessionsCached(sdk).catch(() => []);
         ref = sessions[0]?.sessionId ?? null;
-        if (!ref) return c.json({ error: "no sessions found" }, 404);
+        if (!ref) return { status: 404, body: { error: "no sessions found" } };
       }
+      // 前端已经知道这个会话的 sessionId 时直接用它（它自己就是从宿主那里拿到的），
+      // 省掉一次「文件名 → sessionId」的全量列会话（实测 0.5～2.5 秒）。
+      const knownId = /^sess_/.test(String(c.req.query("session") ?? "")) ? String(c.req.query("session")) : null;
       // 刚落盘的新会话：账本里还没有它的用量，会话列表缓存（15s）也还没收录，
       // 常规路径要先两轮 resolveSessionId、再并发三个 RPC，前端 4s 就超时了。
       // 20 秒内的新会话直接回空壳，让面板先显示 0，下一轮拿到真实数据。
@@ -396,7 +402,7 @@ export default defineApp(async (sdk) => {
           shell.title = null;
           shell.source = "pending";
           shell.pending = true;
-          return c.json(shell);
+          return { status: 200, body: shell };
         }
       }
       // 分阶段计时：只用于慢路径画像，不影响任何返回值
@@ -411,7 +417,7 @@ export default defineApp(async (sdk) => {
         }
       };
       try {
-        let sessionId = await _step("resolve", () => resolveSessionId(sdk, ref));
+        let sessionId = knownId ?? (await _step("resolve", () => resolveSessionId(sdk, ref)));
         // 新建会话刚建好时，会话列表的 15 秒缓存里还没有它，照缓存查必然落空：绕开缓存再查一次。
         if (!sessionId) sessionId = await _step("resolveFresh", () => resolveSessionId(sdk, ref, { fresh: true }));
         // 还是没有：新会话在第一轮之前根本没有会话文件，这是「还没有用量」，不是请求出错。
@@ -423,14 +429,27 @@ export default defineApp(async (sdk) => {
           shell.title = null;
           shell.source = "pending";
           shell.pending = true;
-          return c.json(shell);
+          return { status: 200, body: shell };
         }
-        if (!sessionId) return c.json({ error: `unknown session: ${ref}` }, 404);
-        const [entries, context, sessions] = await Promise.all([
-          _step("usage", () => fetchSessionUsage(sdk, sessionId, c.req.query("fast") === "1" ? { limit: 1000, ttlMs: 1200 } : undefined)),
-          _step("context", () => sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null)),
-          _step("sessions", () => listSessionsCached(sdk, { ttlMs: 120000 }).catch(() => [])),
-        ]);
+        if (!sessionId) return { status: 404, body: { error: `unknown session: ${ref}` } };
+        let entries;
+        let context = null;
+        let sessions = [];
+        if (fast) {
+          // 快通道只做一次用量查询，其余一步都不走。
+          entries = await _step("usage", () => fetchSessionUsage(sdk, sessionId, { limit: 1000, ttlMs: 1200 }));
+        } else {
+          [entries, context, sessions] = await Promise.all([
+            _step("usage", () => fetchSessionUsage(sdk, sessionId)),
+            _step("context", () => sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null)),
+            _step("sessions", () => listSessionsCached(sdk, { ttlMs: 120000 }).catch(() => [])),
+          ]);
+        }
+        // 快通道没有账本记录时不当成「0」回给前端：有的会话在账本窗口之外，靠解析会话文件才有数，
+        // 这里回 0 会让卡片上的数字每秒在真值和 0 之间来回跳。回一句「没新东西」，前端保留原值。
+        if (fast && entries.length === 0) {
+          return { status: 200, body: { error: "no ledger entries", file: baseName(ref) } };
+        }
         const hit = sessions.find((s) => s.sessionId === sessionId);
         let stats = buildSessionStats(entries, context);
         // 默认走宿主账本；账本窗口（本机目前约二十多天）以外的会话回退到解析会话文件。
@@ -440,14 +459,29 @@ export default defineApp(async (sdk) => {
         }
         const _total = Date.now() - _t0;
         if (_total > 2000) logSlowStats(sdk, _total, _st);
-        stats.file = hit?.name ?? (baseName(context?.sessionPath ?? null) || ref);
+        stats.file = hit?.name ?? (baseName(context?.sessionPath ?? null) || baseName(ref));
         stats.sessionId = sessionId;
         stats.title = hit?.title ?? null;
         stats.source = stats.source ?? "ledger";
-        return c.json(stats);
+        return { status: 200, body: stats };
       } catch (error) {
-        return c.json({ error: String(error?.message ?? error) }, 500);
+        return { status: 500, body: { error: String(error?.message ?? error) } };
       }
+    }
+
+    // 同一份会话数据，同一时刻只让一个请求真去问宿主。
+    // 卡片 1 秒一次、页面 10 秒一次、点刷新随时插进来，重复问只会把本来就慢的宿主 RPC 排得更长。
+    // 只做「在途合并」：请求一落地就从表里删掉，不缓存结果，所以不存在数据变旧的问题。
+    const statsInflight = new Map();
+    app.get("/api/stats", async (c) => {
+      const key = `${c.req.query("fast") === "1" ? "fast" : "full"}|${c.req.query("session") ?? c.req.query("file") ?? c.req.query("sessionId") ?? ""}`;
+      let pending = statsInflight.get(key);
+      if (!pending) {
+        pending = computeStats(c).finally(() => statsInflight.delete(key));
+        statsInflight.set(key, pending);
+      }
+      const { status, body } = await pending;
+      return c.json(body, status);
     });
 
     // ── 额度查询凭据 ────────────────────────────────

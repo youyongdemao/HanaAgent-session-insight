@@ -43,13 +43,25 @@ const surface=root?.dataset.surface||"page";
 /* 出错时把请求路径与错误原文显在左下角，便于定位；无错时自动移除。 */
 function siDiag(msg){try{let el=document.getElementById("si-diag");if(!msg){if(el)el.remove();return;}if(!el){el=document.createElement("div");el.id="si-diag";el.style.cssText="position:fixed;left:8px;bottom:8px;z-index:9999;background:rgba(196,64,64,.94);color:#fff;font:11px/1.5 ui-monospace,Consolas,monospace;padding:6px 9px;border-radius:8px;max-width:78%;white-space:pre-wrap;pointer-events:none";document.body.appendChild(el);}el.textContent=msg;}catch{}}
 const diagFails=new Map();
-let diagFailAt=0;let surfaceExpired=false;/* 宿主签发的 App 视图会话（app surface session，默认 12 小时）到期后，这个 iframe 之后所有 /api/apps/... 请求都会被宿主直接拒成 403；token 由宿主签发、iframe 自己续不了期，只能等宿主重新挂载视图。置位后停止一切重试，省得每秒刷屏。 */
+let diagFailAt=0;let surfaceExpired=false;
+/* 宿主卡住时，每秒一条的通道自己后退。不后退的话，一次几十秒的宿主停顿会被放大成上百条超时
+   （实测一分钟 158 条），而每条超时都要再走一遍同样的慢路径，越堵越堵。
+   任何一次成功就立刻恢复。 */
+let tickPauseUntil=0,tickBackoff=0;
+/* 宿主卡住时，面板自己后退（向后加倍，封顶 60 秒），缓过来立刻恢复。不后退的话，一次几十秒的宿主停顿会被放大成上百条超时
+   （实测一分钟 158 条），而每条超时都要再走一遍同样的慢路径，越堵越堵。 */
+const TICK_BACKOFF_MAX=60000;
+/* 这些接口慢是外面网络的事（余额要打供应商、计费库要下 GitHub），不代表宿主卡了：不参与上面的后退。 */
+const NETWORK_API=/^\/api\/(balance|pricing|update)/;
+function tickPaused(){return Date.now()<tickPauseUntil;}
+function noteTickError(error){if(!/signal timed out|timed out|timeout|abort/i.test(String(error?.message||error)))return;tickBackoff=Math.min(tickBackoff?tickBackoff*2:10000,TICK_BACKOFF_MAX);tickPauseUntil=Date.now()+tickBackoff;}
+function noteTickOk(){tickPauseUntil=0;tickBackoff=0;}/* 宿主签发的 App 视图会话（app surface session，默认 12 小时）到期后，这个 iframe 之后所有 /api/apps/... 请求都会被宿主直接拒成 403；token 由宿主签发、iframe 自己续不了期，只能等宿主重新挂载视图。置位后停止一切重试，省得每秒刷屏。 */
 function diagClock(){const d=new Date();return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,"0")).join(":");}
 function diagShort(error){const s=String(error?.message||error||"未知错误");/* 同一个 AbortSignal.timeout 超时，Chrome 的报错文案不统一：可能是 "signal timed out"，也可能是 "The user aborted a request."（底层 abort 的文案）。两种都归成「超时」，不要把它原样当业务错误显示出来。 */if(/signal timed out|timed out|timeout|abort/i.test(s))return "超时";return s.length>30?s.slice(0,30)+"…":s;}
 /* 失败详情写日志，弹窗只留一句短话 */
 async function reportDiag(path,error,ms,attempt){try{await pluginApiFetch("api/diag-report",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({path,error:String(error?.message||error),ms,attempt}),signal:AbortSignal.timeout(3000)});}catch{}}
-function diagFail(path,error,t0){const ms=t0?Date.now()-t0:0;const expired=/HTTP (401|403)/.exec(String(error?.message||error));if(expired){if(!surfaceExpired){surfaceExpired=true;diagFails.clear();siDiag("视图凭证已过期\n"+(surface==="widget"?"重新打开这张卡片即可恢复":"重新打开本页即可恢复"));}return;}const n=(diagFails.get(path)||0)+1;diagFails.set(path,n);diagFailAt=Date.now();siDiag(`[${diagClock()}] ${path} ${diagShort(error)}${n>1?" · 第"+n+"次":""} · 详见日志`);reportDiag(path,error,ms,n);}
-async function fetchJson(path,timeoutMs=8000){if(surfaceExpired)throw new Error("surface session expired");const t0=Date.now();try{const res=await hana.api.fetch(path,{signal:AbortSignal.timeout(timeoutMs)});if(!res.ok)throw new Error("HTTP "+res.status);const out=await res.json();if(Date.now()-diagFailAt>4000)siDiag("");diagFails.delete(path);return out;}catch(error){diagFail(path,error,t0);throw error;}}
+function diagFail(path,error,t0){const ms=t0?Date.now()-t0:0;const expired=/HTTP (401|403)/.exec(String(error?.message||error));if(expired){if(!surfaceExpired){surfaceExpired=true;diagFails.clear();siDiag("视图凭证已过期\n"+(surface==="widget"?"重新打开这张卡片即可恢复":"重新打开本页即可恢复"));}return;}const n=(diagFails.get(path)||0)+1;diagFails.set(path,n);diagFailAt=Date.now();/* 偶发抽一次不弹：宿主忙起来随手就是几秒，弹出来只会让人以为坏了。连着第三次才提示。 */if(n>=3)siDiag(`[${diagClock()}] ${path} ${diagShort(error)}${n>3?" · 第"+n+"次":""} · 详见日志`);/* 上报也限一下流量：卡的时候每条失败都往日志写，等于又给宿主加一份排队。 */if(n===1||n%5===0)reportDiag(path,error,ms,n);}
+async function fetchJson(path,timeoutMs=8000){if(surfaceExpired)throw new Error("surface session expired");/* 宿主正卡着（见 noteTickError）：这一段干脆不发新请求，等它缓过来。 */if(tickPaused()&&!NETWORK_API.test(path)){const e=new Error("host busy, request skipped");e.siSkipDiag=true;throw e;}const t0=Date.now();try{const res=await hana.api.fetch(path,{signal:AbortSignal.timeout(timeoutMs)});if(!res.ok)throw new Error("HTTP "+res.status);const out=await res.json();if(Date.now()-diagFailAt>4000)siDiag("");diagFails.delete(path);/* 只有被保护的那两条通道报平安才解后退：只读两个文件的 build-stamp 能成功，说明不了宿主已经缓过来。 */if(/^\/api\/(stats|hero-stats)/.test(path))noteTickOk();return out;}catch(error){if(!error?.siSkipDiag){if(!NETWORK_API.test(path))noteTickError(error);diagFail(path,error,t0);}throw error;}}
 
 /* 主题同步（与 v1 一致） */
 function applyHostTheme(t){const raw=resolveThemeIntent(t);if(!raw)return false;if(document.documentElement.dataset.theme!==raw)document.documentElement.dataset.theme=raw;if(document.body.dataset.hanaTheme!==raw)document.body.dataset.hanaTheme=raw;const tc=document.getElementById("hana-theme-css")||document.querySelector('link[href*="/api/plugins/theme.css"]');if(tc){try{const u=new URL(tc.href,window.location.href);if(u.searchParams.get("theme")!==raw){u.searchParams.set("theme",raw);tc.addEventListener("load",syncComputedColorMode,{once:true});tc.href=u.toString();}}catch{}}requestAnimationFrame(syncComputedColorMode);return true;}
@@ -77,7 +89,7 @@ initV2ActiveTracking();
         ③ 回到可见 / 拿到焦点 / pageshow 时立即补一次。 */
 let activeSessionWatchdogTimer=null,activeSessionWatchdogBusy=false,activeSessionRebindAt=0;
 async function pollActiveSession(){
-  if(activeSessionWatchdogBusy)return;
+  if(activeSessionWatchdogBusy||tickPaused())return;
   activeSessionWatchdogBusy=true;
   try{
     const a=await hanaV2.sessions.getActive();
@@ -87,7 +99,7 @@ async function pollActiveSession(){
       activeSessionFile=base;focusedFile=base;focusedEntryId=null;focusedFileFailUntil=0;
       if(surface==="widget")await loadWidget();
     }
-  }catch(e){diagFail("sessions.getActive(watchdog)",e);}
+  }catch(e){noteTickError(e);diagFail("sessions.getActive(watchdog)",e);}
   finally{activeSessionWatchdogBusy=false;}
 }
 function startActiveSessionWatchdog(){
@@ -864,10 +876,10 @@ let heroTickBusy=false;
 async function pollHeroStats(){
   // 不再看 document.hidden：宿主 iframe 可能一直报 hidden，那会把这个每秒通道自己捻死
   // （主轮询本来就没这个守卫）。只跳“总览不是当前页”那种确实没必要刷的情况。
-  if(heroTickBusy)return;
+  if(heroTickBusy||tickPaused())return;
   if(state.view!=="usage"||state.page!=="usage-overview")return;
   heroTickBusy=true;
-  try{applyHeroStats(await fetchJson("/api/hero-stats",4000));}catch{}finally{heroTickBusy=false;}
+  try{applyHeroStats(await fetchJson("/api/hero-stats",4000));noteTickOk();}catch(e){noteTickError(e);}finally{heroTickBusy=false;}
 }
 // ── 卡片的 token / 费用每秒跟一次（与 KPI 通道同一节奏）──
 // 只更新那几个数字，不重绘整张卡；数据走 /api/stats?fast=1（会话级用量，单会话只有几百条，
@@ -886,14 +898,19 @@ function applyWidgetTotals(st){
 }
 let wTotalsBusy=false;
 async function pollWidgetTotals(){
-  if(wTotalsBusy)return;
+  if(wTotalsBusy||tickPaused())return;
   wTotalsBusy=true;
   try{
     const f=activeSessionFile;
-    applyWidgetTotals(await fetchJson(f?"/api/stats?fast=1&file="+encodeURIComponent(f):"/api/stats?fast=1",4000));
+    /* 已经知道这个会话的 sessionId 就带上（它本来就是从宿主那里拿的）：服务端能省掉
+       一次「文件名 → sessionId」的全量列会话，那一步实测 0.5～2.5 秒。 */
+    const sid=state.stats&&state.stats.file===f?state.stats.sessionId:null;
+    const q=(f?"/api/stats?fast=1&file="+encodeURIComponent(f):"/api/stats?fast=1")+(sid?"&session="+encodeURIComponent(sid):"");
+    applyWidgetTotals(await fetchJson(q,4000));
+    noteTickOk();
     // 数字变了，内容需求也跟着变（位数多的数字要更宽），重新判一次升/叠放
     syncWidgetGap();
-  }catch{}finally{wTotalsBusy=false;}
+  }catch(e){noteTickError(e);}finally{wTotalsBusy=false;}
 }
 // ── 升/叠放 + 间距：一律量成 px 写内联，过渡才生效 ──
 // 为什么不能在 CSS 里直接过渡：百分比 margin 的 computed 值不会随容器宽度变化，
