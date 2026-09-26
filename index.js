@@ -429,7 +429,7 @@ export default defineApp(async (sdk) => {
         const [entries, context, sessions] = await Promise.all([
           _step("usage", () => fetchSessionUsage(sdk, sessionId, c.req.query("fast") === "1" ? { limit: 1000, ttlMs: 1200 } : undefined)),
           _step("context", () => sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null)),
-          _step("sessions", () => listSessionsCached(sdk).catch(() => [])),
+          _step("sessions", () => listSessionsCached(sdk, { ttlMs: 120000 }).catch(() => [])),
         ]);
         const hit = sessions.find((s) => s.sessionId === sessionId);
         let stats = buildSessionStats(entries, context);
