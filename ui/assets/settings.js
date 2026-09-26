@@ -136,14 +136,6 @@ resetEl.addEventListener("click", async () => {
     wBlocks = wcfg.blocks || wBlocks;
     wOnSet = new Set(wcfg.on || []);
 
-    const pcfg = await apiFetch("api/panel-prefs", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    homeView = pcfg?.homeView === "api" ? "api" : "usage";
-    renderHomeView();
-
     dirty = false;
     render();
     renderWidgetTable();
@@ -169,16 +161,15 @@ let homeView = "usage";
 
 function renderHomeView() {
   if (!homeViewEl) return;
-  homeViewEl.querySelectorAll("[data-v]").forEach((b) => {
-    b.classList.toggle("active", b.dataset.v === homeView);
-  });
+  const picked = homeViewEl.querySelector('input[name="homeView"][value="' + homeView + '"]');
+  if (picked) picked.checked = true;
 }
 
-homeViewEl?.addEventListener("click", (e) => {
-  const b = e.target.closest("[data-v]");
-  if (!b || b.dataset.v === homeView) return;
-  homeView = b.dataset.v;
-  renderHomeView();
+// 点卡片由 label + radio 自己完成，这里只接状态变化
+homeViewEl?.addEventListener("change", (e) => {
+  const input = e.target.closest('input[name="homeView"]');
+  if (!input || input.value === homeView) return;
+  homeView = input.value;
   markDirty();
 });
 

@@ -24,7 +24,7 @@ const SDK_STUB = `export const hana = {
   external:{ open(){return true;} },
   api:{ fetch: (...a)=>fetch(...a) },
 };\n`;
-const SHIM_CSS = `:root{--text:#e6e8ea;--text-light:#cfd4d8;--text-muted:#8b9298;--bg-card:#1b1f22;--accent:#5b8def;--font-ui:system-ui,"Segoe UI",sans-serif;}\n`;
+const SHIM_CSS = `:root{--text:#e6e8ea;--text-light:#cfd4d8;--text-muted:#9aa1a8;--bg:#0f1113;--bg-card:#1b1f22;--accent:#5b8def;--accent-hover:#6f9bf2;--font-ui:system-ui,"Segoe UI",sans-serif;}\nbody{background:var(--bg);}\n`;
 const THEME_CSS = (() => {
   try {
     const base = "D:/AI/Hanako/artifacts/renderer";
@@ -122,7 +122,7 @@ async function ev(c, expression) {
   return r.result?.value;
 }
 
-const SETTINGS_VIEW = `(()=>{const s=document.getElementById('stHomeView');const a=s?s.querySelector('[data-v].active'):null;return {active:a?a.dataset.v:'none',saveDisabled:!!(document.getElementById('stSave')||{}).disabled,status:((document.getElementById('stStatus')||{}).textContent||'').trim()};})()`;
+const SETTINGS_VIEW = `(()=>{const s=document.getElementById('stHomeView');const r=s?s.querySelector('input[name="homeView"]:checked'):null;return {active:r?r.value:'none',saveDisabled:!!(document.getElementById('stSave')||{}).disabled,status:((document.getElementById('stStatus')||{}).textContent||'').trim()};})()`;
 const PANEL_VIEW = `(()=>{const tab=document.querySelector('.nav [data-view].active');const view=document.querySelector('.view.active');return {tab:tab?tab.dataset.view:'none',view:view?view.id:'none'};})()`;
 
 (async () => {
@@ -148,13 +148,12 @@ const PANEL_VIEW = `(()=>{const tab=document.querySelector('.nav [data-view].act
     const cdp = new CDP(ws);
     await cdp.send("Page.enable"); await cdp.send("Runtime.enable");
     await cdp.send("Emulation.setDeviceMetricsOverride", { width: 900, height: 1100, deviceScaleFactor: 1, mobile: false });
-
     const out = {};
     // 1) 设置页：默认值 + 改动 + 保存
     await cdp.send("Page.navigate", { url: "http://127.0.0.1:8821/settings.html" }); await sleep(2200);
     out.settingsBoot = await ev(cdp, SETTINGS_VIEW);
     out.settingsImport = await ev(cdp, `(async()=>{try{await import('/assets/settings.js');return 'ok';}catch(e){return 'ERR '+String(e&&e.message||e);}})()`);
-    out.clickApi = await ev(cdp, `(()=>{const b=document.querySelector('#stHomeView [data-v="api"]');if(!b)return 'missing';b.click();return 'ok';})()`);
+    out.clickApi = await ev(cdp, `(()=>{const i=document.querySelector('#stHomeView .st-form[data-v="api"] input');if(!i)return 'missing';i.click();return 'ok';})()`);
     await sleep(250);
     out.settingsAfterClick = await ev(cdp, SETTINGS_VIEW);
     await ev(cdp, `(()=>{const s=document.getElementById('stSave');if(s)s.click();return 'ok';})()`);
