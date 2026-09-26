@@ -1,8 +1,9 @@
-// probe-home-view.cjs —— 「工作台首页」设置回归探针
-// 场景：设置里把工作台首页选成「API 管理」，重新打开面板应直接落在 API 管理页。
+// probe-home-view.cjs —— 设置页「每块各自保存 / 恢复默认」与「工作台首页」回归探针
+// 场景：
+//   ① 本轮速览、实时用量各自有保存与恢复默认，互不牵连（改了一块不会点亮另一块）；
+//   ② 工作台首页只有保存，没有恢复默认；
+//   ③ 首页选成 API 管理后，打开工作台直接落在 API 管理页。
 // 用法：node scripts/probe-home-view.cjs
-//   本地 mock server + 无头 Chrome：先看设置页读写是否落到 /api/panel-prefs，
-//   再按保存后的值打开面板，验证落页。
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -16,15 +17,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const PREF = { homeView: "usage" };
 const POSTS = [];
+const LIVE_ITEMS = [{ id: "hit", label: "缓存命中率", group: "本轮", desc: "本轮请求的缓存命中比例" }];
+const WB = [
+  { id: "overview", label: "会话信息总览", group: null, desc: "上下文环与本会话总 Token" },
+  { id: "turnTokens", label: "当前轮 Token", group: "当前轮信息卡片", desc: "本轮的 Token 消耗总量" },
+  { id: "turnHit", label: "当前轮缓存命中", group: "当前轮信息卡片", desc: "本轮的缓存命中率" },
+];
 // 探针里没有真宿主：settings.js 顶部就会调 hana.ready()，一抛就整模块不执行。
 // 于是把 sdk.js 换成最小 shim，只验证设置页自己的读写逻辑。
-const SDK_STUB = `export const hana = {
-  ready(){}, 
-  resources:{ pick: async()=>({resources:[]}) },
-  external:{ open(){return true;} },
-  api:{ fetch: (...a)=>fetch(...a) },
-};\n`;
+const SDK_STUB = `export const hana = {\n  ready(){}, \n  resources:{ pick: async()=>({resources:[]}) },\n  external:{ open(){return true;} },\n  api:{ fetch: (...a)=>fetch(...a) },\n};\n`;
 const SHIM_CSS = `:root{--text:#e6e8ea;--text-light:#cfd4d8;--text-muted:#9aa1a8;--bg:#0f1113;--bg-card:#1b1f22;--accent:#5b8def;--accent-hover:#6f9bf2;--font-ui:system-ui,"Segoe UI",sans-serif;}\nbody{background:var(--bg);}\n`;
+
 const THEME_CSS = (() => {
   try {
     const base = "D:/AI/Hanako/artifacts/renderer";
@@ -45,7 +48,6 @@ function startServer(port) {
     const json = (o) => send("application/json", JSON.stringify(o));
     if (p === "/theme.css") return send("text/css", THEME_CSS);
     if (p === `/api/plugins/${ID}/page`) return send("text/html; charset=utf-8", PANEL_HTML);
-    // 设置页与其静态资源
     if (p === "/settings.html") {
       const html = fs.readFileSync(path.join(REPO, "ui", "settings.html"), "utf8")
         .replace("</head>", `<style>${SHIM_CSS}</style></head>`);
@@ -78,21 +80,35 @@ function startServer(port) {
     for (const pre of PREFIXES) if (p.startsWith(pre)) api = p.slice(pre.length);
     if (api !== null) {
       const readBody = (cb) => { let d = ""; req.on("data", (c) => (d += c)); req.on("end", () => cb(d)); };
+      const isPost = req.method === "POST";
       if (api === "panel-prefs") {
-        if (req.method === "POST") {
-          return readBody((d) => {
-            let body = null;
-            try { body = JSON.parse(d || "{}"); } catch {}
-            POSTS.push({ api, body });
-            PREF.homeView = body && body.homeView === "api" ? "api" : "usage";
-            json({ ok: true, homeView: PREF.homeView });
-          });
-        }
-        POSTS.push({ api, body: null });
+        if (isPost) return readBody((d) => {
+          let body = null;
+          try { body = JSON.parse(d || "{}"); } catch {}
+          POSTS.push({ api, body });
+          PREF.homeView = body && body.homeView === "api" ? "api" : "usage";
+          json({ ok: true, homeView: PREF.homeView });
+        });
         return json({ homeView: PREF.homeView });
       }
-      if (api === "live-config") return json({ items: [], order: [], on: [] });
-      if (api === "widget-config") return json({ blocks: [], on: [] });
+      if (api === "live-config") {
+        if (isPost) return readBody((d) => {
+          let body = null;
+          try { body = JSON.parse(d || "{}"); } catch {}
+          POSTS.push({ api, body });
+          json({ ok: true, items: LIVE_ITEMS, order: ["hit"], on: body && Array.isArray(body.on) ? body.on : [] });
+        });
+        return json({ items: LIVE_ITEMS, order: ["hit"], on: ["hit"] });
+      }
+      if (api === "widget-config") {
+        if (isPost) return readBody((d) => {
+          let body = null;
+          try { body = JSON.parse(d || "{}"); } catch {}
+          POSTS.push({ api, body });
+          json({ ok: true, blocks: WB, on: body && Array.isArray(body.on) ? body.on : WB.map((b) => b.id) });
+        });
+        return json({ blocks: WB, on: WB.map((b) => b.id) });
+      }
       if (api === "version") return json({ version: "0.0.0-probe" });
       if (api === "stats") return json({ file: "probe.jsonl", turns: 1, series: [], providers: [] });
       if (api === "ledger-stats") return json({ days: {}, tokens: {}, coverage: {}, latency: { buckets: {} }, timeBuckets: {}, tokenBuckets: {}, cacheRateBuckets: {}, models: {}, providers: {} });
@@ -122,8 +138,17 @@ async function ev(c, expression) {
   return r.result?.value;
 }
 
-const SETTINGS_VIEW = `(()=>{const s=document.getElementById('stHomeView');const r=s?s.querySelector('input[name="homeView"]:checked'):null;return {active:r?r.value:'none',saveDisabled:!!(document.getElementById('stSave')||{}).disabled,status:((document.getElementById('stStatus')||{}).textContent||'').trim()};})()`;
+const UI_STATE = `(()=>{
+  const btn=id=>{const e=document.getElementById(id);return e?(e.disabled?'disabled':'enabled'):'missing';};
+  const tx=id=>{const e=document.getElementById(id);return e?e.textContent.trim():null;};
+  const ck=id=>{const e=document.getElementById(id);return e?e.checked:'missing';};
+  return {
+    live:{save:btn('stSaveLive'),reset:btn('stResetLive'),status:tx('stStatusLive'),firstToggle:ck('stList')},
+    widget:{save:btn('stSaveWidget'),reset:btn('stResetWidget'),status:tx('stStatusWidget')},
+    home:{save:btn('stSaveHome'),reset:btn('stResetHome'),status:tx('stStatusHome'),picked:(()=>{const r=document.querySelector('#stHomeView input[name="homeView"]:checked');return r?r.value:'none';})()}
+  };})()`;
 const PANEL_VIEW = `(()=>{const tab=document.querySelector('.nav [data-view].active');const view=document.querySelector('.view.active');return {tab:tab?tab.dataset.view:'none',view:view?view.id:'none'};})()`;
+const clickToggle = (sel) => `(()=>{const e=document.querySelector('${sel}');if(!e)return 'missing';e.click();return 'ok';})()`;
 
 (async () => {
   const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "si-home-"));
@@ -147,27 +172,38 @@ const PANEL_VIEW = `(()=>{const tab=document.querySelector('.nav [data-view].act
     await new Promise((r, j) => { ws.addEventListener("open", r); ws.addEventListener("error", j); });
     const cdp = new CDP(ws);
     await cdp.send("Page.enable"); await cdp.send("Runtime.enable");
-    await cdp.send("Emulation.setDeviceMetricsOverride", { width: 900, height: 1100, deviceScaleFactor: 1, mobile: false });
+    await cdp.send("Emulation.setDeviceMetricsOverride", { width: 900, height: 1300, deviceScaleFactor: 1, mobile: false });
+
     const out = {};
-    // 1) 设置页：默认值 + 改动 + 保存
+    // ① 设置页：三块按钮初见
     await cdp.send("Page.navigate", { url: "http://127.0.0.1:8821/settings.html" }); await sleep(2200);
-    out.settingsBoot = await ev(cdp, SETTINGS_VIEW);
-    out.settingsImport = await ev(cdp, `(async()=>{try{await import('/assets/settings.js');return 'ok';}catch(e){return 'ERR '+String(e&&e.message||e);}})()`);
-    out.clickApi = await ev(cdp, `(()=>{const i=document.querySelector('#stHomeView .st-form[data-v="api"] input');if(!i)return 'missing';i.click();return 'ok';})()`);
-    await sleep(250);
-    out.settingsAfterClick = await ev(cdp, SETTINGS_VIEW);
-    await ev(cdp, `(()=>{const s=document.getElementById('stSave');if(s)s.click();return 'ok';})()`);
-    await sleep(1200);
-    out.settingsAfterSave = await ev(cdp, SETTINGS_VIEW);
-    out.postsAfterSave = POSTS.slice(-3);
+    out.boot = await ev(cdp, UI_STATE);
+    // ② 只动实时用量里的开关：速览的保存按钮不该被点亮
+    out.toggleWidget = await ev(cdp, clickToggle('#wTableBody input[type="checkbox"]')); await sleep(200);
+    out.afterWidgetToggle = await ev(cdp, UI_STATE);
+    // ③ 实时用量：保存 → 恢复默认
+    await ev(cdp, `(()=>{document.getElementById('stSaveWidget').click();return 'ok';})()`); await sleep(900);
+    out.afterWidgetSave = await ev(cdp, UI_STATE);
+    await ev(cdp, `(()=>{document.getElementById('stResetWidget').click();return 'ok';})()`); await sleep(900);
+    out.afterWidgetReset = await ev(cdp, UI_STATE);
+    // ④ 只动本轮速览的开关：实时用量的保存按钮不该被点亮
+    out.toggleLive = await ev(cdp, clickToggle('#stList input[type="checkbox"]')); await sleep(200);
+    out.afterLiveToggle = await ev(cdp, UI_STATE);
+    await ev(cdp, `(()=>{document.getElementById('stSaveLive').click();return 'ok';})()`); await sleep(900);
+    out.afterLiveSave = await ev(cdp, UI_STATE);
+    // ⑤ 工作台首页：选 API 管理并保存，再恢复默认按钮应该压根不存在
+    await ev(cdp, `(()=>{const i=document.querySelector('#stHomeView .st-form[data-v="api"] input');if(i)i.click();return 'ok';})()`); await sleep(200);
+    out.afterHomePick = await ev(cdp, UI_STATE);
+    await ev(cdp, `(()=>{document.getElementById('stSaveHome').click();return 'ok';})()`); await sleep(900);
+    out.afterHomeSave = await ev(cdp, UI_STATE);
+    out.posts = POSTS.slice();
     const shotS = await cdp.send("Page.captureScreenshot", { format: "png" });
     out.settingsShot = path.join(SELF, "probe-home-view-settings.png");
     fs.writeFileSync(out.settingsShot, Buffer.from(shotS.data, "base64"));
-    // 2) 面板：首页=api 时应直接落在 API 管理页
+    // ⑥ 打开工作台：应按保存的首页落页
     out.prefNow = PREF.homeView;
     await cdp.send("Page.navigate", { url: `http://127.0.0.1:8821/api/plugins/${ID}/page?hana-theme=midnight` }); await sleep(2600);
     out.panelWhenApi = await ev(cdp, PANEL_VIEW);
-    // 3) 改回用量，再进应回落用量页
     PREF.homeView = "usage";
     await cdp.send("Page.navigate", { url: `http://127.0.0.1:8821/api/plugins/${ID}/page?hana-theme=midnight` }); await sleep(2600);
     out.panelWhenUsage = await ev(cdp, PANEL_VIEW);

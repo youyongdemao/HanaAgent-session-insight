@@ -18,11 +18,21 @@
       <section class="st-section">
         <h2>本轮速览</h2>
         <ul class="st-list" id="stList"></ul>
+        <div class="st-actions">
+          <span class="st-status" id="stStatusLive"></span>
+          <button class="st-btn st-btn-primary" id="stSaveLive">保存</button>
+          <button class="st-btn" id="stResetLive">恢复默认</button>
+        </div>
       </section>
 
       <section class="st-section">
         <h2>实时用量</h2>
         <ul class="st-list" id="wTableBody"></ul>
+        <div class="st-actions">
+          <span class="st-status" id="stStatusWidget"></span>
+          <button class="st-btn st-btn-primary" id="stSaveWidget">保存</button>
+          <button class="st-btn" id="stResetWidget">恢复默认</button>
+        </div>
       </section>
 
       <section class="st-section">
@@ -54,12 +64,11 @@
             </span>
           </label>
         </div>
+        <div class="st-actions">
+          <span class="st-status" id="stStatusHome"></span>
+          <button class="st-btn st-btn-primary" id="stSaveHome">保存</button>
+        </div>
       </section>
-
-      <div class="st-actions">
-        <button class="st-btn st-btn-primary" id="stSave">保存</button>
-        <span class="st-status" id="stStatus"></span>
-      </div>
     </section>
 
     <section class="st-block" id="stLocalBlock" hidden>

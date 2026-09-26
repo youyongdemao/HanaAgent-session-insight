@@ -211,10 +211,12 @@ body {
 }
 .st-sw input:disabled { cursor: not-allowed; }
 
-/* ── 操作区与按钮 ── */
+/* ── 操作区与按钮 ──
+   一行里状态文字留在左边，按钮全部靠右。 */
 .st-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 10px;
@@ -238,13 +240,15 @@ body {
 .st-btn:active { transform: scale(.97); }
 .st-btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* 主操作：实心填充 */
 .st-btn-primary {
-  background: color-mix(in srgb, var(--accent) 82%, transparent);
-  border-color: transparent;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
 }
 .st-btn-primary:hover {
-  background: var(--accent);
+  background: var(--accent-hover, var(--accent));
+  border-color: var(--accent-hover, var(--accent));
   color: #fff;
 }
 
@@ -256,6 +260,7 @@ body {
 }
 
 .st-status {
+  margin-right: auto;
   font-size: 11.5px;
   color: var(--text-muted);
 }

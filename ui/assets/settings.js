@@ -14,23 +14,47 @@ hana.ready();
 const BROADCAST_KEY = "si-live-layout";
 
 const listEl = document.getElementById("stList");
-const saveEl = document.getElementById("stSave");
-const statusEl = document.getElementById("stStatus");
 
 let items = [];   // [{id,label,group,desc}]
 let onSet = new Set();
-let dirty = false;
 
-function setStatus(text, cls = "") {
-  statusEl.textContent = text;
-  statusEl.className = "st-status" + (cls ? " " + cls : "");
+/**
+ * 每个小节自己一套「保存 / 恢复默认 / 状态」：脏标记、按钮禁用与状态文字各管各的，
+ * 改了一块不会把另一块的保存按钮也点亮。
+ */
+function makeSaver(saveId, statusId) {
+  const saveEl = document.getElementById(saveId);
+  const statusEl = document.getElementById(statusId);
+  const setStatus = (text, cls = "") => {
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.className = "st-status" + (cls ? " " + cls : "");
+  };
+  if (saveEl) saveEl.disabled = true;
+  return {
+    saveEl,
+    setStatus,
+    markDirty() {
+      if (saveEl) saveEl.disabled = false;
+      setStatus("");
+    },
+    saved(msg = "已保存") {
+      if (saveEl) saveEl.disabled = true;
+      setStatus(msg, "ok");
+      window.setTimeout(() => {
+        if (statusEl && statusEl.textContent === msg) setStatus("");
+      }, 2400);
+    },
+    failed(error) {
+      if (saveEl) saveEl.disabled = false;
+      setStatus("保存失败：" + String(error?.message || error), "err");
+    },
+  };
 }
 
-function markDirty() {
-  dirty = true;
-  saveEl.disabled = false;
-  setStatus("");
-}
+const liveCtl = makeSaver("stSaveLive", "stStatusLive");
+const widgetCtl = makeSaver("stSaveWidget", "stStatusWidget");
+const homeCtl = makeSaver("stSaveHome", "stStatusHome");
 
 function render() {
   listEl.innerHTML = "";
@@ -43,7 +67,7 @@ function render() {
         onChange: (on) => {
           if (on) onSet.add(it.id);
           else onSet.delete(it.id);
-          markDirty();
+          liveCtl.markDirty();
         },
       })
     );
@@ -56,7 +80,6 @@ function currentOrder() {
 }
 
 async function load() {
-  saveEl.disabled = true;
   try {
     const cfg = await apiFetch("api/live-config");
     items = cfg.items || [];
@@ -66,49 +89,56 @@ async function load() {
     items = order.filter((id) => known.has(id)).map((id) => known.get(id));
     for (const it of known.values()) if (!items.includes(it)) items.push(it);
     onSet = new Set(cfg.on || []);
-    dirty = false;
     render();
-    setStatus("");
+    liveCtl.setStatus("");
   } catch (error) {
-    setStatus("读取配置失败：" + String(error?.message || error), "err");
+    liveCtl.setStatus("读取配置失败：" + String(error?.message || error), "err");
   }
 }
 
-saveEl.addEventListener("click", async () => {
-  saveEl.disabled = true;
-  setStatus("保存中…");
+/* ── 本轮速览：保存与恢复默认 ── */
+liveCtl.saveEl?.addEventListener("click", async () => {
+  liveCtl.setStatus("保存中…");
   try {
-    // 界面设置两块一起提交：本轮速览（输入栏五项）与实时用量（卡片区块）。
-    // 两块共用一个保存键，避免出现“按了保存只存了一半”。
     await apiFetch("api/live-config", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ order: currentOrder(), on: [...onSet] }),
     });
-    await apiFetch("api/widget-config", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ on: [...wOnSet] }),
-    });
-    await apiFetch("api/panel-prefs", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ homeView }),
-    });
-    dirty = false;
-    setStatus("已保存", "ok");
-    broadcastWidgetLayout();
+    liveCtl.saved();
+    // 输入栏那边开着时接到广播就地重排
     try {
       localStorage.setItem(BROADCAST_KEY, String(Date.now()));
     } catch {
       /* 广播失败不影响保存结果 */
     }
-    window.setTimeout(() => {
-      if (statusEl.textContent === "已保存") setStatus("");
-    }, 2400);
   } catch (error) {
-    saveEl.disabled = false;
-    setStatus("保存失败：" + String(error?.message || error), "err");
+    liveCtl.failed(error);
+  }
+});
+
+document.getElementById("stResetLive")?.addEventListener("click", async () => {
+  liveCtl.setStatus("恢复中…");
+  try {
+    // 空对象走后端默认分支：五项全开
+    const cfg = await apiFetch("api/live-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    items = cfg.items || items;
+    const known = new Map(items.map((i) => [i.id, i]));
+    items = (cfg.order || []).filter((id) => known.has(id)).map((id) => known.get(id));
+    onSet = new Set(cfg.on || []);
+    render();
+    liveCtl.saved("已恢复默认");
+    try {
+      localStorage.setItem(BROADCAST_KEY, String(Date.now()));
+    } catch {
+      /* 同上 */
+    }
+  } catch (error) {
+    liveCtl.setStatus("恢复失败：" + String(error?.message || error), "err");
   }
 });
 
@@ -130,7 +160,7 @@ homeViewEl?.addEventListener("change", (e) => {
   const input = e.target.closest('input[name="homeView"]');
   if (!input || input.value === homeView) return;
   homeView = input.value;
-  markDirty();
+  homeCtl.markDirty();
 });
 
 async function loadHomeView() {
@@ -139,10 +169,25 @@ async function loadHomeView() {
     const prefs = await apiFetch("api/panel-prefs");
     homeView = prefs?.homeView === "api" ? "api" : "usage";
     renderHomeView();
+    homeCtl.setStatus("");
   } catch {
     /* 读不到就按默认，不打扰其它设置项 */
   }
 }
+
+homeCtl.saveEl?.addEventListener("click", async () => {
+  homeCtl.setStatus("保存中…");
+  try {
+    await apiFetch("api/panel-prefs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ homeView }),
+    });
+    homeCtl.saved();
+  } catch (error) {
+    homeCtl.failed(error);
+  }
+});
 
 loadHomeView();
 
@@ -222,7 +267,7 @@ function renderWidgetTable() {
           onChange: (on) => {
             if (on) wOnSet.add(b.id);
             else wOnSet.delete(b.id);
-            markDirty();
+            widgetCtl.markDirty();
           },
         })
       );
@@ -241,7 +286,7 @@ function renderWidgetTable() {
             if (on) wOnSet.add(x.id);
             else wOnSet.delete(x.id);
           }
-          markDirty();
+          widgetCtl.markDirty();
           renderWidgetTable();
         },
       })
@@ -258,7 +303,7 @@ function renderWidgetTable() {
             if (on) wOnSet.add(x.id);
             else wOnSet.delete(x.id);
             // 子项单独改了，母项的「全开/全关」跟着变，所以整块重画一次
-            markDirty();
+            widgetCtl.markDirty();
             renderWidgetTable();
           },
         })
@@ -274,10 +319,46 @@ async function loadWidgetConfig() {
     wBlocks = cfg.blocks || [];
     wOnSet = new Set(cfg.on || []);
     renderWidgetTable();
+    widgetCtl.setStatus("");
   } catch (error) {
-    setStatus("读取实时用量配置失败：" + String(error?.message || error), "err");
+    widgetCtl.setStatus("读取实时用量配置失败：" + String(error?.message || error), "err");
   }
 }
+
+/* ── 实时用量：保存与恢复默认 ── */
+widgetCtl.saveEl?.addEventListener("click", async () => {
+  widgetCtl.setStatus("保存中…");
+  try {
+    await apiFetch("api/widget-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ on: [...wOnSet] }),
+    });
+    widgetCtl.saved();
+    broadcastWidgetLayout();
+  } catch (error) {
+    widgetCtl.failed(error);
+  }
+});
+
+document.getElementById("stResetWidget")?.addEventListener("click", async () => {
+  widgetCtl.setStatus("恢复中…");
+  try {
+    // 空对象走后端默认分支：区块全开
+    const wcfg = await apiFetch("api/widget-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    wBlocks = wcfg.blocks || wBlocks;
+    wOnSet = new Set(wcfg.on || []);
+    renderWidgetTable();
+    widgetCtl.saved("已恢复默认");
+    broadcastWidgetLayout();
+  } catch (error) {
+    widgetCtl.setStatus("恢复失败：" + String(error?.message || error), "err");
+  }
+});
 
 // 保存由「界面设置」底部的按钮统管（见上），这里不再单设。
 
