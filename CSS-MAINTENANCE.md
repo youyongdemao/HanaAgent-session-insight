@@ -7,7 +7,7 @@
 原因：这么叠下去之后，没人能一眼看出哪条生效。2026-09-26 清理时，
 `body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-num` 这一个选择器上叠了 5 条规则，想改个字号要连着读五处，还得数顺序。
 
-## 改完 CSS 的三步
+## 改完 CSS 的四步
 
 ### 1. 体检：还有没有被完整覆盖的规则
 
@@ -26,7 +26,19 @@ node scripts/css-prune.cjs            # dry-run：看会删什么
 node scripts/css-prune.cjs --apply    # 写回
 ```
 
-### 3. 验证：渲染指纹必须零差异
+### 3. 合并同一选择器上的多条规则（需要时）
+
+```powershell
+node scripts/css-merge.cjs            # dry-run：看会并什么
+node scripts/css-merge.cjs --apply
+node scripts/css-prune.cjs --apply    # 合并后要再收尾一次
+```
+
+只合并「选择器组一字不差」的重复规则。`.a` 跟 `.a,.b` **不能**合：把 `.a` 的声明搬进 `.a,.b` 会把它扩散到 `.b` 上（第一次合并时 550 处渲染差异就是这么来的）。拼接顺序必须按原规则在文件里的先后，否则同属性的属主就换人了。
+
+合并之后要再跑一次 `css-prune`：把同选择器的几条并成一条后，会新露出几条完全冗余的规则（2026-09-26 实测 9 条），删掉它们渲染仍为零差异。
+
+### 4. 验证：渲染指纹必须零差异
 
 ```powershell
 node scripts/css-render-diff.cjs dump scripts/_render-before.json
