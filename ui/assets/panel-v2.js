@@ -62,8 +62,46 @@ initSharedThemeSync();
    v1 那套（宿主 /api/sessions/messages + resolve-entry）在 v2 里不存在，会退化成一个固定会话。 */
 let v2ActiveFile=null;
 function v2FileFromActive(active){const p=active?.sessionPath??active?.path??active?.file;return typeof p==="string"&&p.endsWith(".jsonl")?p.split(/[\\/]/).pop():null;}
-function initV2ActiveTracking(){const push=(active)=>{const base=v2FileFromActive(active);if(base===v2ActiveFile)return;v2ActiveFile=base;};const fail=(tag)=>(e)=>{diagFail(tag,e);};try{hanaV2.sessions.getActive().then(push).catch(fail("sessions.getActive"));}catch(e){fail("sessions.getActive")(e);}try{hanaV2.sessions.onActiveChanged?.((ev)=>push(ev?.current??null));}catch(e){fail("sessions.onActiveChanged")(e);}}
+function pushActiveSession(active){const base=v2FileFromActive(active);if(base===v2ActiveFile)return false;v2ActiveFile=base;return true;}
+let activeSubUnsub=null;
+function bindActiveSubscription(){try{if(typeof activeSubUnsub==="function"){try{activeSubUnsub();}catch{}}activeSubUnsub=hanaV2.sessions.onActiveChanged?.((ev)=>pushActiveSession(ev?.current??null))||null;}catch(e){diagFail("sessions.onActiveChanged",e);}}
+function initV2ActiveTracking(){try{hanaV2.sessions.getActive().then(pushActiveSession).catch((e)=>diagFail("sessions.getActive",e));}catch(e){diagFail("sessions.getActive",e);}bindActiveSubscription();}
 initV2ActiveTracking();
+/* 活动会话订阅自愈（2026-09-26）：宿主在 iframe 被挂起 / 长连接断开时会发一条
+   APP_SESSION_HOST_EVENT.ERROR，SDK 收到后把 activeSessionSubscriptionBlocked 永久置 true，
+   此后再不重订阅；而 blocked 只在「重新调用 onActiveChanged」时才复位（见 sdk/ui.js）。
+   叠加 getFocusedSessionFile() 里 `if(v2ActiveFile)return v2ActiveFile` 的短路，一旦订阅死掉，
+   卡片就永久卡在旧会话上、再也不跟随，只有手动刷新页面才恢复。
+   对策：① 每 3 秒主动 getActive() 拉一次，订阅断了也能跟上当前会话；
+        ② 每 30 秒重绑一次订阅，复位 blocked、恢复实时性；
+        ③ 回到可见 / 拿到焦点 / pageshow 时立即补一次。 */
+let activeSessionWatchdogTimer=null,activeSessionWatchdogBusy=false,activeSessionRebindAt=0;
+async function pollActiveSession(){
+  if(activeSessionWatchdogBusy)return;
+  activeSessionWatchdogBusy=true;
+  try{
+    const a=await hanaV2.sessions.getActive();
+    pushActiveSession(a);
+    const base=v2FileFromActive(a);
+    if(base&&base!==activeSessionFile){
+      activeSessionFile=base;focusedFile=base;focusedEntryId=null;focusedFileFailUntil=0;
+      if(surface==="widget")await loadWidget();
+    }
+  }catch(e){diagFail("sessions.getActive(watchdog)",e);}
+  finally{activeSessionWatchdogBusy=false;}
+}
+function startActiveSessionWatchdog(){
+  if(activeSessionWatchdogTimer)return;
+  activeSessionRebindAt=Date.now()+30000;
+  activeSessionWatchdogTimer=setInterval(()=>{
+    pollActiveSession();
+    if(Date.now()>=activeSessionRebindAt){activeSessionRebindAt=Date.now()+30000;bindActiveSubscription();}
+  },3000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){pollActiveSession();bindActiveSubscription();}});
+  window.addEventListener("focus",()=>{pollActiveSession();});
+  window.addEventListener("pageshow",()=>{pollActiveSession();bindActiveSubscription();});
+}
+function stopActiveSessionWatchdog(){if(activeSessionWatchdogTimer){clearInterval(activeSessionWatchdogTimer);activeSessionWatchdogTimer=null;}}
 function onHostThemeMessage(evt){if(evt.source!==window.parent)return;const m=evt.data||{};if(m.type!=="hana.host.theme"&&m.type!=="hana.host.context")return;const p=m.payload||{};applyHostTheme(p.resolvedTheme||p.effectiveTheme||p.theme);}
 window.addEventListener("message",onHostThemeMessage);
 /* v2 主题已改由宿主 SDK（hana.theme）下发，不再需要每秒轮询 /api/appearance。
@@ -1237,7 +1275,7 @@ async function watchProviders(){
 // 这里在首次渲染前等一次字体（封顶 600ms，字体拿不到不阻塞），字体到位后再安静重渲染一次，
 // 让度量重的部分（滚动结构 + 对齐）用真字体重算。
 function fontsReady(ms){return new Promise(res=>{let done=false;const fin=()=>{if(done)return;done=true;res();};try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fin);}catch(e){}setTimeout(fin,ms);});}
-async function start(){hana.ready();await fontsReady(600);if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();watchWidgetGap();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000),wt=setInterval(pollWidgetTotals,1000);window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);clearInterval(wt);},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);const ht=setInterval(pollHeroStats,1000);window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);clearInterval(ht);},{once:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(surface!=='widget')paintQuiet(()=>renderPageAll(true),true);});}}
+async function start(){hana.ready();await fontsReady(600);if(surface==='widget'){window.addEventListener('message',onHostContextSwitch);activeSessionFile=await getFocusedSessionFile();await loadWidget();watchOdometers();watchWidgetGap();const ft=setInterval(syncFocusedSession,500),rt=setInterval(loadWidget,5000),bs=setInterval(checkBuildStamp,6000),wt=setInterval(pollWidgetTotals,1000);startActiveSessionWatchdog();window.addEventListener('beforeunload',()=>{clearInterval(ft);clearInterval(rt);clearInterval(bs);clearInterval(wt);stopActiveSessionWatchdog();},{once:true});}else{await loadPage(false);watchOdometers();requestAnimationFrame(()=>requestAnimationFrame(()=>animateNumbers(root)));const rt=setInterval(()=>loadPage(false),10000);const pw=setInterval(watchProviders,4000);const bs=setInterval(checkBuildStamp,6000);const ht=setInterval(pollHeroStats,1000);startActiveSessionWatchdog();window.addEventListener('beforeunload',()=>{clearInterval(rt);clearInterval(pw);clearInterval(bs);clearInterval(ht);stopActiveSessionWatchdog();},{once:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(surface!=='widget')paintQuiet(()=>renderPageAll(true),true);});}}
 start().catch(()=>{if(surface==='widget')renderWidget();else renderPageAll();});
 // 进页面自检一次更新：有新版才弹窗，没有就什么都不做（与设置页共用同一套弹窗）
 initUpdateNotice();
