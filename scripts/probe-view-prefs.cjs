@@ -130,6 +130,8 @@ async function snap(cdp) { await sleep(450); return ev(cdp, READ); }
     // 1) 全新 profile：默认态
     await cdp.send("Page.navigate", { url: URL }); await sleep(2600);
     out.first = await snap(cdp);
+    await ev(cdp, `(()=>{const e=document.getElementById('tokViz');if(e)e.scrollIntoView({block:'start'});return 'ok';})()`); await sleep(500);
+    { const s0 = await cdp.send("Page.captureScreenshot", { format: "png" }); const f0 = path.join(SELF, "probe-view-prefs-first.png"); fs.writeFileSync(f0, Buffer.from(s0.data, "base64")); out.firstShotFile = f0; }
     // 2) 逐个改：形态全切热力、范围全切到更远的档
     const clicks = [["tokModeSeg", "heat"], ["tokUnitSeg", "d7"], ["cacheModeSeg", "heat"], ["cacheUnitSeg", "d30"], ["provUnitSeg", "d7"], ["evRangeSeg", "24h"], ["costModeSeg", "heat"], ["costUnitSeg", "day"]];
     out.clickResults = [];
@@ -142,17 +144,16 @@ async function snap(cdp) { await sleep(450); return ev(cdp, READ); }
     // 3) 重新导航 = “下次再进入”
     await cdp.send("Page.navigate", { url: URL }); await sleep(2600);
     out.reenter = await snap(cdp);
-    // 4) 坏值防护：塞一个不存在的值，重进后应回默认而不是空白
-    await ev(cdp, `(()=>{try{localStorage.setItem('session-insight.view-prefs.v1',JSON.stringify({costUnit:'bogus',tokMode:'xxx',evRange:'24h'}));}catch(e){}return 'ok';})()`);
-    await cdp.send("Page.navigate", { url: URL }); await sleep(2600);
-    out.badValues = await snap(cdp);
-    // 5) 截图：热力图 + 按天档的实景
-    await ev(cdp, `(()=>{document.querySelector('.nav [data-view="usage"]').click();return 'ok';})()`); await sleep(500);
-    await ev(cdp, `(()=>{const e=document.getElementById('tokViz');if(e)e.scrollIntoView({block:'center'});return 'ok';})()`); await sleep(400);
+    // 3b) 截图：重进后仍是「热力图 + 近7天」的实景（先落在 Token 消费统计上，再把日志区也带上）
+    await ev(cdp, `(()=>{const e=document.getElementById('tokViz');if(e)e.scrollIntoView({block:'start'});return 'ok';})()`); await sleep(500);
     const shot = await cdp.send("Page.captureScreenshot", { format: "png" });
     const f = path.join(SELF, "probe-view-prefs.png");
     fs.writeFileSync(f, Buffer.from(shot.data, "base64"));
     out.shotFile = f;
+    // 4) 坏值防护：塞一个不存在的值，重进后应回默认而不是空白
+    await ev(cdp, `(()=>{try{localStorage.setItem('session-insight.view-prefs.v1',JSON.stringify({costUnit:'bogus',tokMode:'xxx',evRange:'24h'}));}catch(e){}return 'ok';})()`);
+    await cdp.send("Page.navigate", { url: URL }); await sleep(2600);
+    out.badValues = await snap(cdp);
 
     console.log(JSON.stringify(out, null, 2));
     ws.close();
