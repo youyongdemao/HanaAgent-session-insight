@@ -282,6 +282,31 @@ body {
 }
 
 /* 关于里的地址就是入口本身；链接样式见上方 .st-item-link */
+/* ── 工作台首页：二选一分段控件 ──
+   形态跟面板里的 .seg 同构，收小一号以贴合设置行的行内控件尺寸。 */
+.st-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.st-seg-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: 500 11.5px var(--font-ui, system-ui, sans-serif);
+  padding: 4px 11px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .16s, color .16s;
+}
+.st-seg-btn:hover { color: var(--text); }
+.st-seg-btn.active {
+  background: color-mix(in srgb, var(--accent) 82%, transparent);
+  color: #fff;
+}
 /* ── 分组子项 ──
    挂在母项下面的一档：左侧缩进，分隔线跟着内缩，标题弱化一级，和母项区分开。 */
 .st-item.sub { padding-left: 30px; }

@@ -258,6 +258,14 @@ function parseWidgetLayout(raw, { migrateNewBlocks = false } = {}) {
   return { on: WIDGET_DEFAULT.slice(), rev: WIDGET_LAYOUT_REV };
 }
 
+// ── 工作台首页：打开面板时先落在哪个页签（用量 / API 管理）──
+// 值就一个字符串，存 config.json 的 homeView；读不到或值不认就按默认「用量」。
+const HOME_VIEWS = ["usage", "api"];
+function parseHomeView(raw) {
+  const v = typeof raw === "string" ? raw : "";
+  return HOME_VIEWS.includes(v) ? v : "usage";
+}
+
 /**
  * App 自有配置：存在 dataDir/config.json，不进宿主 settings schema。
  * 宿主只要看到 contributes.settings.schema，就把设置 tab 归成 schema 类，自定义设置页会被降级，
@@ -608,6 +616,27 @@ export default defineApp(async (sdk) => {
         const layout = parseWidgetLayout(body);
         await writeAppConfig(sdk, "widgetLayout", JSON.stringify(layout));
         return c.json({ ok: true, blocks: WIDGET_BLOCKS, ...layout });
+      } catch (error) {
+        return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    // ── 工作台首页：面板打开时默认停在哪个页签 ──
+    app.get("/api/panel-prefs", async (c) => {
+      try {
+        const all = await readAppConfig(sdk);
+        return c.json({ homeView: parseHomeView(all.homeView) });
+      } catch (error) {
+        return c.json({ homeView: "usage", error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    app.post("/api/panel-prefs", async (c) => {
+      try {
+        const body = await c.req.json().catch(() => null);
+        const homeView = parseHomeView(body && body.homeView);
+        await writeAppConfig(sdk, "homeView", homeView);
+        return c.json({ ok: true, homeView });
       } catch (error) {
         return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
       }

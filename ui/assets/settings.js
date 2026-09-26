@@ -91,6 +91,11 @@ saveEl.addEventListener("click", async () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ on: [...wOnSet] }),
     });
+    await apiFetch("api/panel-prefs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ homeView }),
+    });
     dirty = false;
     setStatus("已保存", "ok");
     broadcastWidgetLayout();
@@ -131,6 +136,14 @@ resetEl.addEventListener("click", async () => {
     wBlocks = wcfg.blocks || wBlocks;
     wOnSet = new Set(wcfg.on || []);
 
+    const pcfg = await apiFetch("api/panel-prefs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    homeView = pcfg?.homeView === "api" ? "api" : "usage";
+    renderHomeView();
+
     dirty = false;
     render();
     renderWidgetTable();
@@ -148,6 +161,39 @@ resetEl.addEventListener("click", async () => {
 });
 
 load();
+
+/* ── 工作台首页：用量页还是 API 管理页 ──
+   只决定「打开时先停在哪个页面」，读不到或没设过就按默认用量页。 */
+const homeViewEl = document.getElementById("stHomeView");
+let homeView = "usage";
+
+function renderHomeView() {
+  if (!homeViewEl) return;
+  homeViewEl.querySelectorAll("[data-v]").forEach((b) => {
+    b.classList.toggle("active", b.dataset.v === homeView);
+  });
+}
+
+homeViewEl?.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-v]");
+  if (!b || b.dataset.v === homeView) return;
+  homeView = b.dataset.v;
+  renderHomeView();
+  markDirty();
+});
+
+async function loadHomeView() {
+  if (!homeViewEl) return;
+  try {
+    const prefs = await apiFetch("api/panel-prefs");
+    homeView = prefs?.homeView === "api" ? "api" : "usage";
+    renderHomeView();
+  } catch {
+    /* 读不到就按默认，不打扰其它设置项 */
+  }
+}
+
+loadHomeView();
 
 /* ── 实时用量：卡片内各区块的开关（含分组子项）── */
 const W_BROADCAST_KEY = "si-widget-layout";
