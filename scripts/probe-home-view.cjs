@@ -197,6 +197,9 @@ const clickToggle = (sel) => `(()=>{const e=document.querySelector('${sel}');if(
     await ev(cdp, `(()=>{document.getElementById('stSaveHome').click();return 'ok';})()`); await sleep(900);
     out.afterHomeSave = await ev(cdp, UI_STATE);
     out.posts = POSTS.slice();
+    // 截图前把首页保存按钮重新点亮（来回切一次选项），这样图上能看到实心可用态
+    await ev(cdp, `(()=>{const u=document.querySelector('#stHomeView .st-form[data-v="usage"] input');if(u)u.click();return 'ok';})()`); await sleep(150);
+    await ev(cdp, `(()=>{const a=document.querySelector('#stHomeView .st-form[data-v="api"] input');if(a)a.click();return 'ok';})()`); await sleep(250);
     const shotS = await cdp.send("Page.captureScreenshot", { format: "png" });
     out.settingsShot = path.join(SELF, "probe-home-view-settings.png");
     fs.writeFileSync(out.settingsShot, Buffer.from(shotS.data, "base64"));

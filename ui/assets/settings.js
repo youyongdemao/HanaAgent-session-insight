@@ -38,12 +38,13 @@ function makeSaver(saveId, statusId) {
       if (saveEl) saveEl.disabled = false;
       setStatus("");
     },
-    saved(msg = "已保存") {
+    // 设置写进 App 配置后，已挂载的界面不一定立刻反映出来，提示一句要重载插件
+    saved(msg = "已保存 · 需重载插件生效") {
       if (saveEl) saveEl.disabled = true;
       setStatus(msg, "ok");
       window.setTimeout(() => {
         if (statusEl && statusEl.textContent === msg) setStatus("");
-      }, 2400);
+      }, 3600);
     },
     failed(error) {
       if (saveEl) saveEl.disabled = false;
@@ -131,7 +132,7 @@ document.getElementById("stResetLive")?.addEventListener("click", async () => {
     items = (cfg.order || []).filter((id) => known.has(id)).map((id) => known.get(id));
     onSet = new Set(cfg.on || []);
     render();
-    liveCtl.saved("已恢复默认");
+    liveCtl.saved("已恢复默认 · 需重载插件生效");
     try {
       localStorage.setItem(BROADCAST_KEY, String(Date.now()));
     } catch {
@@ -353,7 +354,7 @@ document.getElementById("stResetWidget")?.addEventListener("click", async () => 
     wBlocks = wcfg.blocks || wBlocks;
     wOnSet = new Set(wcfg.on || []);
     renderWidgetTable();
-    widgetCtl.saved("已恢复默认");
+    widgetCtl.saved("已恢复默认 · 需重载插件生效");
     broadcastWidgetLayout();
   } catch (error) {
     widgetCtl.setStatus("恢复失败：" + String(error?.message || error), "err");
