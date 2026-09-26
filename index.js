@@ -13,6 +13,7 @@ import {
   listSessions,
   listSessionsCached,
   fetchSessionUsage,
+  fetchSessionContext,
   buildSessionStats,
   buildStatsFromSessionFile,
   fetchLedger,
@@ -136,7 +137,7 @@ async function buildOverview(sdk, sessionId) {
 
   if (targetId) {
     const context = await safe("sessions.context", () =>
-      sdk.sessions.context({ sessionId: targetId, scope: "all" })
+      fetchSessionContext(sdk, targetId, { ttlMs: 15000, timeoutMs: 6000 })
     );
     if (context) {
       out.context = {
@@ -437,11 +438,14 @@ export default defineApp(async (sdk) => {
         let sessions = [];
         if (fast) {
           // 快通道只做一次用量查询，其余一步都不走。
-          entries = await _step("usage", () => fetchSessionUsage(sdk, sessionId, { limit: 1000, ttlMs: 1200 }));
+          entries = await _step("usage", () => fetchSessionUsage(sdk, sessionId, { limit: 1000, ttlMs: 1200, timeoutMs: 3000 }));
         } else {
+          // 上下文走带 TTL + 超时兜底的封装：它是本机最慢的一条宿主 RPC，
+          // 这里每 5 秒问一次，不缓存的话光这一步就可能拖到几十秒，
+          // 客户端 8 秒一到就整块变空（见「侧栏统计时好时坏」）。
           [entries, context, sessions] = await Promise.all([
-            _step("usage", () => fetchSessionUsage(sdk, sessionId)),
-            _step("context", () => sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null)),
+            _step("usage", () => fetchSessionUsage(sdk, sessionId, { timeoutMs: 6000 })),
+            _step("context", () => fetchSessionContext(sdk, sessionId, { ttlMs: 15000, timeoutMs: 6000 })),
             _step("sessions", () => listSessionsCached(sdk, { ttlMs: 120000 }).catch(() => [])),
           ]);
         }
@@ -619,7 +623,7 @@ export default defineApp(async (sdk) => {
 
         const [recent, context, entries] = await Promise.all([
           sdk.usage.list({ sessionId, limit: 30 }).catch(() => null),
-          sdk.sessions.context({ sessionId, scope: "all" }).catch(() => null),
+          fetchSessionContext(sdk, sessionId, { ttlMs: 15000, timeoutMs: 6000 }),
           fetchSessionUsage(sdk, sessionId).catch(() => []),
         ]);
 

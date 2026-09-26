@@ -395,7 +395,7 @@ function renderUsageSessions(){const ss=activeSessions();const menu=$("#sessionM
 function positionSessionMenu(){const m=$("#sessionMenu"),t=$("#sessionTrigger");if(!m||!t||m.hidden)return;const r=t.getBoundingClientRect();const vw=window.innerWidth||document.documentElement.clientWidth||0;const desired=Math.max(r.width,560);const w=Math.min(desired,vw-24);m.style.left=Math.round(r.left)+"px";m.style.top=Math.round(r.bottom+6)+"px";m.style.width=Math.round(w)+"px";}
 function toggleSessionMenu(){const m=$("#sessionMenu"),drop=$("#sessionDrop"),t=$("#sessionTrigger");if(!m||!drop)return;if(!m.hidden){closeSessionMenu();return;}m.__siHome=drop;if(m.parentElement!==document.body)document.body.appendChild(m);m.hidden=false;requestAnimationFrame(()=>{positionSessionMenu();m.classList.add("open");if(t)t.classList.add("open");});}
 function closeSessionMenu(){const m=$("#sessionMenu"),t=$("#sessionTrigger");if(m&&!m.hidden){m.classList.remove("open");m.hidden=true;const home=m.__siHome||$("#sessionDrop");if(home&&m.parentElement!==home)home.appendChild(m);m.style.left="";m.style.top="";m.style.width="";}if(t)t.classList.remove("open");}
-function pickSession(file){if(!file){state.sessionStats=null;renderUsageSession();return;}state.userSelectedFile=file;state.manualPickAt=Date.now();lastRenderedSession=file;closeSessionMenu();const pg=document.getElementById('usage-session');if(pg)pg.classList.add('si-quiet');fetchJson("/api/stats?file="+encodeURIComponent(file)).then(r=>{if(pg)pg.classList.remove('si-quiet');if(state.userSelectedFile!==file)return;if(r&&!r.error){state.sessionStats=r;renderUsageSession();if(pg)requestAnimationFrame(()=>animateNumbers(pg));}}).catch(()=>{}).finally(()=>{requestAnimationFrame(()=>{if(pg)pg.classList.remove('si-quiet');});});renderUsageSessions();}
+function pickSession(file){if(!file){state.sessionStats=null;renderUsageSession();return;}state.userSelectedFile=file;state.manualPickAt=Date.now();lastRenderedSession=file;closeSessionMenu();const pg=document.getElementById('usage-session');if(pg)pg.classList.add('si-quiet');fetchJson("/api/stats?file="+encodeURIComponent(file)).then(r=>{if(pg)pg.classList.remove('si-quiet');if(state.userSelectedFile!==file)return;if(acceptStatsInto("sessionStats",r,file,{staleTurns:true})){renderUsageSession();if(pg)requestAnimationFrame(()=>animateNumbers(pg));}}).catch(()=>{}).finally(()=>{requestAnimationFrame(()=>{if(pg)pg.classList.remove('si-quiet');});});renderUsageSessions();}
 /* 延迟分布：按容器实测像素作图，viewBox 比例与容器一致，图正好填满卡片剩余高度 */
 let latRO=null,latSig="";
 function drawLatHist(){const box=document.getElementById("latHist");if(!box)return;const hAll=Math.round(box.clientHeight||0);if(hAll<160)return;const lat=state.ledger?.latency?.buckets||{};const lats=[lat.lt1||0,lat["1_3"]||0,lat["3_10"]||0,lat.gt10||0];const lmx=Math.max(...lats,1);const lnames=["<1s","1–3s","3–10s",">10s"];const fmtN=v=>String(Math.round(v));const w=Math.max(320,Math.round(box.clientWidth)||520);const sig=w+"x"+hAll+"|"+lats.join(",");if(sig===latSig)return;latSig=sig;box.innerHTML=bars(lats,{w,h:Math.max(150,hAll-18),format:fmtN,xLabels:i=>lnames[i],xticks:4,yMax:lmx*1.15,fill:"color-mix(in srgb,var(--accent) 58%,transparent)"});}
@@ -848,7 +848,32 @@ function renderPageAll(quiet){renderUsageOverview();renderTokenPanel();renderCac
 let widgetRefreshSeq=0;/** 宿主关闭「窗口按钮独立置顶」时，那三个按钮会悬浮到卡片上、压住右上角的「实时」标签；
  *  这类模式下给卡片顶部右侧让出位置。开关打开（按钮独立）时不加，维持原样。 */
 function applyHostAvoid(avoid){try{const w=root.querySelector('.widget');if(w)w.classList.toggle('avoid-host-buttons',avoid);}catch{}}
-async function loadWidget(){const thisRefresh=++widgetRefreshSeq;const requestedFile=activeSessionFile;const switching=lastWidgetSession!==null&&requestedFile!==lastWidgetSession;if(switching){retractShareRing();state.shareRingSweep=true;}const statsPath=requestedFile?"/api/stats?file="+encodeURIComponent(requestedFile):"/api/stats";const [stats,balance,uiEnv]=await Promise.all([fetchJson(statsPath).catch(()=>null),fetchJson("/api/balance",12000).catch(()=>null),fetchJson("/api/ui-env").catch(()=>null)]);if(thisRefresh!==widgetRefreshSeq||requestedFile!==activeSessionFile)return;applyHostAvoid(uiEnv?.overlappingWindowButtons===true);state.stats=stats;state.balance=balance;const sessionChanged=requestedFile!==lastWidgetSession;if(sessionChanged)lastWidgetSession=requestedFile;paintQuiet(()=>renderWidget(),widgetBooted&&!sessionChanged);if(sessionChanged){requestAnimationFrame(()=>{try{animateNumbers(root);}catch{}});}widgetBooted=true;}
+/* 宿主卡住时的保底。回头根：宿主一边跑模型一边接 RPC，usage:list / session:context 实测单次 6～63 秒，
+   面板的预算只有 4～8 秒；超时后 fetchJson 还会熔断（tickPaused）把接下来几秒的请求直接跳过。
+   于是「这一轮没拿到」是常态而不是异常。旧写法把结果无条件写成 null，渲染层只能把整块画成
+   「0% / 0.0% / 已用 –」——看着像数据错了，实际上只是宿主这一轮没答。
+   现在：拿不到就保留上一次的好值；只有拿到同一个会话的新数据才覆盖；会话真的换了才清空。
+   另：pending 是服务端「这个会话刚落盘、账本里还没记录」的空壳，不能拿它冲掉已有的真数据。 */
+function acceptStatsInto(key,incoming,requestedFile,{staleTurns=false}={}){
+  const prev=state[key];
+  const sameSession=Boolean(prev&&(!requestedFile||prev.file===requestedFile));
+  if(!incoming||incoming.error){if(!sameSession)state[key]=null;return false;}
+  if(staleTurns&&incoming.pending&&sameSession&&Number(prev?.turns)>0)return false;
+  state[key]=incoming;return true;
+}
+/* 右上角那个「实时」原来是写死的：宿主停顿时它还在闪，数字却停在几分钟前，属于说假话。
+   现在它跟着实际拿到数据的成败走：连着两轮没拿到才改成「数据滞后」（单次抽一下不报，免得闪）。 */
+let widgetMisses=0;
+function markWidgetFreshness(ok){
+  if(surface!=="widget")return;
+  widgetMisses=ok?0:widgetMisses+1;
+  const el=root.querySelector(".widget .live");if(!el)return;
+  const stale=widgetMisses>=2;
+  el.classList.toggle("stale",stale);
+  el.textContent=stale?"数据滞后":"实时";
+  el.title=stale?`连续 ${widgetMisses} 轮没从宿主拿到新数据，下面显示的是上一次的统计`:"";
+}
+async function loadWidget(){const thisRefresh=++widgetRefreshSeq;const requestedFile=activeSessionFile;const switching=lastWidgetSession!==null&&requestedFile!==lastWidgetSession;if(switching){retractShareRing();state.shareRingSweep=true;}const statsPath=requestedFile?"/api/stats?file="+encodeURIComponent(requestedFile):"/api/stats";const [stats,balance,uiEnv]=await Promise.all([fetchJson(statsPath).catch(()=>null),fetchJson("/api/balance",12000).catch(()=>null),fetchJson("/api/ui-env").catch(()=>null)]);if(thisRefresh!==widgetRefreshSeq||requestedFile!==activeSessionFile)return;if(uiEnv)applyHostAvoid(uiEnv.overlappingWindowButtons===true);const fresh=acceptStatsInto("stats",stats,requestedFile,{staleTurns:true});/* 余额是全局的、不按会话分，失败时也没有「换了会话」一说，直接留上一次的。 */if(balance)state.balance=balance;markWidgetFreshness(fresh);const sessionChanged=requestedFile!==lastWidgetSession;if(sessionChanged)lastWidgetSession=requestedFile;paintQuiet(()=>renderWidget(),widgetBooted&&!sessionChanged);if(sessionChanged){requestAnimationFrame(()=>{try{animateNumbers(root);}catch{}});}widgetBooted=true;}
 // ── 静默刷新机制 ──
 // 轮询重绘不应该重播整页入场动画：静默模式下临时挂 .si-quiet（把 animation/transition 压到 0.001s），
 // 数据完全没变时干脆不重绘；数值在没变时不会被重写，滚动结构得以保留，画面保持稳定。
@@ -906,7 +931,10 @@ async function pollWidgetTotals(){
        一次「文件名 → sessionId」的全量列会话，那一步实测 0.5～2.5 秒。 */
     const sid=state.stats&&state.stats.file===f?state.stats.sessionId:null;
     const q=(f?"/api/stats?fast=1&file="+encodeURIComponent(f):"/api/stats?fast=1")+(sid?"&session="+encodeURIComponent(sid):"");
-    applyWidgetTotals(await fetchJson(q,4000));
+    const payload=await fetchJson(q,4000);
+    applyWidgetTotals(payload);
+    /* 快通道也算「拿到了新数据」：它成得了，说明宿主还活着，只是上下文那一路慢。 */
+    if(payload&&!payload.error)markWidgetFreshness(true);
     noteTickOk();
     // 数字变了，内容需求也跟着变（位数多的数字要更宽），重新判一次升/叠放
     syncWidgetGap();
@@ -1069,7 +1097,7 @@ async function loadPage(force){
   const q=force?"?force=1":"";
   // 快组：本地账本 / 会话数据，先出数字。
   // 会话统计不在这里发：它取决于「看哪个会话」，而那个判定要用到本次拿到的会话列表，所以排在 await 之后。
-  const fast=[fetchJson("/api/stats").then(r=>state.stats=r).catch(()=>state.stats=null),fetchJson("/api/ledger-stats"+q).then(r=>state.ledger=r).catch(()=>state.ledger=null),fetchJson("/api/sessions").then(r=>state.sessions=r).catch(()=>state.sessions=null),fetchJson("/api/total-cost").then(r=>state.totalCost=r).catch(()=>state.totalCost=null),fetchJson("/api/rules").then(r=>state.rules=r).catch(()=>state.rules={}),fetchJson("/api/providers").then(r=>{state.providers=r;state.providersErr=false;pageProvSig=provSigOf(r);}).catch(()=>{state.providersErr=true;}),fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300").then(r=>state.events=r).catch(()=>state.events=null)];
+  const fast=[fetchJson("/api/stats").then(r=>acceptStatsInto("stats",r,null)).catch(()=>acceptStatsInto("stats",null,null)),fetchJson("/api/ledger-stats"+q).then(r=>state.ledger=r).catch(()=>state.ledger=null),fetchJson("/api/sessions").then(r=>state.sessions=r).catch(()=>state.sessions=null),fetchJson("/api/total-cost").then(r=>state.totalCost=r).catch(()=>state.totalCost=null),fetchJson("/api/rules").then(r=>state.rules=r).catch(()=>state.rules={}),fetchJson("/api/providers").then(r=>{state.providers=r;state.providersErr=false;pageProvSig=provSigOf(r);}).catch(()=>{state.providersErr=true;}),fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300").then(r=>state.events=r).catch(()=>state.events=null)];
   try{
     await Promise.all(fast);
     // 先定下会话页的数据源再拉它：手选优先，否则跟随当前会话（见 resolveSessionPick）。
@@ -1077,7 +1105,7 @@ async function loadPage(force){
     const sessPick=resolveSessionPick();
     const sessionChanged=Boolean(sessPick)&&sessPick!==lastRenderedSession;
     if(sessionChanged){lastRenderedSession=sessPick;if(realSwitch)playSessionEnter();}
-    if(sessPick){state.userSelectedFile=sessPick;try{const r=await fetchJson("/api/stats?file="+encodeURIComponent(sessPick));state.sessionStats=(r&&!r.error)?r:null;}catch{state.sessionStats=null;}}
+    if(sessPick){state.userSelectedFile=sessPick;try{const r=await fetchJson("/api/stats?file="+encodeURIComponent(sessPick));acceptStatsInto("sessionStats",r,sessPick,{staleTurns:true});}catch{acceptStatsInto("sessionStats",null,sessPick);}}
     else state.sessionStats=null;
     // 会话切过的时候不静默：让本会话那几张卡重播入场动画，而不是硬切
     // 但“首轮自己稳定”不算切换：刚启动时 pick 会从列表第一个/活跃会话漂到真实焦点会话一次，
