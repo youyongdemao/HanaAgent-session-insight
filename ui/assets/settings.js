@@ -15,7 +15,6 @@ const BROADCAST_KEY = "si-live-layout";
 
 const listEl = document.getElementById("stList");
 const saveEl = document.getElementById("stSave");
-const resetEl = document.getElementById("stReset");
 const statusEl = document.getElementById("stStatus");
 
 let items = [];   // [{id,label,group,desc}]
@@ -110,45 +109,6 @@ saveEl.addEventListener("click", async () => {
   } catch (error) {
     saveEl.disabled = false;
     setStatus("保存失败：" + String(error?.message || error), "err");
-  }
-});
-
-resetEl.addEventListener("click", async () => {
-  saveEl.disabled = true;
-  setStatus("恢复中…");
-  try {
-    // 空对象走后端默认分支：两块都回到默认（全部显示）
-    const cfg = await apiFetch("api/live-config", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    items = cfg.items || items;
-    const known = new Map(items.map((i) => [i.id, i]));
-    items = (cfg.order || []).filter((id) => known.has(id)).map((id) => known.get(id));
-    onSet = new Set(cfg.on || []);
-
-    const wcfg = await apiFetch("api/widget-config", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    wBlocks = wcfg.blocks || wBlocks;
-    wOnSet = new Set(wcfg.on || []);
-
-    dirty = false;
-    render();
-    renderWidgetTable();
-    setStatus("已恢复默认", "ok");
-    broadcastWidgetLayout();
-    try {
-      localStorage.setItem(BROADCAST_KEY, String(Date.now()));
-    } catch {
-      /* 同上 */
-    }
-  } catch (error) {
-    saveEl.disabled = false;
-    setStatus("恢复失败：" + String(error?.message || error), "err");
   }
 });
 
@@ -319,7 +279,7 @@ async function loadWidgetConfig() {
   }
 }
 
-// 保存与恢复默认都由「界面设置」底部那一对按钮统管（见上），这里不再单设。
+// 保存由「界面设置」底部的按钮统管（见上），这里不再单设。
 
 loadWidgetConfig();
 
