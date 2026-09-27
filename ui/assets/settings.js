@@ -365,6 +365,76 @@ document.getElementById("stResetWidget")?.addEventListener("click", async () => 
 
 loadWidgetConfig();
 
+/* ── 高级视觉效果：毛玻璃 / 鼠标跟随光晕 ──
+   两个开关都是“切换即生效”：推配置后广播一次，已打开的页面自己重新拉一遍应用，不用重载插件。
+   保存按钮在这块不适用（没有“改完再存”这一步），所以不走 makeSaver。 */
+const FX_BROADCAST_KEY = "si-fx-config";
+const fxListEl = document.getElementById("stFxList");
+const FX_ROWS = [
+  { key: "glass", label: "毛玻璃背景" },
+  { key: "glow", label: "鼠标跟随光晕" },
+];
+let fxState = { glass: false, glow: true };
+
+function renderFx() {
+  if (!fxListEl) return;
+  fxListEl.innerHTML = "";
+  for (const row of FX_ROWS) {
+    fxListEl.append(
+      makeToggleRow({
+        label: row.label,
+        checked: !!fxState[row.key],
+        onChange: (on) => {
+          if (fxState[row.key] === on) return;
+          fxState[row.key] = on;
+          saveFx();
+        },
+      })
+    );
+  }
+}
+
+function broadcastFx() {
+  try {
+    localStorage.setItem(FX_BROADCAST_KEY, String(Date.now()));
+  } catch {
+    /* 广播失败不影响保存 */
+  }
+}
+
+async function saveFx() {
+  try {
+    await apiFetch("api/fx-config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(fxState),
+    });
+    broadcastFx();
+  } catch (error) {
+    // 写失败就回读一次，界面不撒谎
+    try {
+      const back = await apiFetch("api/fx-config");
+      fxState = { glass: !!back?.glass, glow: back?.glow !== false };
+      renderFx();
+    } catch {
+      /* 读也失败就保持现状 */
+    }
+  }
+}
+
+async function loadFx() {
+  if (!fxListEl) return;
+  try {
+    const fx = await apiFetch("api/fx-config");
+    fxState = { glass: !!fx?.glass, glow: fx?.glow !== false };
+  } catch {
+    /* 读不到按默认 */
+  }
+  renderFx();
+}
+
+loadFx();
+
 /* ── 本地供应商：程序路径 ──
    启动按钮用哪个程序由后端定（默认安装目录 → 这里指定的），这一块只负责让用户指定与清除。 */
 const localBlockEl = document.getElementById("stLocalBlock");

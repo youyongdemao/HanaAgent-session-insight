@@ -267,6 +267,28 @@ function parseHomeView(raw) {
 }
 
 /**
+ * 高级视觉效果开关（存 config.json 的 fxConfig，一段 JSON 字符串）。
+ * 毛玻璃默认关：面板下面就是纯色页面背景，模糊纯色与纯色长得一样，实测视觉无差别，
+ * 而它是鼠标移动掉帧的主要开销。鼠标光晕默认开，它才是观感的一部分。
+ * 两个开关都是“用户自己按机器情况关”，不做自动检测。
+ */
+const FX_DEFAULTS = { glass: false, glow: true };
+function parseFx(raw) {
+  let o = null;
+  try {
+    o = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    o = null;
+  }
+  const out = { ...FX_DEFAULTS };
+  if (o && typeof o === "object") {
+    if (typeof o.glass === "boolean") out.glass = o.glass;
+    if (typeof o.glow === "boolean") out.glow = o.glow;
+  }
+  return out;
+}
+
+/**
  * App 自有配置：存在 dataDir/config.json，不进宿主 settings schema。
  * 宿主只要看到 contributes.settings.schema，就把设置 tab 归成 schema 类，自定义设置页会被降级，
  * 所以去掉 schema，配置由 App 自己保管。常驻内存且写入即更新，设置页改完立刻生效。
@@ -637,6 +659,28 @@ export default defineApp(async (sdk) => {
         const homeView = parseHomeView(body && body.homeView);
         await writeAppConfig(sdk, "homeView", homeView);
         return c.json({ ok: true, homeView });
+      } catch (error) {
+        return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
+      }
+    });
+
+    // ── 高级视觉效果：毛玻璃 / 鼠标光晕（存 config.json 的 fxConfig）──
+    // 切换即生效：设置页写本配置后广播一次，页面自己重新拉并应用，不用重载插件。
+    app.get("/api/fx-config", async (c) => {
+      try {
+        const all = await readAppConfig(sdk);
+        return c.json(parseFx(all.fxConfig));
+      } catch (error) {
+        return c.json({ ...FX_DEFAULTS, error: String(error?.message ?? error) });
+      }
+    });
+
+    app.post("/api/fx-config", async (c) => {
+      try {
+        const body = await c.req.json().catch(() => null);
+        const fx = parseFx(body);
+        await writeAppConfig(sdk, "fxConfig", JSON.stringify(fx));
+        return c.json({ ok: true, ...fx });
       } catch (error) {
         return c.json({ ok: false, error: String(error?.message ?? error) }, 500);
       }
