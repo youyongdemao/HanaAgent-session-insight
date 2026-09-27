@@ -368,7 +368,7 @@ export default defineApp(async (sdk) => {
 
   await sdk.routes.register((app) => {
     // v1 遗留端点（账本聚合、供应商、余额等）复用原实现，数据源已在内部换成宿主 API。
-    registerLegacyRoutes(app, ctx);
+    registerLegacyRoutes(app, ctx, sdk);
 
     // 检查更新：只查 GitHub 上最新的已发布版本，安装仍走「设置 → 扩展」
     registerUpdateRoutes(app, ctx);
