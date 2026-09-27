@@ -686,94 +686,6 @@ export default defineApp(async (sdk) => {
       }
     });
 
-    // 数据：一次给齐卡片需要用到的所有原始字段，前端按配置决定显示哪几项。
-    app.get("/api/live-data", async (c) => {
-      try {
-        let sessionId = c.req.query("sessionId") ?? null;
-        const sessions = await listSessionsCached(sdk).catch(() => []);
-        if (!sessionId) sessionId = sessions[0]?.sessionId ?? null;
-        if (!sessionId) return c.json({ error: "no sessions found" }, 404);
-
-        const [recent, context, entries] = await Promise.all([
-          sdk.usage.list({ sessionId, limit: 30 }).catch(() => null),
-          fetchSessionContext(sdk, sessionId, { ttlMs: 15000, timeoutMs: 6000 }),
-          fetchSessionUsage(sdk, sessionId).catch(() => []),
-        ]);
-
-        // 取最近一轮：按 startedAt 排序后取最后一条
-        const all = (recent?.entries ?? [])
-          .slice()
-          .sort((a, b) => String(a?.startedAt ?? "").localeCompare(String(b?.startedAt ?? "")));
-        const last = all.at(-1) ?? null;
-        const u = last?.usage ?? null;
-        const outTok = num(u?.output?.totalTokens) ?? 0;
-        const durMs = num(last?.durationMs);
-        // 吐吐用墙钟耗时自己算：起止时间最可靠；durationMs 语义不稳（见过只有个位数），
-        // 直接按毫秒折算会得出百万 t/s 这种荒谬值。
-        const t0 = Date.parse(last?.startedAt ?? "");
-        const t1 = Date.parse(last?.endedAt ?? "");
-        const wallMs =
-          Number.isFinite(t0) && Number.isFinite(t1) && t1 > t0 ? t1 - t0 : durMs;
-        const rawTps = wallMs && wallMs >= 500 ? Math.round(outTok / (wallMs / 1000)) : null;
-        // 超过 2000 t/s 视为口径不对，宁可不显示也不给错数
-        const tps = rawTps != null && rawTps > 0 && rawTps <= 2000 ? rawTps : null;
-
-        // 会话累计：命中率按 token 加权，不能简单平均
-        let sumHit = 0;
-        let sumMiss = 0;
-        let sumTokens = 0;
-        let sumCost = 0;
-        for (const e of entries) {
-          if (e?.attribution?.kind !== "session") continue;
-          sumTokens += num(e?.usage?.totalTokens) ?? 0;
-          const hc = num(e?.usage?.costTotal);
-          sumCost += hc != null && hc > 0 ? hc : (calcEntryCost(e) ?? 0);
-          sumHit += num(e?.usage?.cache?.readTokens) ?? 0;
-          sumMiss += missTokensOf(e?.usage) ?? 0;
-        }
-        const hit = sessions.find((s) => s.sessionId === sessionId) ?? null;
-
-        return c.json({
-          at: new Date().toISOString(),
-          sessionId,
-          turn: {
-            provider: last?.model?.provider ?? null,
-            modelId: last?.model?.modelId ?? null,
-            inputTokens: num(u?.input?.totalTokens),
-            uncachedTokens: num(u?.input?.uncachedTokens),
-            outputTokens: num(u?.output?.totalTokens),
-            reasoningTokens: num(u?.output?.reasoningTokens),
-            totalTokens: num(u?.totalTokens),
-            hitRatio: num(u?.cache?.hitRatio),
-            cacheReadTokens: num(u?.cache?.readTokens),
-            cacheMissTokens: missTokensOf(u),
-            cost: num(u?.costTotal) > 0 ? num(u?.costTotal) : calcEntryCost(last),
-            durationMs: wallMs > 0 ? wallMs : null,
-            tps,
-            startedAt: last?.startedAt ?? null,
-            status: last?.status ?? null,
-          },
-          session: {
-            name: hit?.title ?? hit?.name ?? null,
-            totalTokens: sumTokens,
-            cost: sumCost,
-            hitRatio: sumHit + sumMiss > 0 ? sumHit / (sumHit + sumMiss) : null,
-          },
-          context: context
-            ? {
-                tokens: num(context.contextUsage?.tokens),
-                percent: num(context.contextUsage?.percent),
-                compactThreshold: num(context.compactThreshold),
-                window: num(context.model?.contextWindow),
-                systemPromptTokens: estPromptTokens(context.systemPrompt),
-              }
-            : null,
-        });
-      } catch (error) {
-        return c.json({ error: String(error?.message ?? error) }, 500);
-      }
-    });
-
     // ── 宿主界面环境：卡片据此决定要不要为宿主控件让位 ──
     app.get("/api/ui-env", async (c) => {
       try {
@@ -804,7 +716,7 @@ export default defineApp(async (sdk) => {
     return v > 0 ? "¥" + v.toFixed(6) : "¥0";
   };
 
-  /** 从一条 ledger entry 抽本轮指标（与 /api/live-data 同一套口径）。 */
+  /** 从一条 ledger entry 抽本轮指标。 */
   function turnFromEntry(entry) {
     const u = entry?.usage ?? null;
     const outTok = num(u?.output?.totalTokens) ?? 0;
