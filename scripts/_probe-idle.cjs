@@ -7,8 +7,12 @@ const os = require("os");
 const { spawn } = require("child_process");
 const SELF = __dirname, REPO = path.resolve(SELF, ".."), ID = "session-insight", APP = "session-insight-v2";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const PORT = 9071, CDP_PORT = 9571;
-const IDLE_MS = Number(process.argv[2] || 20000);
+const argOf = (k, d) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
+const PORT = Number(argOf("--port", "9071")), CDP_PORT = Number(argOf("--cdp", "9571"));
+const IDLE_MS = Number(argOf("--secs", "25000"));
+const TAG = argOf("--tag", "current");
+const JS_FILE = argOf("--js", path.join(REPO, "ui", "assets", "panel-v2.js"));
+const CSS_FILE = argOf("--css", path.join(REPO, "ui", "assets", "panel-v2.css"));
 
 const N = 256;
 const series = (b, m, w) => Array.from({ length: N }, (_, i) => b + m * Math.abs(Math.sin(i / w)));
@@ -28,7 +32,7 @@ const STATS = { file: "mock.jsonl", title: "探针会话", model: "deepseek-v3.2
 const THEME_CSS = (() => { try { const b = "D:/AI/Hanako/artifacts/renderer"; for (const d of fs.readdirSync(b).sort().reverse()) { const p = path.join(b, d, "themes", "midnight.css"); if (fs.existsSync(p)) return fs.readFileSync(p, "utf8"); } } catch {} return ""; })();
 const HTML = (surface) => `<!doctype html><html data-theme="midnight"><head><meta charset="utf-8"><link rel="stylesheet" href="/theme.css"><link rel="stylesheet" href="/api/plugins/${ID}/assets/panel-v2.css"></head><body data-hana-theme="midnight" data-surface="${surface}"><div id="root" data-surface="${surface}"></div><script type="module" src="/api/plugins/${ID}/assets/panel-v2.js"></script></body></html>`;
 const REQ_LOG = [];
-function startServer(port) {
+function startServer(port, assets) {
   const srv = http.createServer(async (req, res) => {
     const p = new URL(req.url, "http://127.0.0.1").pathname;
     const send = (t, b) => { res.writeHead(200, { "Content-Type": t, "Cache-Control": "no-store" }); res.end(b); };
@@ -37,7 +41,7 @@ function startServer(port) {
     if (p === `/api/plugins/${ID}/page`) return send("text/html; charset=utf-8", HTML("page"));
     if (p === `/api/plugins/${ID}/widget`) return send("text/html; charset=utf-8", HTML("widget"));
     const m = p.match(new RegExp(`^/api/plugins/${ID}/assets/(.+)$`));
-    if (m) { const f = path.join(REPO, "ui", "assets", m[1]); if (fs.existsSync(f)) { const e = path.extname(f).toLowerCase(); return send(e === ".css" ? "text/css" : e === ".js" ? "text/javascript" : "application/octet-stream", fs.readFileSync(f)); } res.writeHead(404); return res.end("nf"); }
+    if (m) { const f = (assets && assets[m[1]]) || path.join(REPO, "ui", "assets", m[1]); if (fs.existsSync(f)) { const e = path.extname(f).toLowerCase(); return send(e === ".css" ? "text/css" : e === ".js" ? "text/javascript" : "application/octet-stream", fs.readFileSync(f)); } res.writeHead(404); return res.end("nf"); }
     const PRE = [`/api/apps/${APP}/routes/api/`, `/api/plugins/${ID}/api/`];
     let api = null; for (const x of PRE) if (p.startsWith(x)) api = p.slice(x.length);
     if (api !== null) {
@@ -74,7 +78,7 @@ const READ = `(()=>({mut:window.__mut||0,frames:window.__frames||0,nodes:documen
 
 (async () => {
   const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "si-idle-"));
-  const srv = await startServer(PORT);
+  const srv = await startServer(PORT, { "panel-v2.js": JS_FILE, "panel-v2.css": CSS_FILE });
   const chrome = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
   const proc = spawn(chrome, ["--headless=new", "--disable-gpu", "--no-first-run", "--no-default-browser-check", "--disable-background-timer-throttling", "--disable-renderer-backgrounding", "--disable-backgrounding-occluded-windows", "--remote-debugging-port=" + CDP_PORT, "--user-data-dir=" + path.join(TMP, "p"), "about:blank"], { stdio: "ignore" });
   const out = {};
@@ -100,6 +104,7 @@ const READ = `(()=>({mut:window.__mut||0,frames:window.__frames||0,nodes:documen
       const counts = {};
       for (const r of REQ_LOG) counts[r] = (counts[r] || 0) + 1;
       out[name] = {
+        tag: TAG, js: path.basename(JS_FILE),
         seconds: IDLE_MS / 1000,
         requests: REQ_LOG.length,
         perMinute: +(REQ_LOG.length * 60000 / IDLE_MS).toFixed(1),
