@@ -488,7 +488,7 @@ export default defineApp(async (sdk) => {
         let stats = buildSessionStats(entries, context);
         // 默认走宿主账本；账本窗口（本机目前约二十多天）以外的会话回退到解析会话文件。
         if (entries.length === 0) {
-          const fromFile = await _step("file", () => buildStatsFromSessionFile(sdk, hit?.path ?? null));
+          const fromFile = await _step("file", () => buildStatsFromSessionFile(sdk, hit?.path ?? null, 200, hit?.mtime ?? 0));
           if (fromFile) stats = fromFile;
         }
         const _total = Date.now() - _t0;
