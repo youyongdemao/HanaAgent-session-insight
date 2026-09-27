@@ -1524,6 +1524,12 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-cost .ah-num
    鼠标跟随光晕关掉时连绘制一起去掉，JS 侧同步短路（只关 CSS 不够，每帧仍会写变量触发重绘）。 */
 :root{--fx-lens-lg:none;--fx-lens-sm:none}
 body[data-fx-glass="on"]{--fx-lens-lg:blur(18px) saturate(1.45);--fx-lens-sm:blur(10px) saturate(1.3)}
+/* 关掉光晕时要一起停的不只 .si-glow-spot：分段按钮、导航、费用简报卡、延迟卡的光斑是各自的
+   伪元素，位置写在中心（靠 --mx 跟手，而关掉后 --mx 不再更新），不拦就会留一坨死光斑在那里。 */
+body[data-fx-glow="off"] .seg::after,
+body[data-fx-glow="off"] .nav::after,
+body[data-fx-glow="off"] .hero-pricing .pricing-side::before,
+body[data-fx-glow="off"] .lat-kpis>div::before{display:none!important}
 body[data-fx-glow="off"] #usage-overview .panel>.si-glow-spot,
 body[data-fx-glow="off"] #usage-session .panel>.si-glow-spot,
 body[data-fx-glow="off"] #view-api :is(.panel,.card,.chart-card,.provider-item)>.si-glow-spot,
