@@ -479,7 +479,7 @@ export default defineApp(async (sdk) => {
           [entries, context, sessions] = await Promise.all([
             _step("usage", () => fetchSessionUsage(sdk, sessionId, { timeoutMs: 6000 })),
             _step("context", () => fetchSessionContext(sdk, sessionId, { ttlMs: 15000, timeoutMs: 6000 })),
-            _step("sessions", () => listSessionsCached(sdk, { ttlMs: 120000 }).catch(() => [])),
+            _step("sessions", () => listSessionsCached(sdk, { ttlMs: 120000, staleMs: 600000 }).catch(() => [])),
           ]);
         }
         // 快通道没有账本记录时不当成「0」回给前端：有的会话在账本窗口之外，靠解析会话文件才有数，
