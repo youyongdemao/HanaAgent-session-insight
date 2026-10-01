@@ -398,7 +398,10 @@ export default defineApp(async (sdk) => {
       try {
         // 默认只给未归档的：归档会话留在档案里，不进工作台的下拉列表
         const lifecycle = c.req.query("lifecycle") ?? "active";
-        const sessions = await listSessions(sdk, { lifecycle });
+        // 走共享缓存而不是直发枚举：以前这里是唯一绕过缓存的口子，
+        // 面板每 10 秒问一次，就多一次全目录枚举（实测 2.2～5 秒）。
+        // 30 秒档：下拉列表晚半分钟无害，且完全不阻塞（过期时后台刷）。
+        const sessions = await listSessionsCached(sdk, { lifecycle, ttlMs: 30000, staleMs: 120000 });
         return c.json({ sessions, count: sessions.length });
       } catch (error) {
         return c.json({ sessions: [], error: String(error?.message ?? error) }, 500);

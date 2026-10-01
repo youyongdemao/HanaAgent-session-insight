@@ -1433,6 +1433,21 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-
 .si-tip.on{opacity:1;transform:translateY(0)}
 .si-tip .si-tip-t{color:var(--text);font-weight:600}
 .si-tip .si-tip-v{color:var(--accent);margin-left:8px}
+/* ── 折线图的悬停读数：跟随光标的窗格 + 图内竖直基准线（与热力图浮层同一套玻璃语言） ── */
+.si-charttip{position:fixed;z-index:9999;pointer-events:none;min-width:126px;padding:8px 11px;border-radius:10px;
+  font:11px/1.5 var(--font-mono);color:var(--text-light);white-space:nowrap;
+  background:color-mix(in srgb,var(--bg-card) 92%,transparent);
+  border:1px solid var(--si-glass-border);
+  box-shadow:0 8px 24px rgba(0,0,0,.26),inset 0 1px 0 var(--si-glass-hi);
+  -webkit-backdrop-filter:var(--fx-lens-sm);backdrop-filter:var(--fx-lens-sm)}
+.si-charttip[hidden]{display:none}
+.si-charttip b{display:block;margin-bottom:5px;color:var(--text);font-size:11px;font-weight:600;letter-spacing:.01em}
+.si-charttip span{display:flex;align-items:center;gap:7px}
+.si-charttip span i{width:8px;height:8px;border-radius:2.5px;flex:0 0 auto}
+.si-charttip span em{margin-left:auto;padding-left:14px;font-style:normal;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.si-guide{pointer-events:none}
+.si-guide line{stroke:color-mix(in srgb,var(--text) 30%,transparent);stroke-width:1;stroke-dasharray:3 3}
+.si-guide circle{stroke:color-mix(in srgb,var(--bg-card) 80%,transparent);stroke-width:1.5}
 /* ── 为宿主悬浮的窗口按钮让位 ──
    宿主关掉「窗口按钮独立置顶」时，最小化/最大化/关闭会浮在卡片右上角，
    正好压住「实时」徽标。此时给顶部行右侧留出按钮宽度，让徽标退到按钮左侧；
