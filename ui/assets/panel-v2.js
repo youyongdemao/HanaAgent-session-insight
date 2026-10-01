@@ -64,9 +64,10 @@ function diagFail(path,error,t0){const ms=t0?Date.now()-t0:0;const expired=/HTTP
 async function fetchJson(path,timeoutMs=8000){if(surfaceExpired)throw new Error("surface session expired");/* 宿主正卡着（见 noteTickError）：这一段干脆不发新请求，等它缓过来。 */if(tickPaused()&&!NETWORK_API.test(path)){const e=new Error("host busy, request skipped");e.siSkipDiag=true;throw e;}const t0=Date.now();try{const res=await hana.api.fetch(path,{signal:AbortSignal.timeout(timeoutMs)});if(!res.ok)throw new Error("HTTP "+res.status);const out=await res.json();if(Date.now()-diagFailAt>4000)siDiag("");diagFails.delete(path);/* 只有被保护的那两条通道报平安才解后退：只读两个文件的 build-stamp 能成功，说明不了宿主已经缓过来。 */if(/^\/api\/(stats|hero-stats)/.test(path))noteTickOk();return out;}catch(error){if(!error?.siSkipDiag){if(!NETWORK_API.test(path))noteTickError(error);diagFail(path,error,t0);}throw error;}}
 
 /* 主题同步（与 v1 一致） */
-/* 请求闸门：宿主同时只服务有限条请求。一次甩七八条过去，排在后面的还没被处理就已经耗光自己的 8 秒预算，
-   表现成「整批超时、页面数据断供」。把重的那几条（要碰账本/会话枚举的）限并发 2，
-   让每条请求的超时预算只花在自己身上；本地的轻接口（规则/供应商）不排队。 */
+/* 请求闸门：宿主同时只服务有限条请求，一条全目录枚举要 2～5 秒。把两条要枚举的接口
+   （/api/stats 与 /api/sessions）限到一起排队，让每条请求的超时预算只花在自己身上；
+   其余接口都是本地读（规则/供应商/账本），本来就不互相挤，不进这道闸门，
+   否则一条便宜的本地请求会排在几秒的枚举后面白等。 */
 function makeGate(limit){let active=0;const queue=[];const pump=()=>{if(active>=limit||!queue.length)return;const job=queue.shift();active++;job.fn().then(job.ok,job.no).then(()=>{active--;pump();});};return fn=>new Promise((ok,no)=>{queue.push({fn,ok,no});pump();});}
 const heavyGate=makeGate(2);
 function applyHostTheme(t){const raw=resolveThemeIntent(t);if(!raw)return false;/* 主题没变就什么都不做：500ms 的主题同步轮询每次都会调到这里，而它原来无条件排一个 rAF 去重读一遍计算样式。宿主真实的主题变化有 MutationObserver 和样式表 load 事件兜着，不靠这个轮询。 */if(document.documentElement.dataset.theme===raw&&document.body.dataset.hanaTheme===raw)return true;document.documentElement.dataset.theme=raw;document.body.dataset.hanaTheme=raw;const tc=document.getElementById("hana-theme-css")||document.querySelector('link[href*="/api/plugins/theme.css"]');if(tc){try{const u=new URL(tc.href,window.location.href);if(u.searchParams.get("theme")!==raw){u.searchParams.set("theme",raw);tc.addEventListener("load",syncComputedColorMode,{once:true});tc.href=u.toString();}}catch{}}requestAnimationFrame(syncComputedColorMode);return true;}
@@ -1138,12 +1139,12 @@ async function loadPage(force){
   // 会话统计不在这里发：它取决于「看哪个会话」，而那个判定要用到本次拿到的会话列表，所以排在 await 之后。
   const fast=[
     heavyGate(()=>fetchJson("/api/stats")).then(r=>acceptStatsInto("stats",r,null)).catch(()=>acceptStatsInto("stats",null,null)),
-    heavyGate(()=>fetchJson("/api/ledger-stats"+q)).then(r=>state.ledger=r).catch(()=>state.ledger=null),
+    fetchJson("/api/ledger-stats"+q).then(r=>state.ledger=r).catch(()=>state.ledger=null),
     heavyGate(()=>fetchJson("/api/sessions")).then(r=>state.sessions=r).catch(()=>state.sessions=null),
-    heavyGate(()=>fetchJson("/api/total-cost")).then(r=>state.totalCost=r).catch(()=>state.totalCost=null),
+    fetchJson("/api/total-cost").then(r=>state.totalCost=r).catch(()=>state.totalCost=null),
     fetchJson("/api/rules").then(r=>state.rules=r).catch(()=>state.rules={}),
     fetchJson("/api/providers").then(r=>{state.providers=r;state.providersErr=false;pageProvSig=provSigOf(r);}).catch(()=>{state.providersErr=true;}),
-    heavyGate(()=>fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300")).then(r=>state.events=r).catch(()=>state.events=null)
+    fetchJson("/api/events?hours="+(EV.range==="2h"?2:24)+"&limit=300").then(r=>state.events=r).catch(()=>state.events=null)
   ];
   try{
     await Promise.all(fast);

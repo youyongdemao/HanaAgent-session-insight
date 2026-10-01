@@ -453,7 +453,7 @@ export default defineApp(async (sdk) => {
       try {
         let sessionId = knownId ?? (await _step("resolve", () => resolveSessionId(sdk, ref)));
         // 新建会话刚建好时，会话列表的 15 秒缓存里还没有它，照缓存查必然落空：绕开缓存再查一次。
-        if (!sessionId) sessionId = await _step("resolveFresh", () => resolveSessionId(sdk, ref, { fresh: true }));
+        if (!sessionId) sessionId = await _step("resolveFresh", () => resolveSessionId(sdk, ref, { fresh: true, since: _t0 }));
         // 还是没有：新会话在第一轮之前根本没有会话文件，这是「还没有用量」，不是请求出错。
         // 回一个空壳让面板显示 0，别弹红色的请求失败提示。非会话文件名的引用仍然按未知会话处理。
         if (!sessionId && isSessionFileName(ref)) {
