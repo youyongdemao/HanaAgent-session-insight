@@ -78,6 +78,33 @@ const TIP = (id) => `(()=>{const svg=document.querySelector('svg[data-sitip="${i
     console.log("\n悬停后：");
     console.log(JSON.stringify(tip, null, 1));
 
+    // 鼠标移开（移到页面左上角）后，竖线与窗格都必须收走
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 4, y: 4, button: "none", pointerType: "mouse" });
+    await sleep(200);
+    const after = await ev(cdp, `(()=>{const e=document.querySelector('.si-charttip');return {tipHidden:e?e.hidden:null,guides:document.querySelectorAll('.si-guide').length};})()`);
+    console.log("\n鼠标移开后：" + JSON.stringify(after));
+
+    // 带日期/时间的折线图（用量页 · 费用面板切到折线）：标签应当是「日期 时间」
+    await ev(cdp, `(()=>{const t=document.querySelector('.tab[data-view="usage"]');if(t)t.click();const b=document.querySelector('#costModeSeg [data-v="line"]');if(b)b.click();return true;})()`);
+    await sleep(900);
+    const cost = await ev(cdp, LIST);
+    const c1 = (cost || []).find((x) => x.w > 200);
+    if (c1) {
+      await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c1.x + Math.round(c1.w * 0.45), y: c1.y + Math.round(c1.h * 0.55), button: "none", pointerType: "mouse" });
+      await sleep(240);
+      const ct = await ev(cdp, TIP(c1.id));
+      console.log("\n费用面板（折线 · 近24h）读数：" + JSON.stringify({ text: ct && ct.text, guide: ct && ct.guide }));
+      if (ct && ct.box && ct.svg) {
+        const pad = 16;
+        const x = Math.max(0, Math.min(ct.svg.x, ct.box.x) - pad), y = Math.max(0, Math.min(ct.svg.y, ct.box.y) - pad);
+        const w = Math.min(1260, Math.max(ct.svg.x + ct.svg.w, ct.box.x + ct.box.w) - x + pad), h = Math.max(ct.svg.y + ct.svg.h, ct.box.y + ct.box.h) - y + pad;
+        const shot2 = (await cdp.send("Page.captureScreenshot", { format: "png", clip: { x, y, width: w, height: h, scale: 2 } })).data;
+        const out2 = path.join(REPO, "scripts", "probe-chart-tip-time.png");
+        fs.writeFileSync(out2, Buffer.from(shot2, "base64"));
+        console.log("截图 -> " + out2);
+      }
+    }
+
     // 截图：把图表与浮层一起框进去
     if (tip && tip.box && tip.svg) {
       const pad = 18;
