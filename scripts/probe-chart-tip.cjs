@@ -39,7 +39,7 @@ class CDP {
 }
 async function ev(c, expression) { const r = await c.send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }); return r.exceptionDetails ? { __exception: r.exceptionDetails.text } : r.result?.value; }
 
-const LIST = `(()=>[...document.querySelectorAll('svg[data-sitip]')].map(e=>{const r=e.getBoundingClientRect();return {id:e.getAttribute('data-sitip'),x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),host:(e.closest('.scl-wrap')?'scl-wrap':(e.closest('.chart-card')?'chart-card':'inline'))};}))()`;
+const LIST = `(()=>[...document.querySelectorAll('svg[data-sitip]')].map(e=>{const r=e.getBoundingClientRect(),c=e.closest('[data-chart]');return {id:e.getAttribute('data-sitip'),chart:c?c.dataset.chart:null,x:Math.round(r.x),y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),host:(e.closest('.scl-wrap')?'scl-wrap':(e.closest('.chart-card')?'chart-card':'inline'))};}))()`;
 const TIP = (id) => `(()=>{const svg=document.querySelector('svg[data-sitip="${id}"]'),e=document.querySelector('.si-charttip'),g=svg?svg.querySelector('.si-guide'):null;
  const r=e?e.getBoundingClientRect():null,sr=svg?svg.getBoundingClientRect():null,gl=g?g.querySelector('line'):null,gr=gl?gl.getBoundingClientRect():null;
  return {hidden:e?e.hidden:null,text:e?e.innerText.replace(/\\n/g,' | '):null,guide:!!g,dots:g?g.querySelectorAll('circle').length:0,
@@ -65,11 +65,25 @@ const TIP = (id) => `(()=>{const svg=document.querySelector('svg[data-sitip="${i
     await sleep(1200);
 
     const charts = await ev(cdp, LIST);
-    console.log("折线图（带悬停读数的 svg）：");
-    console.log(JSON.stringify(charts, null, 1));
-    if (!charts || !charts.length) { console.log("!! 没有找到带 data-sitip 的折线图"); }
+    const live = (charts || []).filter((c) => c.w > 200);
+    console.log("\n会话页四张折线图，逐个悬停看读数窗格：");
+    for (const c of live) {
+      await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: c.x + Math.round(c.w * 0.62), y: c.y + Math.round(c.h * 0.55), button: "none", pointerType: "mouse" });
+      await sleep(200);
+      const t = await ev(cdp, TIP(c.id));
+      console.log(`  ${c.chart || c.host}  ->  ${t && t.text}`);
+      if (c.chart === "sessionStack" && t && t.box && t.svg) {
+        const pad = 16;
+        const x = Math.max(0, Math.min(t.svg.x, t.box.x) - pad), y = Math.max(0, Math.min(t.svg.y, t.box.y) - pad);
+        const w = Math.min(1260, Math.max(t.svg.x + t.svg.w, t.box.x + t.box.w) - x + pad), h = Math.max(t.svg.y + t.svg.h, t.box.y + t.box.h) - y + pad;
+        const shot3 = (await cdp.send("Page.captureScreenshot", { format: "png", clip: { x, y, width: w, height: h, scale: 2 } })).data;
+        const out3 = path.join(REPO, "scripts", "probe-chart-tip-names.png");
+        fs.writeFileSync(out3, Buffer.from(shot3, "base64"));
+        console.log("  截图 -> " + out3);
+      }
+    }
 
-    const target = (charts || []).sort((a, b) => b.w - a.w)[0];
+    const target = live.sort((a, b) => b.w - a.w)[0];
     if (!target) throw new Error("no chart");
     const px = target.x + Math.round(target.w * 0.62), py = target.y + Math.round(target.h * 0.55);
     await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: px, y: py, button: "none", pointerType: "mouse" });
