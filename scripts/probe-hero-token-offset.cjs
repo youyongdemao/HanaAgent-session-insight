@@ -8,7 +8,7 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os");
 const { spawn } = require("child_process");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const REPO = process.env.REPO_DIR || "D:/AI/Hanako/OH-WorkSpace/session-insight/repo";
+const REPO = process.env.REPO_DIR || "D:/AI/Hanako/OH-WorkSpace/HanaApp-Dev/session-insight/repo";
 const ID = "session-insight";
 const OUT = path.join(REPO, "scripts", "_shots");
 fs.mkdirSync(OUT, { recursive: true });

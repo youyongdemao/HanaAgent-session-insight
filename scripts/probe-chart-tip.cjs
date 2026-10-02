@@ -4,7 +4,7 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os");
 const { spawn } = require("child_process");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const REPO = "D:/AI/Hanako/OH-WorkSpace/session-insight/repo";
+const REPO = "D:/AI/Hanako/OH-WorkSpace/HanaApp-Dev/session-insight/repo";
 const ID = "session-insight";
 const THEME_CSS = (() => { try { const base = "D:/AI/Hanako/artifacts/renderer"; for (const d of fs.readdirSync(base).sort().reverse()) { const p = path.join(base, d, "themes", "midnight.css"); if (fs.existsSync(p)) return fs.readFileSync(p, "utf8"); } } catch {} return ""; })();
 const HTML = `<!doctype html><html data-theme="midnight"><head><meta charset="utf-8"><link rel="stylesheet" href="/theme.css"><link rel="stylesheet" href="/api/plugins/${ID}/assets/panel-v2.css"></head><body data-hana-theme="midnight" data-surface="page"><div id="root" data-surface="page"></div><script type="module" src="/api/plugins/${ID}/assets/panel-v2.js"></script></body></html>`;

@@ -4,7 +4,7 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os");
 const { spawn } = require("child_process");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const REPO = "D:/AI/Hanako/OH-WorkSpace/session-insight/repo";
+const REPO = "D:/AI/Hanako/OH-WorkSpace/HanaApp-Dev/session-insight/repo";
 const ID = "session-insight";
 const OUT = process.argv[2] || path.join(REPO, "scripts", "probe-balance-empty.png");
 const THEME = (() => {

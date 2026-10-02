@@ -10,7 +10,7 @@
 const http = require("http"), fs = require("fs"), path = require("path"), os = require("os");
 const { spawn } = require("child_process");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const REPO = process.env.REPO_DIR || "D:/AI/Hanako/OH-WorkSpace/session-insight/repo";
+const REPO = process.env.REPO_DIR || "D:/AI/Hanako/OH-WorkSpace/HanaApp-Dev/session-insight/repo";
 const ID = "session-insight";
 const SURFACE = process.env.SURFACE || "page";
 const THEME_CSS = (() => { try { const base = "D:/AI/Hanako/artifacts/renderer"; for (const d of fs.readdirSync(base).sort().reverse()) { const p = path.join(base, d, "themes", "midnight.css"); if (fs.existsSync(p)) return fs.readFileSync(p, "utf8"); } } catch {} return ""; })();
