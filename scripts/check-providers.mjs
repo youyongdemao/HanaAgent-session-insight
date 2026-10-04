@@ -4,6 +4,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import registerPluginApiRoutes from "../lib/legacy-api.js";
+import { registerLaunchRoutes } from "../lib/local-launch.js";
 
 // 宿主自带 hono，但插件目录不一定有自己的 node_modules，这里按候选路径探测（可用 HONO_PATH 覆盖）
 const HONO_CANDIDATES = [
@@ -50,6 +51,9 @@ console.log("");
 
 const app = new Hono();
 registerPluginApiRoutes(app, ctx);
+// 本地供应商拉起路由在 v2 里迁到 lib/local-launch.js（/api/open-app 已移除），
+// 诊断脚本要单独注册，否则下面探活会 404。writeConfig 只在 POST 用，这里不需要。
+registerLaunchRoutes(app, ctx, { writeConfig: async () => {} });
 const r = await (await app.request("/api/providers")).json();
 const list = r.providers || [];
 console.log(`插件认定已启用供应商：${list.length} 家   (hono=${honoPath})`);
@@ -62,14 +66,14 @@ console.log("");
 console.log("会显示粉色灯（本地部署）：" + (local.join(", ") || "(无)"));
 
 console.log("");
-console.log("本地应用启动目标（dry=1，只看命令，不实际启动）：");
+console.log("本地应用启动目标（dry=1，只看状态，不实际拉起）：");
 for (const id of local) {
-  const r = await (await app.request(`/api/open-app?provider=${encodeURIComponent(id)}&dry=1`)).json();
+  const r = await (await app.request(`/api/launch-provider?provider=${encodeURIComponent(id)}&dry=1`)).json();
   console.log(`  ${id.padEnd(12)} ${JSON.stringify(r)}`);
 }
-console.log("拒绝非本地供应商：");
+console.log("未知供应商（应回 running:false，不抛错）：");
 for (const bad of ["deepseek", "not-exist", "../../windows/system32/cmd"]) {
-  const r = await (await app.request(`/api/open-app?provider=${encodeURIComponent(bad)}&dry=1`)).json();
+  const r = await (await app.request(`/api/launch-provider?provider=${encodeURIComponent(bad)}&dry=1`)).json();
   console.log(`  ${String(bad).padEnd(28)} ${JSON.stringify(r)}`);
 }
 
