@@ -47,7 +47,7 @@ git cherry-pick <v2.0.x 上的提交>
 
 - `v2.1.x`：发行线，推送远端 `origin/v2.1.x`，release 从这条线出。
 - `v2.0.x`：已停更，仅作历史保留。
-- 远端 `main` 指向 2.1.0 架构的历史提交，仅作历史保留，不代表发行线。
+- 远端 `main`：仓库默认分支，2026-10-06 起与 `v2.1.x` 同源（已跟进 2.1.0 发行状态）。根 `pricing.json` 由周三任务在 `repo-main`（main）改动后合并回 `v2.1.x`。
 - 远端 tag `v2.1.0` 已指向发行提交，GitHub Releases 里有对应的 release。
 
 ## 查看状态
