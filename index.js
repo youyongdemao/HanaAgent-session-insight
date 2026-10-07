@@ -187,12 +187,15 @@ const APP_DIR = dirname(fileURLToPath(import.meta.url));
 const LIVE_ITEMS = [
   { id: "hit", label: "缓存命中率", group: "本轮", desc: "本轮请求的缓存命中比例" },
   { id: "tps", label: "吞吐速度", group: "本轮", desc: "输出 tokens ÷ 耗时" },
+  { id: "ttft", label: "首字耗时", group: "本轮", desc: "请求发出到流式第一个分片到达（含思考）" },
   { id: "tokens", label: "Token 用量", group: "本轮", desc: "本轮消耗总量" },
   { id: "cost", label: "费用", group: "本轮", desc: "本轮折算费用" },
   { id: "duration", label: "耗时", group: "本轮", desc: "本轮墙钟耗时" },
 ];
-// 五项默认全开；关掉的项在输入栏里不显示。
-const LIVE_DEFAULT = ["hit", "tps", "tokens", "cost", "duration"];
+// 默认全开；关掉的项在输入栏里不显示。
+const LIVE_DEFAULT = LIVE_ITEMS.map((i) => i.id);
+// 后加的项：老配置里没有它们，读取时补进 order，并默认打开（用户从没关过它，不该替用户关）。
+const LIVE_ADDED = ["ttft"];
 
 /** 解析持久化的显示项配置；缺失或损坏时回退默认，并补上新增项。 */
 function parseLiveLayout(raw) {
@@ -210,7 +213,11 @@ function parseLiveLayout(raw) {
     }
     const order = obj.order.filter((id) => known.has(id));
     const on = Array.isArray(obj.on) ? obj.on.filter((id) => known.has(id)) : [];
-    for (const it of LIVE_ITEMS) if (!order.includes(it.id)) order.push(it.id);
+    for (const it of LIVE_ITEMS) {
+      if (order.includes(it.id)) continue;
+      order.push(it.id);
+      if (LIVE_ADDED.includes(it.id)) on.push(it.id);
+    }
     return { order, on };
   }
   return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice() };
@@ -712,6 +719,13 @@ export default defineApp(async (sdk) => {
     if (v >= 1e3) return (v / 1e3).toFixed(1) + "K";
     return String(Math.round(v));
   };
+  /** 首字耗时：一秒以内给毫秒（本地模型常在几百毫秒，写成 0.4s 会丢精度），以上给一位小数秒。 */
+  const fmtTtft = (ms) => {
+    const v = Number(ms) || 0;
+    if (v < 1000) return Math.round(v) + "ms";
+    if (v < 60 * 1000) return (v / 1000).toFixed(1) + "s";
+    return Math.round(v / 60000) + "min";
+  };
   const fmtCompactCost = (n) => {
     const v = Number(n) || 0;
     if (v >= 1) return "¥" + v.toFixed(2);
@@ -816,6 +830,14 @@ export default defineApp(async (sdk) => {
             : undefined,
       },
       {
+        id: "ttft",
+        text: `首字${LABEL_GAP}${t.ttftMs != null ? fmtTtft(t.ttftMs) : DASH}`,
+        tooltip:
+          t.ttftMs != null
+            ? `请求发出到流式第一个分片到达（含思考）${t.ttftMs} 毫秒`
+            : undefined,
+      },
+      {
         id: "tps",
         text: `速度${LABEL_GAP}${t.tps != null ? t.tps + "t/s" : DASH}`,
         tooltip: t.tps != null ? `输出速度 ${t.tps} tokens/秒` : undefined,
@@ -880,6 +902,60 @@ export default defineApp(async (sdk) => {
     { types: ["message_start", "message_end"] }
   );
 
+  // ── 首字耗时（TTFT）──
+  // 这个数账本和会话记录里都没有：usage 只有整轮起止，jsonl 只有消息级 timestamp。
+  // 唯一测得到的入口是流式事件——message_start 之后，这个会话到达的第一条 message_update。
+  // 订阅只为这一刻而挂：message_start 时订上，收到这条消息的第一个分片就立刻退订，
+  // 所以每个模型调用只经总线搬进来一条增量。实测一条助手消息有 70～600 条 message_update，
+  // 常驻订阅等于把这一整波都搬进 App 进程；这里只要第一条。
+  const streamStartAt = new Map(); // sessionPath -> 本次 message_start 的毫秒时间
+  const ttftBySession = new Map(); // sessionPath -> { ms, at, startAt }，被对应的 llm_usage 认领一次即删
+  let unwatchStream = null;
+  let watching = false;
+  function disarmTtftWatch() {
+    watching = false;
+    try {
+      unwatchStream?.();
+    } catch {
+      /* 退订失败不挡后续 */
+    }
+    unwatchStream = null;
+  }
+  function armTtftWatch(sessionPath) {
+    disarmTtftWatch();
+    if (!sessionPath) return;
+    watching = true;
+    unwatchStream = sdk.bus.subscribe(
+      (event, path) => {
+        if (!watching || event?.type !== "message_update") return;
+        const t0 = streamStartAt.get(path);
+        const recorded = ttftBySession.get(path);
+        const first = !(recorded && recorded.startAt === t0);
+        disarmTtftWatch(); // 拿到第一个分片就退订：退订后被投递进来的滞留事件都落到上面那句 return
+        if (!first || !t0) return;
+        const ms = Date.now() - t0;
+        // 40ms 以下的多半是假值：App 刚重启或刚换会话时，宿主会把积压的 message_start
+        // 与第一个分片放在同一批里送到，两个时间戳几乎重合。宁可留「—」也不报假数。
+        if (!(ms >= 40) || ms > 10 * 60 * 1000) return;
+        ttftBySession.set(path, { ms, at: Date.now(), startAt: t0 });
+      },
+      { types: ["message_update"], sessionPath }
+    );
+  }
+  sdk.bus.subscribe(
+    (event, sessionPath) => {
+      const type = event?.type;
+      if (type === "message_start") {
+        streamStartAt.set(sessionPath, Date.now());
+        armTtftWatch(sessionPath);
+      } else if (type === "message_end") {
+        streamStartAt.delete(sessionPath);
+        disarmTtftWatch(); // 一条分片都没来（比如被中止）就到这里收尾
+      }
+    },
+    { types: ["message_start", "message_end"] }
+  );
+
   /** 事件本身的时间字段不可用时的兜底：优先刚掐完的一轮，其次从 message_start 起算。 */
   function fallbackWallMs(entry) {
     // 掐表：message_start / message_end 若挤在同一批 RPC 里到达，差值只有几毫秒，
@@ -900,7 +976,7 @@ export default defineApp(async (sdk) => {
 
   // 订阅用量事件：每完成一轮就刷新那一行。回调里的异常自己吃掉。
   sdk.bus.subscribe(
-    (event) => {
+    (event, sessionPath) => {
       if (event?.type !== "llm_usage") return;
       const entry = event?.entry ?? null;
       const turn = turnFromEntry(entry);
@@ -913,6 +989,10 @@ export default defineApp(async (sdk) => {
           if (raw > 0 && raw <= 2000) turn.tps = raw;
         }
       }
+      // 首字耗时：取这一轮流式量到的值；认领一次就删，免得串到下一轮
+      const measured = sessionPath ? ttftBySession.get(sessionPath) : null;
+      if (measured && Date.now() - measured.at < 10 * 60 * 1000) turn.ttftMs = measured.ms;
+      if (sessionPath) ttftBySession.delete(sessionPath);
       pushInputStatus(
         entry?.attribution?.sessionId ?? null,
         turn,
