@@ -21,8 +21,8 @@ const HANA_HOME = process.env.HANA_HOME || "D:/AI/Hanako";
 // --verify：真打一次各家接口，看余额/配额门路是否还有效（不加这个参数只读配置，不触网）
 const VERIFY = process.argv.includes("--verify");
 const ctx = {
-  pluginDir: join(HANA_HOME, "apps", "session-insight-v2"),
-  dataDir: join(HANA_HOME, "app-data", "session-insight-v2"),
+  pluginDir: join(HANA_HOME, "apps", "session-insight"),
+  dataDir: join(HANA_HOME, "app-data", "session-insight"),
   config: { get: () => null },
   network: VERIFY
     ? { fetch: (url, opts) => fetch(url, opts) }

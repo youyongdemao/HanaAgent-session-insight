@@ -1,6 +1,6 @@
 // assets/app-api.js — 应用内路由的统一入口
 // v2 App 的接口都在 /api/apps/<appId>/routes/<path>，凭证走 appSurfaceSession 头。
-export const APP_ID = "session-insight-v2";
+export const APP_ID = "session-insight";
 
 export function apiUrl(path) {
   return `${location.origin}/api/apps/${APP_ID}/routes/${path}`;

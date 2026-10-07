@@ -28,7 +28,7 @@ const srv = http.createServer((req, res) => {
   if (p === `/api/plugins/${ID}/page`) return send("text/html; charset=utf-8", HTML);
   const m = p.match(new RegExp(`^/api/plugins/${ID}/assets/(.+)$`));
   if (m) { const f = path.join(REPO, "ui", "assets", m[1]); if (fs.existsSync(f)) { const e = path.extname(f).toLowerCase(); return send(e === ".css" ? "text/css" : e === ".js" ? "text/javascript" : "application/octet-stream", fs.readFileSync(f)); } res.writeHead(404); return res.end(""); }
-  const api = p.startsWith("/api/apps/session-insight-v2/routes/api/") ? p.slice("/api/apps/session-insight-v2/routes/api/".length) : null;
+  const api = p.startsWith("/api/apps/session-insight/routes/api/") ? p.slice("/api/apps/session-insight/routes/api/".length) : null;
   if (api !== null) {
     if (api === "stats") return json(STATS);
     if (api === "active") return json({ dir: "mock", file: "a.jsonl" });

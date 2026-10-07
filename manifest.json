@@ -1,6 +1,6 @@
 {
   "manifestVersion": 2,
-  "id": "session-insight-v2",
+  "id": "session-insight",
   "name": "会话用量",
   "version": "2.1.0",
   "entry": "index.js",

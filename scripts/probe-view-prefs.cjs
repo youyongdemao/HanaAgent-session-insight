@@ -50,7 +50,7 @@ function startServer(port, js) {
       }
       res.writeHead(404, { "Content-Type": "text/plain" }); return res.end("not found");
     }
-    const PREFIXES = [`/api/apps/session-insight-v2/routes/api/`, `/api/plugins/${ID}/api/`];
+    const PREFIXES = [`/api/apps/session-insight/routes/api/`, `/api/plugins/${ID}/api/`];
     let api = null;
     for (const pre of PREFIXES) if (p.startsWith(pre)) api = p.slice(pre.length);
     if (api !== null) {

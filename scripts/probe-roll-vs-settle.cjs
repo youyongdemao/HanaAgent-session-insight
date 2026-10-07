@@ -22,7 +22,7 @@ const srv = http.createServer((req, res) => {
   if (p === "/theme.css") return send("text/css", THEME);
   const m = p.match(/^\/assets\/(.+)$/);
   if (m) { const f = path.join(REPO, "ui", "assets", m[1]); if (fs.existsSync(f)) { const e = path.extname(f).toLowerCase(); return send(e === ".css" ? "text/css" : "text/javascript", fs.readFileSync(f)); } res.writeHead(404); return res.end(""); }
-  const PREFIX = "/api/apps/session-insight-v2/routes/api/";
+  const PREFIX = "/api/apps/session-insight/routes/api/";
   if (p.startsWith(PREFIX)) {
     const api = p.slice(PREFIX.length);
     // 每次请求把总消耗推高一点，逼出滚动

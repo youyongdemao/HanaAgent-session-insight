@@ -32,7 +32,7 @@ const srv = http.createServer((req, res) => {
   if (p === `/api/plugins/${ID}/page`) return send("text/html; charset=utf-8", HTML);
   const m = p.match(new RegExp(`^/api/plugins/${ID}/assets/(.+)$`));
   if (m) { const f = path.join(REPO, "ui", "assets", m[1]); if (fs.existsSync(f)) { const e = path.extname(f).toLowerCase(); return send(e === ".css" ? "text/css" : "text/javascript", fs.readFileSync(f)); } res.writeHead(404); return res.end(""); }
-  const api = p.startsWith("/api/apps/session-insight-v2/routes/api/") ? p.slice("/api/apps/session-insight-v2/routes/api/".length) : null;
+  const api = p.startsWith("/api/apps/session-insight/routes/api/") ? p.slice("/api/apps/session-insight/routes/api/".length) : null;
   if (api !== null) {
     if (api === "stats") return json(stats());
     if (api === "hero-stats") return json({ tokens: 5707644736 + tick * 999, totalCost: 128.4 + tick, calls: 4211 + tick, errors: tick % 5, hitRate: 0.9 + (tick % 9) / 100, firstDay: "2026-08-01" });

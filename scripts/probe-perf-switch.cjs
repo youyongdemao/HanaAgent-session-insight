@@ -16,7 +16,7 @@ const { spawn } = require("child_process");
 const SELF = __dirname;
 const REPO = path.resolve(SELF, "..");
 const ID = "session-insight";
-const APP = "session-insight-v2";
+const APP = "session-insight";
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const argOf = (k, d) => { const i = process.argv.indexOf(k); return i > -1 ? process.argv[i + 1] : d; };
 const JS_FILE = argOf("--js", path.join(REPO, "ui", "assets", "panel-v2.js"));

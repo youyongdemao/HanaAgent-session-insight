@@ -21,7 +21,7 @@ const os = require("os");
 const { spawn, execFileSync } = require("child_process");
 
 const REPO = path.resolve(__dirname, "..");
-const APP_ID = "session-insight-v2";
+const APP_ID = "session-insight";
 const OLD = process.argv.includes("--old");
 const SHOT = process.argv.includes("--shot");
 const PORT = 8881;

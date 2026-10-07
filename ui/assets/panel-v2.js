@@ -25,7 +25,7 @@ function request(type,payload,timeoutMs=10000){const id=`hana-plugin-${Date.now(
 // v1 的后端地址是 /api/plugins/<pluginId>/<path>，凭证头 pluginSurfaceSession；
 // v2 改成 /api/apps/<appId>/routes/<path>，凭证头 appSurfaceSession。
 // 对外接口（hana.api.url / hana.api.fetch）保持不变，前端其余代码零改动。
-const APP_ID = "session-insight-v2";
+const APP_ID = "session-insight";
 function toRoutePath(input){if(typeof input!=="string"||!input.trim())throw new Error("Invalid app API path.");let t=input.trim();if(t.includes("\\")||t.includes("\0")||t.includes("#")||t.startsWith("//")||/^[a-z][a-z0-9+.-]*:/i.test(t))throw new Error("Invalid app API path.");t=t.replace(/^\/+/, "");if(!t)throw new Error("Invalid app API path.");return t;}
 function pluginApiUrl(path){return `${window.location.origin}/api/apps/${APP_ID}/routes/${toRoutePath(path)}`;}
 function pluginApiFetch(path,init={}){const ss=new URLSearchParams(window.location.search).get("appSurfaceSession");const h=new Headers(init.headers||{});if(ss)h.set("X-Hana-App-Surface-Session",ss);return fetch(pluginApiUrl(path),{...init,headers:h});}

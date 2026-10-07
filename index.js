@@ -23,7 +23,7 @@ import {
 } from "./lib/host-data.js";
 import { missInputOf } from "./lib/usage-parser.js";
 
-export const name = "session-insight-v2";
+export const name = "session-insight";
 
 function num(value) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -179,7 +179,7 @@ async function buildOverview(sdk, sessionId) {
   return out;
 }
 
-const APP_ID = "session-insight-v2";
+const APP_ID = "session-insight";
 const APP_DIR = dirname(fileURLToPath(import.meta.url));
 
 // ── 输入栏「本轮速览」的开关清单 ──
@@ -371,7 +371,7 @@ async function readReduceCardButtons(sdk) {
 }
 
 export default defineApp(async (sdk) => {
-  await sdk.logger.info("session-insight-v2 loaded");
+  await sdk.logger.info("session-insight loaded");
 
   const ctx = await makeCtx(sdk);
 
@@ -385,7 +385,7 @@ export default defineApp(async (sdk) => {
     // 本地供应商：拉起本机应用（要 app/process.spawn）；程序路径可由用户在设置里指定
     registerLaunchRoutes(app, ctx, { writeConfig: (key, value) => writeAppConfig(sdk, key, value) });
 
-    app.get("/health", (c) => c.json({ ok: true, app: "session-insight-v2" }));
+    app.get("/health", (c) => c.json({ ok: true, app: "session-insight" }));
 
     // 前端资源指纹：面板页面自己盯着它，一变就自动刷新。
     // 以后我这边同步完代码，已经打开的面板不用用户手动刷。
@@ -1041,5 +1041,5 @@ export default defineApp(async (sdk) => {
     },
   });
 
-  await sdk.logger.info("session-insight-v2 ready");
+  await sdk.logger.info("session-insight ready");
 });

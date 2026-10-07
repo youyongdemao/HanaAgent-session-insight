@@ -77,7 +77,7 @@ function startServer(port, assets) {
       res.writeHead(404, { "Content-Type": "text/plain" }); return res.end("not found");
     }
     // v2 App 的接口前缀是 /api/apps/<appId>/routes/api/*，v1 插件时代是 /api/plugins/<id>/api/*
-    const PREFIXES = [`/api/apps/session-insight-v2/routes/api/`, `/api/plugins/${ID}/api/`];
+    const PREFIXES = [`/api/apps/session-insight/routes/api/`, `/api/plugins/${ID}/api/`];
     let api = null;
     for (const pre of PREFIXES) if (p.startsWith(pre)) api = p.slice(pre.length);
     if (api !== null) {
@@ -265,7 +265,7 @@ async function runSide(cdp, port, tag) {
   // 自刷新链路：先把详情关掉（开着时是故意不刷的）→ 改指纹 → 等一轮轮询 → 页面应该自己 reload
   await ev(cdp, `(()=>{const b=document.querySelector('[data-detail-close]');if(b)b.click();return true;})()`);
   await sleep(500);
-  const routeProbe = await ev(cdp, `fetch("/api/apps/session-insight-v2/routes/api/build-stamp").then(r=>r.text()).then(t=>t.slice(0,140)).catch(e=>"ERR "+String(e))`);
+  const routeProbe = await ev(cdp, `fetch("/api/apps/session-insight/routes/api/build-stamp").then(r=>r.text()).then(t=>t.slice(0,140)).catch(e=>"ERR "+String(e))`);
   const t0 = await ev(cdp, "performance.timeOrigin");
   STAMP.value = "probe-2-" + Date.now();
   await sleep(15000);

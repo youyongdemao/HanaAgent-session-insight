@@ -77,7 +77,7 @@ const srv = http.createServer((req, res) => {
     if (fs.existsSync(f)) return send(res, path.extname(f).toLowerCase() === ".css" ? "text/css" : "text/javascript", fs.readFileSync(f));
     res.writeHead(404); return res.end("");
   }
-  const api = p.startsWith(`/api/apps/session-insight-v2/routes/api/`) ? p.slice(`/api/apps/session-insight-v2/routes/api/`.length) : null;
+  const api = p.startsWith(`/api/apps/session-insight/routes/api/`) ? p.slice(`/api/apps/session-insight/routes/api/`.length) : null;
   if (api === null) return json(res, { ok: true });
   switch (api) {
     case "providers": return json(res, PROVIDERS);

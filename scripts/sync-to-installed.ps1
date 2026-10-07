@@ -5,7 +5,7 @@
 #   index.js / lib/ 改完需要重新加载 App（扩展页「重新加载」），且子模块有时要重启宿主才彻底生效。
 
 param(
-  [string]$Target = 'D:\AI\Hanako\apps\session-insight-v2'
+  [string]$Target = 'D:\AI\Hanako\apps\session-insight'
 )
 
 $ErrorActionPreference = 'Stop'
