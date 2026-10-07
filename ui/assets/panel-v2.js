@@ -680,21 +680,28 @@ function renderApiDetail(){
   const quickHost=$("#pdQuick");
   if(quickHost){
     const pid=state.provider;
+    // 每次重绘领一个世代号：异步结果回来时对不上号就作废，不再往新容器里塞按钮
+    const gen=(launchRenderGen.get(pid)||0)+1;launchRenderGen.set(pid,gen);
     quickHost.innerHTML=(pdLinks.length?'<button type="button" data-open="'+esc(pdLinks[0].url)+'" title="打开 '+esc(pdLinks[0].label||'官网')+'">↗</button>':'<button type="button" disabled title="暂无入口">↗</button>');
     renderLaunchHint(pid);
     // 是不是本地供应商、有没有可用的程序，由后端判（预设 → 用户指定），前端不猜
-    hana.api.fetch("/api/local-providers",{signal:AbortSignal.timeout(15000)}).then(r=>r.json()).then(j=>{
+    localProvidersCatalog().then(j=>{
       if(!j||!Array.isArray(j.providers))return;
+      if(launchRenderGen.get(pid)!==gen||!quickHost.isConnected)return;
       const lp=j.providers.find(x=>x.id===pid);
       if(!lp)return;
       const btn=document.createElement("button");
       btn.type="button";btn.className="pd-launch";btn.dataset.launch=pid;
       btn.textContent=lp.program?("启动 "+lp.name):"指定程序";
       btn.dataset.base=btn.textContent;
+      btn.dataset.name=lp.name||pid;
       btn.title=lp.program?lp.program:("未指定 "+lp.name+" 的程序，点击选择");
+      // 兜底：容器里同名按钮只留一个（世代号已经挡住绝大多数情况，这里防手动插入/热重载的残留）
+      quickHost.querySelectorAll('.pd-launch[data-launch="'+pid+'"]').forEach(b=>b.remove());
       quickHost.append(btn);
       if(!lp.program)return;
       fetchJson("/api/launch-provider?dry=1&provider="+encodeURIComponent(pid)).then(s=>{
+        if(!btn.isConnected)return;
         if(s&&s.running){btn.classList.add("running");btn.textContent="运行中";btn.title=(lp.name||pid)+" 已在运行，点击可重新检测";}
       }).catch(()=>{});
     }).catch(()=>{});
@@ -733,6 +740,32 @@ function renderApiDetail(){
    程序在哪由后端定（默认安装目录优先，其次用户在设置里指定的），这里只管按钮状态与引导。
    面板会定时重绘，所以提示存在状态里、每次重绘按状态重新画，而不是只往 DOM 里塞一次。 */
 const launchHints = new Map();
+
+/* ── 启动按钮的数据源：本地供应商目录 ──
+   /api/local-providers 要挨个探安装目录、解析程序路径，比一轮轮询还慢。而详情面板每次重绘都会问它一次，
+   于是上一个请求没回来又发下一个，各自的回调都往同一个容器 append，按钮就堆成一片（曾经堆到十几个）。
+   两道闸：① 短 TTL 缓存 + 单飞，重绘不再重复发请求；② 调用侧用世代号丢弃过期结果。 */
+let localProvidersCache = { at: 0, value: null };
+let localProvidersInflight = null;
+let localProvidersSeq = 0;
+const LOCAL_PROVIDERS_TTL = 20000;
+function invalidateLocalProviders() { localProvidersCache = { at: 0, value: null }; localProvidersInflight = null; localProvidersSeq++; }
+function localProvidersCatalog() {
+  if (localProvidersCache.value && Date.now() - localProvidersCache.at < LOCAL_PROVIDERS_TTL) {
+    return Promise.resolve(localProvidersCache.value);
+  }
+  if (localProvidersInflight) return localProvidersInflight;
+  const seq = ++localProvidersSeq;
+  localProvidersInflight = hana.api.fetch("/api/local-providers", { signal: AbortSignal.timeout(15000) })
+    .then(r => r.json())
+    // 只有最新一次请求的结果能写缓存：程序路径改过之后，晚回来的旧结果不能把新结论顶掉
+    .then(j => { if (seq === localProvidersSeq && j && Array.isArray(j.providers)) localProvidersCache = { at: Date.now(), value: j }; return j; })
+    .catch(() => null)
+    .finally(() => { if (seq === localProvidersSeq) localProvidersInflight = null; });
+  return localProvidersInflight;
+}
+/** 每个供应商的当前渲染世代号，见 renderApiDetail 里的用法 */
+const launchRenderGen = new Map();
 
 function renderLaunchHint(pid) {
   const head = document.querySelector("#api-detail .d-head");
@@ -778,6 +811,7 @@ async function chooseLocalProgram(pid) {
     setLaunchHint(pid, "程序路径保存失败：" + String(error?.message || error));
     return null;
   }
+  invalidateLocalProviders(); // 程序路径变了，缓存的「未指定」结论立刻作废
   return picked;
 }
 
@@ -809,7 +843,12 @@ async function runLocalLaunch(pid, btn, baseLabel) {
   if (payload && payload.code === "NOT_CONFIGURED") {
     settle(baseLabel, false);
     const picked = await chooseLocalProgram(pid);
-    if (picked) await runLocalLaunch(pid, btn, baseLabel);
+    if (picked) {
+      // 指完程序按钮该改叫「启动 X」了，顺手把基名换掉，再走一遍完整流程
+      const nm = btn.dataset.name || "";
+      if (nm) { baseLabel = "启动 " + nm; btn.dataset.base = baseLabel; }
+      await runLocalLaunch(pid, btn, baseLabel);
+    }
     return;
   }
 
