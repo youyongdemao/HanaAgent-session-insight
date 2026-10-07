@@ -192,13 +192,19 @@ const LIVE_ITEMS = [
   { id: "cost", label: "费用", group: "本轮", desc: "本轮折算费用" },
   { id: "duration", label: "耗时", group: "本轮", desc: "本轮墙钟耗时" },
 ];
-// 默认全开；关掉的项在输入栏里不显示。
-const LIVE_DEFAULT = LIVE_ITEMS.map((i) => i.id);
-// 后加的项：老配置里没有它们，读取时补进 order，并默认打开（用户从没关过它，不该替用户关）。
-const LIVE_ADDED = ["ttft"];
+// 默认只开三项：速度、首字耗时、总耗时（都是“多快”）。命中/用量/费用要看自己在设置里开。
+const LIVE_DEFAULT = ["tps", "ttft", "duration"];
+// 布局版本：改默认集就 +1，读到旧版本配置时铺一次新默认，之后用户自己改的会被 rev 记住。
+const LIVE_LAYOUT_REV = 2;
 
-/** 解析持久化的显示项配置；缺失或损坏时回退默认，并补上新增项。 */
-function parseLiveLayout(raw) {
+function liveDefaultLayout() {
+  return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice(), rev: LIVE_LAYOUT_REV };
+}
+
+/** 解析持久化的显示项配置；缺失或损坏时回退默认。
+ *  opts.saving=true 用于设置页提交：用户刚点的就是他要的，不做版本迁移。 */
+function parseLiveLayout(raw, opts) {
+  const saving = !!opts?.saving;
   const known = new Set(LIVE_ITEMS.map((i) => i.id));
   let obj = null;
   try {
@@ -206,21 +212,17 @@ function parseLiveLayout(raw) {
   } catch {
     obj = null;
   }
-  if (obj && Array.isArray(obj.order)) {
-    // 老版本（16 项清单）留下的配置里会有现在认不出的 id，说明已经对不上了，直接回默认全开。
-    if (obj.order.some((id) => typeof id === "string" && !known.has(id))) {
-      return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice() };
-    }
-    const order = obj.order.filter((id) => known.has(id));
-    const on = Array.isArray(obj.on) ? obj.on.filter((id) => known.has(id)) : [];
-    for (const it of LIVE_ITEMS) {
-      if (order.includes(it.id)) continue;
-      order.push(it.id);
-      if (LIVE_ADDED.includes(it.id)) on.push(it.id);
-    }
-    return { order, on };
+  if (!obj || !Array.isArray(obj.order)) return liveDefaultLayout(); // 空对象就取默认（设置页的「恢复默认」走这条）
+  if (!saving) {
+    // 认不出的 id = 更老版本（16 项清单）留下的，已经对不上了，整套回默认。
+    if (obj.order.some((id) => typeof id === "string" && !known.has(id))) return liveDefaultLayout();
+    // 没有 rev 或 rev 更小的配置：这一版改过默认集，铺一次新默认。
+    if (!(Number(obj.rev) >= LIVE_LAYOUT_REV)) return liveDefaultLayout();
   }
-  return { order: LIVE_ITEMS.map((i) => i.id), on: LIVE_DEFAULT.slice() };
+  const order = obj.order.filter((id) => known.has(id));
+  const on = Array.isArray(obj.on) ? obj.on.filter((id) => known.has(id)) : [];
+  for (const it of LIVE_ITEMS) if (!order.includes(it.id)) order.push(it.id);
+  return { order, on, rev: LIVE_LAYOUT_REV };
 }
 
 // ── 实时用量卡片（widget）的区块清单 ──
@@ -615,7 +617,7 @@ export default defineApp(async (sdk) => {
     app.post("/api/live-config", async (c) => {
       try {
         const body = await c.req.json().catch(() => null);
-        const layout = parseLiveLayout(body);
+        const layout = parseLiveLayout(body, { saving: true });
         await writeAppConfig(sdk, "liveLayout", JSON.stringify(layout));
         liveLayoutCache = layout;
         // 显隐立即生效：用上一轮的数据重推一次，内容不变、只更新 visible。
@@ -764,7 +766,7 @@ export default defineApp(async (sdk) => {
     };
   }
 
-  /** 输入栏五项的开合配置（键 liveLayout）。带一层内存缓存，设置页保存时刷新。 */
+  /** 输入栏六项的开合配置（键 liveLayout）。带一层内存缓存，设置页保存时刷新。 */
   let liveLayoutCache = null;
   async function getLiveLayout() {
     if (liveLayoutCache) return liveLayoutCache;
@@ -777,7 +779,7 @@ export default defineApp(async (sdk) => {
     return liveLayoutCache;
   }
 
-  /** 把本轮指标分别写进五个输入栏项。
+  /** 把本轮指标分别写进六个输入栏项。
    *  拆成多项而不是拼成一条：溢出时宿主按项折叠，不会出现半个数字被截断；
    *  显示与否交给设置页的开关，没值只留「—」占位，不让项数忽增忽减。 */
   // 最后一次推送给输入栏的入参。设置页改完开关时用它立刻重推一次，
@@ -870,7 +872,7 @@ export default defineApp(async (sdk) => {
           id: it.id,
           text: (it.text ?? "—") + ITEM_GAP,
           tooltip: it.tooltip,
-          // 显示与否由设置页的开关决定（默认五项全开）。
+          // 显示与否由设置页的开关决定（默认只开速度/首字/耗时三项）。
           // 没值不隐藏，留「—」占位，免得项数随数据有无增减。
           visible: on.has(it.id),
         });

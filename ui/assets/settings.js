@@ -121,7 +121,7 @@ liveCtl.saveEl?.addEventListener("click", async () => {
 document.getElementById("stResetLive")?.addEventListener("click", async () => {
   liveCtl.setStatus("恢复中…");
   try {
-    // 空对象走后端默认分支：五项全开
+    // 空对象走后端默认分支：只开速度/首字/耗时三项
     const cfg = await apiFetch("api/live-config", {
       method: "POST",
       headers: { "content-type": "application/json" },
