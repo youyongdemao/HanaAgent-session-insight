@@ -5,7 +5,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
-import registerLegacyRoutes, { calcEntryCost } from "./lib/legacy-api.js";
+import registerLegacyRoutes, { calcEntryCost, resetBalanceCaches } from "./lib/legacy-api.js";
 import { PROVIDER_DIRECTORY } from "./lib/provider-directory.js";
 import { registerUpdateRoutes } from "./lib/update-check.js";
 import { registerLaunchRoutes } from "./lib/local-launch.js";
@@ -580,6 +580,8 @@ export default defineApp(async (sdk) => {
         }
         const value = body?.value == null ? "" : String(body.value).trim();
         await writeAppConfig(sdk, keyId, value);
+        // 凭据刚变：清掉余额缓存与失败冷却，下一轮查询立刻用新值重试
+        resetBalanceCaches();
         return c.json({ ok: true, key: keyId, configured: value.length > 0 });
       } catch (error) {
         return c.json({ ok: false, message: String(error?.message ?? error) }, 500);
