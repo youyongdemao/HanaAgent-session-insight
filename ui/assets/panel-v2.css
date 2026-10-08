@@ -1280,7 +1280,15 @@ body[data-surface="widget"] .ring-state[data-stacked="1"] .w-context-side>div>sp
 /* 当前轮那一组的列数由格子数量决定（见 panel-v2.js 的 layoutTurnGrid）：auto-fit 会在窄卡片上塞 3 列，第 4 格掉行、空出一块 */
 body[data-surface="widget"] .w-context-side{grid-template-columns:repeat(2,minmax(0,1fr))} body[data-surface="widget"] .w-context-side>div{padding-left:8px;padding-right:8px} body[data-surface="widget"] .w-context-side>div:first-child{padding-left:0}
 body[data-surface="widget"] .w-comp-stats{grid-template-columns:repeat(auto-fit,minmax(56px,1fr))}
-body[data-surface="widget"] .w-share-body{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
+/* 组件面板里份额卡的横竖切换：环 + 图例横排放不下就上下叠。
+   grid 换列本身不会过渡（auto-fit 触发的是重排，不是可动画属性），所以改成 flex，
+   切换那一下由 JS 用 FLIP 补一段位移，和详情里的环图共用同一套观感。 */
+body[data-surface="widget"] .w-share-body{display:flex;flex-wrap:nowrap;align-items:center;gap:12px}
+body[data-surface="widget"] .w-share-body>.w-share-donut{flex:0 0 auto}
+body[data-surface="widget"] .w-share-body>.w-share-legend{flex:1 1 auto;min-width:0}
+body[data-surface="widget"] .w-share-body[data-stacked="1"]{flex-direction:column;justify-content:center}
+body[data-surface="widget"] .w-share-body[data-stacked="1"]>.w-share-donut{margin-left:0}
+body[data-surface="widget"] .w-share-body[data-stacked="1"]>.w-share-legend{margin-left:0;width:100%}
 body[data-surface="widget"] .widget{grid-template-columns:minmax(0,1fr);min-width:240px}
 body[data-surface="widget"] .widget>*{min-width:0}
 body[data-surface="widget"] .w-quota-meta span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

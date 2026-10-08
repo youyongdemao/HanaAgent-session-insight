@@ -339,7 +339,7 @@ function renderWidget(){
   const ringFill=$("#wRing .ring-progress");if(ringFill){ringFill.style.strokeDasharray=`${ctxPct.toFixed(1)} ${(100-ctxPct).toFixed(1)}`;ringFill.style.opacity=ctxPct>0?"1":"0";}
   const hitAvg=(()=>{const av=Number(st?.avgHitPercent);if(st?.avgHitPercent!=null&&Number.isFinite(av))return av;const se=(st?.series||[]).filter(s=>s.hit!=null);if(!se.length)return null;return se.reduce((a,s)=>a+Number(s.hit),0)/se.length;})();
   const last=st?.series?.length?st.series[st.series.length-1]:null;const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};set("#wTokTotal",st?fmtFullTok(st.sessionTokens):"–");const wTokEl=document.getElementById("wTokTotal");if(wTokEl&&st)wTokEl.style.setProperty("--digits",String(fmtFullTok(st.sessionTokens).length));set("#wHitAvg",hitAvg!=null?fmtPct(hitAvg):"–");setHitClass($("#wHitAvg"),hitAvg);const cacheHit=Math.max(0,Number(st?.sumCacheRead)||0),cacheMiss=Math.max(0,Number(st?.sumInput)||0),outputTok=Math.max(0,(Number(st?.sumOutput)||0)+(Number(st?.sumReasoning)||0)),inputTok=cacheHit+cacheMiss,ioTotal=inputTok+outputTok||1,cacheTotal=cacheHit+cacheMiss||1,inputPct=inputTok/ioTotal*100,outputPct=outputTok/ioTotal*100,hitPct=cacheHit/cacheTotal*100,missPct=cacheMiss/cacheTotal*100;set("#wCompInputPct",inputPct.toFixed(1)+"%");set("#wCompOutputPct",outputPct.toFixed(1)+"%");set("#wCompHitPct",hitPct.toFixed(1)+"%");set("#wCompMissPct",missPct.toFixed(1)+"%");const inputBar=$("#wCompInputBar"),outputBar=$("#wCompOutputBar"),hitBar=$("#wCompHitBar"),missBar=$("#wCompMissBar");if(inputBar)inputBar.style.width=inputPct+"%";if(outputBar)outputBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";const threshold=Math.round(Number(st?.compactThreshold||0.8)*100);const remTrack=$("#wRemTrack");if(remTrack)remTrack.style.width=ctxPct+"%";const thresholdMark=$("#wThresholdMark");if(thresholdMark)thresholdMark.style.left=threshold+"%";const thresholdLabel=$("#wThresholdLabel");if(thresholdLabel){thresholdLabel.style.left=threshold+"%";thresholdLabel.textContent=threshold+"%";}set("#wTokRound",last?fmtTokens(last.total):"–");set("#wCostRound",last?fmtCost(last.cost):"–");set("#wTurnsRound",st&&st.turns!=null?String(st.turns):"–");set("#wHitRound",last&&last.hit!=null?fmtPct(last.hit):"–");setHitClass($("#wHitRound"),last?.hit);set("#wCost",st?fmtCost(st.sessionCostCny):"–");set("#wWindow",st&&st.contextWindow!=null?`${fmtTokens(st.lastWindowTokens||0)} / ${fmtTokens(st.contextWindow)}`:"–");set("#wUsed",st?`已用 ${fmtTokens(st.lastWindowTokens||0)}`:"已用 –");set("#wRem",st&&st.remainingToCompact!=null?`距压缩 ${fmtTokens(st.remainingToCompact)}`:"距压缩 –");
-  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const used=Array.isArray(st?.providers)&&st.providers.length?st.providers:[{provider:st?.provider||"unknown",tokens:st?.sessionTokens||0,turns:st?.turns||0,cost:st?.sessionCostCny}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;let angle=0;const segs=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;const start=angle;angle+=pct;return {p,pct,start,end:angle,color:colors[i%colors.length]};});const shareCard=$("#wProviderShare");if(shareCard){patchShareCard(shareCard,segs,used.length,providerNames);}
+  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const used=Array.isArray(st?.providers)&&st.providers.length?st.providers:[{provider:st?.provider||"unknown",tokens:st?.sessionTokens||0,turns:st?.turns||0,cost:st?.sessionCostCny}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;let angle=0;const segs=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;const start=angle;angle+=pct;return {p,pct,start,end:angle,color:colors[i%colors.length]};});const shareCard=$("#wProviderShare");if(shareCard){patchShareCard(shareCard,segs,used.length,providerNames);layoutShareBodies();}
   const usedProviderIds=new Set(used.map(p=>p.provider));const quotaItems=bal.filter(b=>usedProviderIds.has(b.provider)&&b?.status==="ok"&&(b.kind==="quota"||b.remainingPercent!=null));const quotaList=$("#wQuotaList");if(quotaList){if(!quotaItems.length){quotaList.innerHTML="";}else{const itemsHtml=quotaItems.map(q=>{const windows=Array.isArray(q.windows)&&q.windows.length?q.windows:[q];const limiting=windows.filter(Boolean).reduce((min,x)=>(x.remainingPercent??100)<(min.remainingPercent??100)?x:min,windows[0]||{});const remain=Math.max(0,Math.min(100,Number(limiting.remainingPercent??q.remainingPercent)||0)),usedPct=100-remain;return `<div class="card w-quota w-quota-item" data-detail="quota" data-provider="${esc(q.provider)}"><div class="row"><span>${esc(q.name||q.provider||"额度窗口")}</span><b>${remain.toFixed(0)}% 剩余</b></div><div class="w-quota-meta"><span>${esc(quotaWindowName(limiting))}</span><span>${esc(fmtResetAt(limiting.resetAt??q.resetAt))}</span></div><div class="w-quota-track"><i style="width:${remain}%"></i></div><div class="w-quota-foot"><span>已用 ${usedPct.toFixed(0)}%</span><span>剩余 ${remain.toFixed(0)}%</span></div></div>`;}).join("");quotaList.innerHTML=`<div class="card w-quota-group"><div class="w-qg-title"><b>额度窗口</b><small>${quotaItems.length} 家</small></div>${itemsHtml}</div>`;}}const wprov=$("#wProviders");if(wprov){const balMap=new Map(bal.map(b=>[b.provider,b]));patchProviderList(wprov,segs.map(s=>{const b=balMap.get(s.p.provider);const status=b?.status==="ok"?"正常":(b?.status||"不可查询");const balance=b?.status==="ok"?(quotaBrief(b)||"–"):(b?.status==="no_key"?"未配置":"–");return {key:String(s.p.provider),label:String(providerNames[s.p.provider]||s.p.provider),tokens:s.p.tokens||0,balance:esc(balance),warning:status!=="正常"};}));}normalizeNumbers(root,true);}
 // 视图偏好：每个图表的形态（折线/热力）与时间范围（近24h…）记在本地，下次进来照旧。
 // 存在同源 localStorage：页面态与卡片态共用一个源，两边看到同一份偏好。
@@ -1340,6 +1340,48 @@ function layoutDonutLayouts(){
     });
   }
 }
+/** 组件面板里「本会话供应商」份额卡：环 + 图例横排放不下就上下叠。
+ *  与详情环同一套：横竖由 data-stacked 驱动（CSS 只管两态的样子），
+ *  切换那一下在 JS 里用 FLIP 补一段位移，避免 grid 换列那种硬切。 */
+function layoutShareBodies(){
+  if(surface!=='widget')return;
+  for(const body of document.querySelectorAll('#wProviderShare .w-share-card .w-share-body')){
+    const donut=body.querySelector('.w-share-donut'),legend=body.querySelector('.w-share-legend');
+    if(!donut||!legend)continue;
+    const avail=Math.round(body.clientWidth||0);
+    if(!avail)continue;
+    // 图例文字宽度只量 span 那截：整项量会被网格撑成整行宽，need 会被抬到永远大于 avail。
+    let subW=0;
+    for(const s of legend.querySelectorAll('.w-share-item>span'))subW=Math.max(subW,Math.round(wTextW(s)||0));
+    // 需求宽 = 旧 grid 的 132px×2 + gap(12) = 276，作为不随文案变化的基线；
+    // 图例文字更宽时再抬上去（108+18+12+30+10=178，加文字宽），以免横排把名字截成省略号。
+    const need=Math.max(276,178+subW);
+    const first=body.dataset.siShareInit!=='1';
+    const wasStacked=body.dataset.stacked==='1';
+    // 已叠放时留 6px 滞回，避免正好卡在阈值上反复横跳
+    const stacked=wasStacked?avail<need+6:avail<need;
+    const flip=stacked!==wasStacked;
+    // 首次（卡片刚建出来）只落状态不补动画，免得开屏先抖一下
+    const before=(flip&&!first)?{d:donut.getBoundingClientRect(),l:legend.getBoundingClientRect()}:null;
+    if(flip)body.dataset.stacked=stacked?'1':'';
+    body.dataset.siShareInit='1';
+    if(!before)continue;
+    void body.offsetHeight;
+    const a=donut.getBoundingClientRect(),b=legend.getBoundingClientRect();
+    const dx=Math.round(before.d.x-a.x),dy=Math.round(before.d.y-a.y);
+    const ex=Math.round(before.l.x-b.x),ey=Math.round(before.l.y-b.y);
+    if(!dx&&!dy&&!ex&&!ey)continue;
+    try{window.__hanakoShareFlips=(window.__hanakoShareFlips||0)+1;}catch(e){}
+    donut.style.transform=`translate(${dx}px,${dy}px)`;
+    legend.style.transform=`translate(${ex}px,${ey}px)`;
+    requestAnimationFrame(()=>{
+      donut.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
+      legend.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
+      donut.style.transform='';legend.style.transform='';
+      setTimeout(()=>{donut.style.transition='';legend.style.transition='';},400);
+    });
+  }
+}
 function layoutTurnHead(){
   const head=document.querySelector('#wDetailBody .w-turn-head');
   if(!head)return;
@@ -1451,9 +1493,9 @@ async function loadWidgetBlocks(){
 // 设置页保存后通过 localStorage 广播（同源 iframe 会收到 storage 事件），卡片不需轮询就能跟着变。
 if(surface==='widget'){window.addEventListener('storage',e=>{if(e.key==='si-widget-layout')loadWidgetBlocks();});
   // 卡片宽度是用户拖的，宽度变了要重算列数与详情头部的一行/两行
-  window.addEventListener('resize',()=>{layoutTurnGrid();layoutTurnHead();layoutDonutLayouts();fitHeroNumbers();});
+  window.addEventListener('resize',()=>{layoutTurnGrid();layoutTurnHead();layoutDonutLayouts();layoutShareBodies();fitHeroNumbers();});
   // 卡片在宿主里改宽时 iframe 不一定派发 resize，所以另盯根元素自己的尺寸变化
-  if(typeof ResizeObserver!=='undefined'){try{new ResizeObserver(()=>{layoutTurnGrid();layoutTurnHead();layoutDonutLayouts();fitHeroNumbers();}).observe(document.documentElement);}catch(e){}}}
+  if(typeof ResizeObserver!=='undefined'){try{new ResizeObserver(()=>{layoutTurnGrid();layoutTurnHead();layoutDonutLayouts();layoutShareBodies();fitHeroNumbers();}).observe(document.documentElement);}catch(e){}}}
 
 const shell=surface==='widget'?widgetShell():pageShell();
 root.style.minHeight='100vh';root.innerHTML=shell;
