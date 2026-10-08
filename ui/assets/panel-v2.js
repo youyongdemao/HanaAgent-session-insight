@@ -1309,8 +1309,9 @@ function donutNeed(box){
   return {avail,need:Math.round(ringW)+18+Math.round(Math.max(subW,78))+10};
 }
 /** 详情卡里的环图（Token 分布）：宽度不够就从「环 + 文案」两列改成上下叠放。
- *  机制完全照顶部上下文环那块：间距由 JS 按可用宽度算成 margin-left（CSS 给
- *  margin-left 挂 transition，拖宽时是平滑的），横竖切换再用 FLIP 补一段位移。 */
+ *  横竖切换用 FLIP 补一段位移；间距的平滑由 CSS 给 margin-left 挂的 transition 负责。
+ *  FLIP 走 Web Animations：渲染的静默路径会给整棵子树挂 .si-quiet，
+ *  把 transition-duration 压成 0.001s（!important），CSS 过渡会被当场掉——WAAPI 不受影响。 */
 function layoutDonutLayouts(){
   if(surface!=='widget')return;
   try{window.__hanakoDonutLayoutCalls=(window.__hanakoDonutLayoutCalls||0)+1;}catch(e){}
@@ -1333,14 +1334,14 @@ function layoutDonutLayouts(){
     const ex=Math.round(before.c.x-b.x),ey=Math.round(before.c.y-b.y);
     if(!dx&&!dy&&!ex&&!ey)continue;
     try{window.__hanakoDonutFlips=(window.__hanakoDonutFlips||0)+1;}catch(e){}
-    ring.style.transform=`translate(${dx}px,${dy}px)`;
-    copy.style.transform=`translate(${ex}px,${ey}px)`;
-    requestAnimationFrame(()=>{
-      ring.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
-      copy.style.transition='margin-left .28s cubic-bezier(.22,.72,.28,1),transform .34s cubic-bezier(.22,.72,.28,1)';
-      ring.style.transform='';copy.style.transform='';
-      setTimeout(()=>{ring.style.transition='';copy.style.transition='';},400);
-    });
+    const ease='cubic-bezier(.22,.72,.28,1)';
+    const flipTo=(el,fx,fy)=>{
+      try{el.getAnimations&&el.getAnimations().forEach(an=>{try{an.cancel();}catch(e){}});}catch(e){}
+      el.style.transform='';
+      try{el.animate([{transform:`translate(${fx}px,${fy}px)`},{transform:'translate(0px, 0px)'}],{duration:340,easing:ease});}catch(e){}
+    };
+    flipTo(ring,dx,dy);
+    flipTo(copy,ex,ey);
   }
 }
 /** 组件面板里「本会话供应商」份额卡：环 + 图例横排放不下就上下叠。
