@@ -1286,9 +1286,10 @@ body[data-surface="widget"] .w-comp-stats{grid-template-columns:repeat(auto-fit,
 body[data-surface="widget"] .w-share-body{display:flex;flex-wrap:nowrap;align-items:center;gap:12px}
 body[data-surface="widget"] .w-share-body>.w-share-donut{flex:0 0 auto}
 body[data-surface="widget"] .w-share-body>.w-share-legend{flex:1 1 auto;min-width:0}
-body[data-surface="widget"] .w-share-body[data-stacked="1"]{flex-direction:column;justify-content:center}
+body[data-surface="widget"] .w-share-body[data-stacked="1"]{flex-direction:column;justify-content:center;align-items:center}
 body[data-surface="widget"] .w-share-body[data-stacked="1"]>.w-share-donut{margin-left:0}
-body[data-surface="widget"] .w-share-body[data-stacked="1"]>.w-share-legend{margin-left:0;width:100%}
+/* 图例整块居中：宽度收到内容宽再居中，各项仍是色点左对齐（不是每条各自居中，那会让色点散开）。 */
+body[data-surface="widget"] .w-share-body[data-stacked="1"]>.w-share-legend{margin-left:0;width:max-content;max-width:100%}
 body[data-surface="widget"] .widget{grid-template-columns:minmax(0,1fr);min-width:240px}
 body[data-surface="widget"] .widget>*{min-width:0}
 body[data-surface="widget"] .w-quota-meta span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
