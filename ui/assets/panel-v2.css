@@ -1464,6 +1464,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-
    开关打开（按钮独立置顶）时不加这个类，维持原样。 */
 .widget.avoid-host-buttons > .row {
   padding-right: 120px;
+  align-items: flex-start;
+}
+.widget.avoid-host-buttons > .row > .live {
+  margin-top: 30px;
 }
 
 
