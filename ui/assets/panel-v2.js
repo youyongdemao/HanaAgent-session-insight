@@ -1071,6 +1071,21 @@ function widgetNeed(){
   const ringW=ring?ring.offsetWidth:104;
   return {avail,need:Math.round(ringW)+12+Math.round(Math.max(textW,subW))+10};
 }
+/** 横竖切换的 FLIP：把元素从旧位置平滑滑到新位置，返回有没有真的产生位移。
+ *  三处环图共用（顶部上下文环 / 详情 Token 分布 / 组件里的份额卡）。
+ *  用 Web Animations，不用 CSS transition——渲染的静默路径会给整棵子树挂 .si-quiet，
+ *  把 transition-duration 压成 0.001s（!important），CSS 过渡会被当场掉；WAAPI 不受影响。
+ *  约定：调用方先量好 before，改完排布后传进来，这里再量 after 算位移。 */
+function flipFrom(el,before){
+  if(!el||!before)return false;
+  const now=el.getBoundingClientRect();
+  const dx=Math.round(before.x-now.x),dy=Math.round(before.y-now.y);
+  if(!dx&&!dy)return false;
+  try{el.getAnimations&&el.getAnimations().forEach(a=>{try{a.cancel();}catch(e){}});}catch(e){}
+  el.style.transform='';
+  try{el.animate([{transform:`translate(${dx}px, ${dy}px)`},{transform:'translate(0px, 0px)'}],{duration:340,easing:'cubic-bezier(.22,.72,.28,1)'});}catch(e){}
+  return true;
+}
 function syncWidgetGap(){
   if(surface!=='widget')return;
   const card=document.querySelector('.widget .ring-state');
@@ -1084,30 +1099,14 @@ function syncWidgetGap(){
   if(flip)card.dataset.stacked=stacked?'1':'';
   // 间距：卡片越宽越松，斜率 20%、基线 -60px、下限 12px（与 CSS 里那套数值一致）
   const gap=stacked?0:Math.max(12,Math.round(m.avail*0.2-60));
-  if(flip){ring.style.transition='none';data.style.transition='none';}
+  // 翻转时先把 margin 的过渡关掉，让它一步到位，免得和 FLIP 的位移叠着动
+  if(flip)data.style.transition='none';
   data.style.marginLeft=gap+'px';
   if(flip&&before&&ring){
-    // ── 横竖切换的过渡（FLIP）──
-    // flex-direction 变了没法用 CSS 过渡，所以：先记下旧布局里两块的位置，
-    // 改完排布强制重排拿到新位置，再把它们反推回旧位置（无过渡），下一帧过渡到新位置（transform 归零）。
-    void card.offsetHeight;
-    const a=ring.getBoundingClientRect(),b=data.getBoundingClientRect();
-    const dx=Math.round(before.r.x-a.x),dy=Math.round(before.r.y-a.y);
-    const ex=Math.round(before.d.x-b.x),ey=Math.round(before.d.y-b.y);
-    if(dx||dy||ex||ey){
-      try{
-        ring.style.transform=`translate(${dx}px,${dy}px)`;
-        data.style.transform=`translate(${ex}px,${ey}px)`;
-        requestAnimationFrame(()=>{
-          ring.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
-          data.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
-          ring.style.transform='';data.style.transform='';
-          setTimeout(()=>{ring.style.transition='';data.style.transition='';},400);
-        });
-        flipCount++;
-        try{window.__hanakoWidgetFlips=flipCount;}catch(e){}
-      }catch(e){}
-    }
+    let moved=flipFrom(ring,before.r);
+    moved=flipFrom(data,before.d)||moved;
+    if(moved){flipCount++;try{window.__hanakoWidgetFlips=flipCount;}catch(e){}}
+    requestAnimationFrame(()=>{data.style.transition='';});
   }
   wGapPrev={stacked};
 }
@@ -1324,24 +1323,15 @@ function layoutDonutLayouts(){
     const flip=stacked!==wasStacked;
     const before=flip?{r:ring.getBoundingClientRect(),c:copy.getBoundingClientRect()}:null;
     if(flip)box.dataset.stacked=stacked?'1':'';
-    // 间距：卡片越宽越松，斜率 20%、基线 -60px、下限 12px（与 CSS 那边一致）
+    // 间距：卡片越宽越松，斜率 20%、基线 -60px、下限 12px（与顶部环卡一致）
     const gap=stacked?0:Math.max(12,Math.round(m.avail*0.2-60));
+    if(flip)copy.style.transition='none';
     copy.style.marginLeft=gap+'px';
     if(!flip||!before)continue;
-    void box.offsetHeight;
-    const a=ring.getBoundingClientRect(),b=copy.getBoundingClientRect();
-    const dx=Math.round(before.r.x-a.x),dy=Math.round(before.r.y-a.y);
-    const ex=Math.round(before.c.x-b.x),ey=Math.round(before.c.y-b.y);
-    if(!dx&&!dy&&!ex&&!ey)continue;
-    try{window.__hanakoDonutFlips=(window.__hanakoDonutFlips||0)+1;}catch(e){}
-    const ease='cubic-bezier(.22,.72,.28,1)';
-    const flipTo=(el,fx,fy)=>{
-      try{el.getAnimations&&el.getAnimations().forEach(an=>{try{an.cancel();}catch(e){}});}catch(e){}
-      el.style.transform='';
-      try{el.animate([{transform:`translate(${fx}px,${fy}px)`},{transform:'translate(0px, 0px)'}],{duration:340,easing:ease});}catch(e){}
-    };
-    flipTo(ring,dx,dy);
-    flipTo(copy,ex,ey);
+    let moved=flipFrom(ring,before.r);
+    moved=flipFrom(copy,before.c)||moved;
+    if(moved){try{window.__hanakoDonutFlips=(window.__hanakoDonutFlips||0)+1;}catch(e){}}
+    requestAnimationFrame(()=>{copy.style.transition='';});
   }
 }
 /** 组件面板里「本会话供应商」份额卡：环 + 图例横排放不下就上下叠。
@@ -1370,23 +1360,9 @@ function layoutShareBodies(){
     if(flip)body.dataset.stacked=stacked?'1':'';
     body.dataset.siShareInit='1';
     if(!before)continue;
-    void body.offsetHeight;
-    const a=donut.getBoundingClientRect(),b=legend.getBoundingClientRect();
-    const dx=Math.round(before.d.x-a.x),dy=Math.round(before.d.y-a.y);
-    const ex=Math.round(before.l.x-b.x),ey=Math.round(before.l.y-b.y);
-    if(!dx&&!dy&&!ex&&!ey)continue;
-    try{window.__hanakoShareFlips=(window.__hanakoShareFlips||0)+1;}catch(e){}
-    // 用 Web Animations 而不是 CSS transition：渲染常走「静默」路径，会给整棵子树挂 .si-quiet，
-    // 把 transition-duration 压成 0.001s（!important），CSS 过渡会被当场掉。
-    // WAAPI 动画不受这条 !important 影响，所以不管外面是不是静默态，这一下都能平滑地滑过去。
-    const ease='cubic-bezier(.22,.72,.28,1)';
-    const flipTo=(el,fx,fy)=>{
-      try{el.getAnimations&&el.getAnimations().forEach(an=>{try{an.cancel();}catch(e){}});}catch(e){}
-      el.style.transform='';
-      try{el.animate([{transform:`translate(${fx}px,${fy}px)`},{transform:'translate(0px, 0px)'}],{duration:340,easing:ease});}catch(e){}
-    };
-    flipTo(donut,dx,dy);
-    flipTo(legend,ex,ey);
+    let moved=flipFrom(donut,before.d);
+    moved=flipFrom(legend,before.l)||moved;
+    if(moved){try{window.__hanakoShareFlips=(window.__hanakoShareFlips||0)+1;}catch(e){}}
   }
 }
 function layoutTurnHead(){
