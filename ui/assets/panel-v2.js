@@ -339,7 +339,7 @@ function renderWidget(){
   const ringFill=$("#wRing .ring-progress");if(ringFill){ringFill.style.strokeDasharray=`${ctxPct.toFixed(1)} ${(100-ctxPct).toFixed(1)}`;ringFill.style.opacity=ctxPct>0?"1":"0";}
   const hitAvg=(()=>{const av=Number(st?.avgHitPercent);if(st?.avgHitPercent!=null&&Number.isFinite(av))return av;const se=(st?.series||[]).filter(s=>s.hit!=null);if(!se.length)return null;return se.reduce((a,s)=>a+Number(s.hit),0)/se.length;})();
   const last=st?.series?.length?st.series[st.series.length-1]:null;const set=(id,v)=>{const e=$(id);if(!e)return;const s=String(v);if(e.dataset.odValue===s&&(e.children.length||e.__odBusyUntil>performance.now()))return;e.textContent=s;};set("#wTokTotal",st?fmtFullTok(st.sessionTokens):"–");const wTokEl=document.getElementById("wTokTotal");if(wTokEl&&st)wTokEl.style.setProperty("--digits",String(fmtFullTok(st.sessionTokens).length));set("#wHitAvg",hitAvg!=null?fmtPct(hitAvg):"–");setHitClass($("#wHitAvg"),hitAvg);const cacheHit=Math.max(0,Number(st?.sumCacheRead)||0),cacheMiss=Math.max(0,Number(st?.sumInput)||0),outputTok=Math.max(0,(Number(st?.sumOutput)||0)+(Number(st?.sumReasoning)||0)),inputTok=cacheHit+cacheMiss,ioTotal=inputTok+outputTok||1,cacheTotal=cacheHit+cacheMiss||1,inputPct=inputTok/ioTotal*100,outputPct=outputTok/ioTotal*100,hitPct=cacheHit/cacheTotal*100,missPct=cacheMiss/cacheTotal*100;set("#wCompInputPct",inputPct.toFixed(1)+"%");set("#wCompOutputPct",outputPct.toFixed(1)+"%");set("#wCompHitPct",hitPct.toFixed(1)+"%");set("#wCompMissPct",missPct.toFixed(1)+"%");const inputBar=$("#wCompInputBar"),outputBar=$("#wCompOutputBar"),hitBar=$("#wCompHitBar"),missBar=$("#wCompMissBar");if(inputBar)inputBar.style.width=inputPct+"%";if(outputBar)outputBar.style.width=outputPct+"%";if(hitBar)hitBar.style.width=hitPct+"%";if(missBar)missBar.style.width=missPct+"%";const threshold=Math.round(Number(st?.compactThreshold||0.8)*100);const remTrack=$("#wRemTrack");if(remTrack)remTrack.style.width=ctxPct+"%";const thresholdMark=$("#wThresholdMark");if(thresholdMark)thresholdMark.style.left=threshold+"%";const thresholdLabel=$("#wThresholdLabel");if(thresholdLabel){thresholdLabel.style.left=threshold+"%";thresholdLabel.textContent=threshold+"%";}set("#wTokRound",last?fmtTokens(last.total):"–");set("#wCostRound",last?fmtCost(last.cost):"–");set("#wTurnsRound",st&&st.turns!=null?String(st.turns):"–");set("#wHitRound",last&&last.hit!=null?fmtPct(last.hit):"–");setHitClass($("#wHitRound"),last?.hit);set("#wCost",st?fmtCost(st.sessionCostCny):"–");set("#wWindow",st&&st.contextWindow!=null?`${fmtTokens(st.lastWindowTokens||0)} / ${fmtTokens(st.contextWindow)}`:"–");set("#wUsed",st?`已用 ${fmtTokens(st.lastWindowTokens||0)}`:"已用 –");set("#wRem",st&&st.remainingToCompact!=null?`距压缩 ${fmtTokens(st.remainingToCompact)}`:"距压缩 –");
-  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const used=Array.isArray(st?.providers)&&st.providers.length?st.providers:[{provider:st?.provider||"unknown",tokens:st?.sessionTokens||0,turns:st?.turns||0,cost:st?.sessionCostCny}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;let angle=0;const segs=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;const start=angle;angle+=pct;return {p,pct,start,end:angle,color:colors[i%colors.length]};});const shareCard=$("#wProviderShare");if(shareCard){patchShareCard(shareCard,segs,used.length,providerNames);layoutShareBodies();}
+  const providerNames={deepseek:"DeepSeek",moonshot:"Moonshot",mimo:"MiMo",zhipu:"智谱",agnes:"Agnes",openai:"OpenAI",gemini:"Gemini","openai-codex":"ChatGPT Plus / Pro","xai-oauth":"xAI Grok",xai:"xAI"};const colors=["var(--accent)","#9d5f4d","#4a6b4a","#8a78a8","#b58b4b"];const used=Array.isArray(st?.providers)&&st.providers.length?st.providers:[{provider:st?.provider||"unknown",tokens:st?.sessionTokens||0,turns:st?.turns||0,cost:st?.sessionCostCny}];const totalUsed=used.reduce((a,p)=>a+(Number(p.tokens)||0),0)||1;let angle=0;const segs=used.map((p,i)=>{const pct=(Number(p.tokens)||0)/totalUsed*100;const start=angle;angle+=pct;return {p,pct,start,end:angle,color:colors[i%colors.length]};});const shareCard=$("#wProviderShare");if(shareCard){patchShareCard(shareCard,segs,used.length,providerNames);}
   const usedProviderIds=new Set(used.map(p=>p.provider));const quotaItems=bal.filter(b=>usedProviderIds.has(b.provider)&&b?.status==="ok"&&(b.kind==="quota"||b.remainingPercent!=null));const quotaList=$("#wQuotaList");if(quotaList){if(!quotaItems.length){quotaList.innerHTML="";}else{const itemsHtml=quotaItems.map(q=>{const windows=Array.isArray(q.windows)&&q.windows.length?q.windows:[q];const limiting=windows.filter(Boolean).reduce((min,x)=>(x.remainingPercent??100)<(min.remainingPercent??100)?x:min,windows[0]||{});const remain=Math.max(0,Math.min(100,Number(limiting.remainingPercent??q.remainingPercent)||0)),usedPct=100-remain;return `<div class="card w-quota w-quota-item" data-detail="quota" data-provider="${esc(q.provider)}"><div class="row"><span>${esc(q.name||q.provider||"额度窗口")}</span><b>${remain.toFixed(0)}% 剩余</b></div><div class="w-quota-meta"><span>${esc(quotaWindowName(limiting))}</span><span>${esc(fmtResetAt(limiting.resetAt??q.resetAt))}</span></div><div class="w-quota-track"><i style="width:${remain}%"></i></div><div class="w-quota-foot"><span>已用 ${usedPct.toFixed(0)}%</span><span>剩余 ${remain.toFixed(0)}%</span></div></div>`;}).join("");quotaList.innerHTML=`<div class="card w-quota-group"><div class="w-qg-title"><b>额度窗口</b><small>${quotaItems.length} 家</small></div>${itemsHtml}</div>`;}}const wprov=$("#wProviders");if(wprov){const balMap=new Map(bal.map(b=>[b.provider,b]));patchProviderList(wprov,segs.map(s=>{const b=balMap.get(s.p.provider);const status=b?.status==="ok"?"正常":(b?.status||"不可查询");const balance=b?.status==="ok"?(quotaBrief(b)||"–"):(b?.status==="no_key"?"未配置":"–");return {key:String(s.p.provider),label:String(providerNames[s.p.provider]||s.p.provider),tokens:s.p.tokens||0,balance:esc(balance),warning:status!=="正常"};}));}normalizeNumbers(root,true);}
 // 视图偏好：每个图表的形态（折线/热力）与时间范围（近24h…）记在本地，下次进来照旧。
 // 存在同源 localStorage：页面态与卡片态共用一个源，两边看到同一份偏好。
@@ -1369,22 +1369,23 @@ function layoutShareBodies(){
     if(flip)body.dataset.stacked=stacked?'1':'';
     body.dataset.siShareInit='1';
     if(!before)continue;
-    // 与顶部环卡一致：翻转时先摘掉自身的过渡，免得状态切换那一下先滑一段
-    if(flip){donut.style.transition='none';legend.style.transition='none';}
     void body.offsetHeight;
     const a=donut.getBoundingClientRect(),b=legend.getBoundingClientRect();
     const dx=Math.round(before.d.x-a.x),dy=Math.round(before.d.y-a.y);
     const ex=Math.round(before.l.x-b.x),ey=Math.round(before.l.y-b.y);
     if(!dx&&!dy&&!ex&&!ey)continue;
     try{window.__hanakoShareFlips=(window.__hanakoShareFlips||0)+1;}catch(e){}
-    donut.style.transform=`translate(${dx}px,${dy}px)`;
-    legend.style.transform=`translate(${ex}px,${ey}px)`;
-    requestAnimationFrame(()=>{
-      donut.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
-      legend.style.transition='transform .34s cubic-bezier(.22,.72,.28,1)';
-      donut.style.transform='';legend.style.transform='';
-      setTimeout(()=>{donut.style.transition='';legend.style.transition='';},400);
-    });
+    // 用 Web Animations 而不是 CSS transition：渲染常走「静默」路径，会给整棵子树挂 .si-quiet，
+    // 把 transition-duration 压成 0.001s（!important），CSS 过渡会被当场掉。
+    // WAAPI 动画不受这条 !important 影响，所以不管外面是不是静默态，这一下都能平滑地滑过去。
+    const ease='cubic-bezier(.22,.72,.28,1)';
+    const flipTo=(el,fx,fy)=>{
+      try{el.getAnimations&&el.getAnimations().forEach(an=>{try{an.cancel();}catch(e){}});}catch(e){}
+      el.style.transform='';
+      try{el.animate([{transform:`translate(${fx}px,${fy}px)`},{transform:'translate(0px, 0px)'}],{duration:340,easing:ease});}catch(e){}
+    };
+    flipTo(donut,dx,dy);
+    flipTo(legend,ex,ey);
   }
 }
 function layoutTurnHead(){

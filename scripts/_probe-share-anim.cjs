@@ -56,11 +56,15 @@ async function ev(c, expression, release = false) { const r = await c.send("Runt
     await sleep(4000);
     console.log("BEFORE " + JSON.stringify(await ev(cdp, `(()=>{const d=document.querySelector('#wProviderShare .w-share-donut'),l=document.querySelector('#wProviderShare .w-share-legend');const body=document.querySelector('#wProviderShare .w-share-body');return {stacked:body?body.dataset.stacked:'',dT:d?getComputedStyle(d).transform:'',lT:l?getComputedStyle(l).transform:''};})()`)));
     // 先布好采样器，再改宽度，尽量贴住切换那一刻
-    await ev(cdp, `(()=>{const d=document.querySelector('#wProviderShare .w-share-donut'),l=document.querySelector('#wProviderShare .w-share-legend');window.__t=[];const t0=performance.now();const tick=()=>{const dt=Math.round(performance.now()-t0);window.__t.push([dt,(getComputedStyle(d).transform||'').slice(0,42),(getComputedStyle(l).transform||'').slice(0,42),d.style.transition.slice(0,20)]);if(performance.now()-t0<900)requestAnimationFrame(tick);};requestAnimationFrame(tick);})()`);
+    await ev(cdp, `(()=>{const d=document.querySelector('#wProviderShare .w-share-donut'),l=document.querySelector('#wProviderShare .w-share-legend');window.__t=[];const t0=performance.now();const tick=()=>{const dt=Math.round(performance.now()-t0);window.__t.push([dt,(getComputedStyle(d).transform||'').slice(0,42),(getComputedStyle(l).transform||'').slice(0,42),(d.style.transition.slice(0,20))]);if(performance.now()-t0<900)requestAnimationFrame(tick);};requestAnimationFrame(tick);})()`);
+    const quiet = process.env.QUIET === "1";
+    if (quiet) { await ev(cdp, `document.getElementById('root').classList.add('si-quiet');'ok'`); }
     await cdp.send("Emulation.setDeviceMetricsOverride", { width: 300, height: 900, deviceScaleFactor: 1, mobile: false });
     await sleep(1200);
     const rec = await ev(cdp, "window.__t");
-    console.log("SAMPLES " + JSON.stringify(rec));
+    const moved = (rec || []).filter((r) => r[1] !== "none").length;
+    console.log("QUIET=" + (quiet ? 1 : 0) + "  frames-with-transform=" + moved + "/" + (rec || []).length);
+    console.log("SAMPLES " + JSON.stringify(rec).slice(0, 600));
     clearTimeout(WATCH);
     ws.close();
   } catch (e) { console.error("PROBE ERROR:", (e && e.stack) || e); }
