@@ -1163,8 +1163,11 @@ function watchWidgetGap(){
   if(surface!=='widget'||typeof ResizeObserver==='undefined')return;
   const w=document.querySelector('.widget');if(!w)return;
   syncWidgetGap();
+  // 份额卡（本会话供应商）的横竖切换跟顶部环卡共用同一个观察者与时机，
+  // 这样卡片宽度一变，两张卡一起在下一帧收到重算，不会一张有过渡一张硬切。
+  layoutShareBodies();
   if(widgetGapRO)widgetGapRO.disconnect();
-  widgetGapRO=new ResizeObserver(()=>syncWidgetGap());
+  widgetGapRO=new ResizeObserver(()=>{syncWidgetGap();layoutShareBodies();});
   widgetGapRO.observe(w);
 }
 function paintQuiet(fn,quiet){
@@ -1366,6 +1369,8 @@ function layoutShareBodies(){
     if(flip)body.dataset.stacked=stacked?'1':'';
     body.dataset.siShareInit='1';
     if(!before)continue;
+    // 与顶部环卡一致：翻转时先摘掉自身的过渡，免得状态切换那一下先滑一段
+    if(flip){donut.style.transition='none';legend.style.transition='none';}
     void body.offsetHeight;
     const a=donut.getBoundingClientRect(),b=legend.getBoundingClientRect();
     const dx=Math.round(before.d.x-a.x),dy=Math.round(before.d.y-a.y);
