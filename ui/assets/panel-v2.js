@@ -1293,15 +1293,18 @@ function donutNeed(box){
   const ring=box.querySelector('.w-donut-ring'),copy=box.querySelector('.w-donut-copy');
   if(!ring||!copy)return null;
   const avail=Math.round(box.clientWidth||0);
-  // 量图例文字要从色块之后开始选：图例项是块级的，整项量出来等于整行宽，
-  // 那会把 need 抬到永远大于 avail，于是一直判叠放、永远没有切换（也就没过渡）。
+  // 图例每行是 <i>名字 <em>百分比</em>，名字在 1fr 列里被拉满。
+  // 量整行（或从色块之后到整行末尾）得到的是容器宽，need 会永远大于 avail、永远判叠放；
+  // 所以按内容实际宽算：色块宽 + 名字宽 + 百分比宽 + 两处 6px 间距。
   let subW=0;
   for(const s of copy.querySelectorAll('.w-donut-legend>span')){
     try{
-      const i=s.querySelector('i'),r=document.createRange();
-      if(i)r.setStartAfter(i);else r.setStart(s,0);
-      r.setEndAfter(s.lastChild||s);
-      subW=Math.max(subW,r.getBoundingClientRect().width||0);
+      const i=s.querySelector('i'),em=s.querySelector('em'),r=document.createRange();
+      r.setStartAfter(i||s.firstChild||s);
+      r.setEndBefore(em||s.lastChild||s);
+      const nameW=r.getBoundingClientRect().width||0;
+      const rowW=(i?i.offsetWidth||7:7)+6+nameW+6+(em?em.offsetWidth||0:0);
+      subW=Math.max(subW,rowW);
     }catch(e){subW=Math.max(subW,wTextW(s));}
   }
   const ringW=ring.offsetWidth||98;

@@ -25,7 +25,7 @@ const srv = http.createServer((req, res) => {
   switch (api) {
     case "providers": return json(res, PROVIDERS);
     case "balance": return json(res, BALANCE);
-    case "stats": return json(res, { file: "a.jsonl", title: "会话 A", model: "deepseek-flash", turns: 3, sessionTokens: 120000, series: [], providers: [{ provider: "deepseek", tokens: 4060000, turns: 2, cost: 0 }, { provider: "magpie", tokens: 120000, turns: 1, cost: 0 }] });
+    case "stats": return json(res, { file: "a.jsonl", title: "会话 A", model: "deepseek-flash", turns: 3, sessionTokens: 120000, series: [], providers: [{ provider: "deepseek", tokens: 24840000, turns: 2, cost: 0 }, { provider: "magpie", tokens: 104000, turns: 1, cost: 0 }, { provider: "volcengine-coding", tokens: 0, turns: 1, cost: 0 }, { provider: "unknown", tokens: 0, turns: 1, cost: 0 }] });
     case "active": return json(res, { file: "a.jsonl" });
     case "sessions": return json(res, { sessions: [], count: 0 });
     case "events": return json(res, { events: [] });
@@ -56,6 +56,12 @@ async function ev(c, expression) { const r = await c.send("Runtime.evaluate", { 
     await sleep(1500);
     const has = await ev(cdp, `(()=>{const dl=document.querySelector('.w-detail-card .w-donut-layout');return {found:!!dl, stacked:dl?dl.dataset.stacked||'':'', avail:dl?Math.round(dl.clientWidth):0};})()`);
     console.log("DETAIL " + JSON.stringify(has));
+    for (const w of [760, 560, 460, 400, 340, 760, 420]) {
+      await cdp.send("Emulation.setDeviceMetricsOverride", { width: w, height: 900, deviceScaleFactor: 1, mobile: false });
+      await sleep(650);
+      const r = await ev(cdp, `(()=>{const dl=document.querySelector('.w-detail-card .w-donut-layout');if(!dl)return {__e:1};const ring=dl.querySelector('.w-donut-ring').getBoundingClientRect(),copy=dl.querySelector('.w-donut-copy').getBoundingClientRect();return {w:${w},avail:Math.round(dl.clientWidth),stacked:dl.dataset.stacked||'row',below:copy.top>ring.top+4};})()`);
+      console.log("SWEEP " + JSON.stringify(r));
+    }
     await ev(cdp, `(()=>{const r=document.querySelector('.w-detail-card .w-donut-ring'),c=document.querySelector('.w-detail-card .w-donut-copy');window.__t=[];const t0=performance.now();const tick=()=>{const dt=Math.round(performance.now()-t0);window.__t.push([dt,(getComputedStyle(r).transform||'').slice(0,42),(getComputedStyle(c).transform||'').slice(0,42)]);if(performance.now()-t0<900)requestAnimationFrame(tick);};requestAnimationFrame(tick);})()`);
     const quiet = process.env.QUIET === "1";
     if (quiet) await ev(cdp, `document.getElementById('root').classList.add('si-quiet');'ok'`);
