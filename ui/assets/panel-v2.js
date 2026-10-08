@@ -547,10 +547,9 @@ function renderApiOverview(){
     const busy=refreshing.has(b.provider);
     // 额度类：每个窗口一行（档位标签 + 剩余条 + 百分比）。窗口数量与档位完全跟着接口给的数据走，
     // 不给死磕 5h/7d：几分钟、几小时、几天、几月都能显示，卡高随行数自动变
-    // 小卡只摆一档：优先周窗口（接口给的 5h 太短、刷得快，摆它没多大参考意义），
-    // 没有周窗口才退回最紧的那一档。一张窄卡也塞不下三个窗口，完整窗口留给点开后的详情大卡。
+    // 这一档把接口给的窗口全摆出来（5h / 周 / 月…），每个窗口一行；卡高随行数自动变。
     const allWins=(b.kind==='quota'&&Array.isArray(b.windows)&&b.windows.length)?b.windows:[];
-    const wins=allWins.length?[allWins.find(w=>w&&(w.type==="weekly"||w.short==="周"))||allWins.reduce((m,w)=>((w.remainingPercent??100)<(m.remainingPercent??100)?w:m),allWins[0])]:[];
+    const wins=allWins;
     const mainInfo=!ok?'':(wins.length
       ?'<div class="pv-wins">'+wins.map(w=>{
         const p=Math.max(0,Math.min(100,Number(w.remainingPercent??0)));
