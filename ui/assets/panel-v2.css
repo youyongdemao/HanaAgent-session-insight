@@ -1460,13 +1460,10 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero .ah-block-balance .ah-
 .si-guide circle{stroke:color-mix(in srgb,var(--bg-card) 80%,transparent);stroke-width:1.5}
 /* ── 为宿主悬浮的窗口按钮让位 ──
    宿主关掉「窗口按钮独立置顶」时，最小化/最大化/关闭会浮在卡片右上角，
-   正好压住「实时」徽标。此时给顶部行右侧留出按钮宽度，让徽标退到按钮左侧；
-   开关打开（按钮独立置顶）时不加这个类，维持原样。 */
-.widget.avoid-host-buttons > .row {
-  padding-right: 120px;
-  align-items: flex-start;
-}
-.widget.avoid-host-buttons > .row > .live {
+   正好压住「实时」徽标。/api/ui-env 探测在宿主忙时并不可靠，探测一失败避让就不生效，
+   所以这里不依赖探测，固定把徽标压到按钮带下方。 */
+.widget > .row > .live {
+  align-self: flex-start;
   margin-top: 30px;
 }
 
