@@ -19,13 +19,14 @@ git push origin main
 
 ## 发版
 
-从 `main` 打 tag、发 Release：
+一条命令，出三个资产（手动包 + 市场包 + entry.json）：
 
 ```powershell
-powershell -File ..\pack-plugin.ps1 -Version X.Y.Z     # 打 zip（内含计费快照闸门）
-# 写 ..\release-notes-vX.Y.Z.md（首行只写版本号，正文按 新增 / 优化 / 修复）
-node ..\release.mjs X.Y.Z                              # 建 Release 并上传资产
+# 在 D:\AI\Hanako\OH-WorkSpace\HanaApp-Dev 下执行
+node tools\release-hana.mjs session-insight X.Y.Z
 ```
+
+细则与四条纪律见 `记忆\发版规范.md`、`记忆\HanaApp-开发与发布流程.md`。旧的 `pack-plugin.ps1` / `release.mjs` 已废弃删除。
 
 ## 定价数据
 
