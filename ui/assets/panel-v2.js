@@ -1074,10 +1074,10 @@ function tightQuotaWindow(b){const wins=(Array.isArray(b?.windows)?b.windows:[])
 function quotaBrief(b){if(!b)return "";const lim=tightQuotaWindow(b);if(!lim)return b.summary||"";const p=Math.max(0,Math.min(100,Number(lim.remainingPercent??0)));const nm=lim.short||lim.label||lim.name||quotaWindowName(lim)||"";return (nm?nm+" ":"")+p.toFixed(0)+"%";}
 /** 窗口时长打分：优先用 windowSeconds，缺了再按 type/short/label 里的时间字样本推。 */
 function windowSpanScore(w){const s=Number(w&&w.windowSeconds);if(Number.isFinite(s)&&s>0)return s;const t=(String((w&&w.type)||"")+" "+String((w&&w.short)||"")+" "+String((w&&w.label)||"")).toLowerCase();if(t.indexOf("month")>=0||t.indexOf("月")>=0||/\b30d\b/.test(t))return 30*86400;if(t.indexOf("week")>=0||t.indexOf("周")>=0||/\b7d\b/.test(t))return 7*86400;if(t.indexOf("roll")>=0||/\b5h\b/.test(t)||t.indexOf("5 小时")>=0||t.indexOf("5小时")>=0)return 5*3600;return 0;}
-/** 额度窗口组卡片选的那一档：剩余最紧（最可能先触限）的窗口，不看时长。
- *  与供应商小卡的 quotaBriefLongest（取时长最长的一档、代表套餐档位）是两套规则，故意不复用：
- *  组里看「眼下哪档最紧」，小卡看「套餐是月/周」。 */
-function quotaGroupWindow(b){const wins=(Array.isArray(b&&b.windows)&&b.windows.length?b.windows:[b]).filter(Boolean);if(!wins.length)return {};return wins.reduce((min,x)=>((x.remainingPercent??100)<(min.remainingPercent??100)?x:min),wins[0]);}
+/** 额度窗口组卡片选的那一档：时间跨度最短（5h＜周＜月）的窗口，代表最临近的时间限度。
+ *  与供应商小卡的 quotaBriefLongest（取跨度最长的一档、代表套餐档位）恰好相反，故意不复用：
+ *  组里看「最短时间限度」，小卡看「最长（套餐）」。 */
+function quotaGroupWindow(b){const wins=(Array.isArray(b&&b.windows)&&b.windows.length?b.windows:[b]).filter(Boolean);if(!wins.length)return {};return wins.reduce((m,w)=>windowSpanScore(w)<windowSpanScore(m)?w:m,wins[0]);}
 /** 多窗口里时长最长（月>周>5h）的那一档。 */
 function longestQuotaWindow(b){const wins=(Array.isArray(b&&b.windows)?b.windows:[]).filter(Boolean);if(!wins.length)return null;return wins.reduce((m,w)=>windowSpanScore(w)>windowSpanScore(m)?w:m,wins[0]);}
 /** 窄容器用的额度摘要：给时长最长的那一档（看订阅看月/周比看 5h 稳）。 */
