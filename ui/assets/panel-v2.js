@@ -366,7 +366,7 @@ function renderTaskCat(lg){
     _pr=Object.entries(_raw);
   }
   const sArr=_pr.sort((a,b)=>(b[1].tokens||0)-(a[1].tokens||0)),sMax=sArr.length?Math.max(...sArr.map(x=>x[1].tokens||0)):1;
-  const barsHtml=sArr.map(([k,v])=>{const pct=Math.max(2,Math.round((v.tokens||0)/sMax*100)),cnLab=cn[k]||k;return `<div class="src-row"><span>${esc(cnLab)}</span><div class="track"><i style="width:${pct}%"></i></div><b>${fmtTokens(v.tokens||0)}</b></div>`;}).join("");
+  const barsHtml=sArr.map(([k,v])=>{const pct=Math.max(2,Math.round((v.tokens||0)/sMax*100)),cnLab=_tm==="agent"?((lg&&lg.agentNames&&lg.agentNames[k])||k):(cn[k]||k);return `<div class="src-row"><span>${esc(cnLab)}</span><div class="track"><i style="width:${pct}%"></i></div><b>${fmtTokens(v.tokens||0)}</b></div>`;}).join("");
   srcBox.innerHTML=sArr.length?barsHtml:`<div class="empty">暂无数据</div>`;
   const _tcs=document.getElementById("taskCatSeg");if(_tcs)syncSeg(_tcs,_tm);
   const _tce=document.getElementById("taskCatEm");if(_tce)_tce.textContent=_tm==="agent"?"按 agent":"按子系统";
