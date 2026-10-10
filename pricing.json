@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "snapshotAt": "2026-09-25",
+  "snapshotAt": "2026-10-10",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
@@ -86,7 +86,7 @@
     },
     "deepseek::deepseek-v4-flash": {
       "provider": "deepseek",
-      "source": "deepseek 官方定价页；峰谷计价（高峰为北京时间周一至周五 9:00-12:00、14:00-18:00，空闲价为高峰一半）；旧名；官方页注(1)：模型已下线，请求由 DeepSeek-V4.1-Flash 服务并按 Flash 价计费",
+      "source": "deepseek 官方定价页；峰谷计价（高峰为北京时间周一至周五 9:00-12:00、14:00-18:00，空闲价为高峰一半）；旧名；官方页注(1)：模型已下线，请求由 DeepSeek-V4.1-Flash 服务并按 Flash 价计费；官方已下线，请求由 V4.1-Flash 服务",
       "sourceUrl": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
       "updatedAt": "2026-09-12",
       "peak": {
@@ -103,7 +103,7 @@
     },
     "deepseek::deepseek-v4-flash-vision-exp": {
       "provider": "deepseek",
-      "source": "deepseek 官方定价页；峰谷计价（高峰为北京时间周一至周五 9:00-12:00、14:00-18:00，空闲价为高峰一半）；旧名；官方页注(1)：同上",
+      "source": "deepseek 官方定价页；峰谷计价（高峰为北京时间周一至周五 9:00-12:00、14:00-18:00，空闲价为高峰一半）；旧名；官方页注(1)：同上；官方已下线，请求由 V4.1-Flash 服务",
       "sourceUrl": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
       "updatedAt": "2026-09-12",
       "peak": {
@@ -137,7 +137,7 @@
     },
     "mimo::mimo-v2.5": {
       "provider": "mimo",
-      "source": "mimo 官方定价页",
+      "source": "mimo 官方定价页；官方公告北京时间 2026-10-21 10:00 下线；继任 mimo-v2.6-flash（价格相同）",
       "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -149,7 +149,7 @@
     },
     "mimo::mimo-v2.5-pro": {
       "provider": "mimo",
-      "source": "mimo 官方定价页",
+      "source": "mimo 官方定价页；官方公告北京时间 2026-10-21 10:00 下线；继任 mimo-v2.6-pro（价格相同）",
       "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
       "updatedAt": "2026-09-16",
       "flat": {
@@ -363,7 +363,7 @@
     "agnes::agnes-image-2.1-flash": {
       "provider": "agnes",
       "contextWindow": 1000000,
-      "source": "免费",
+      "source": "免费；官方定价页现列 agnes-image-2.5-flash，2.1 未见，疑似更名",
       "sourceUrl": "https://wiki.agnes-ai.com/",
       "updatedAt": "2026-09-09",
       "flat": {
@@ -375,7 +375,7 @@
     "agnes::agnes-video-v2.0": {
       "provider": "agnes",
       "contextWindow": 1000000,
-      "source": "免费",
+      "source": "免费；官方定价页现列 agnes-video-2.5 / 2.5-flash，v2.0 未见，疑似更名",
       "sourceUrl": "https://wiki.agnes-ai.com/",
       "updatedAt": "2026-09-09",
       "flat": {
@@ -774,10 +774,10 @@
       "provider": "xai",
       "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://docs.x.ai/developers/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-10",
       "flat": {
         "inputMiss": 13.6,
-        "inputHit": 2.04,
+        "inputHit": 3.4,
         "output": 40.8
       },
       "contextWindow": 500000,
@@ -785,19 +785,19 @@
         {
           "condition": "< 200k prompt tokens",
           "inputMiss": 2,
-          "inputHit": 0.3,
+          "inputHit": 0.5,
           "output": 6
         },
         {
           "condition": ">= 200k prompt tokens",
           "inputMiss": 4,
-          "inputHit": 0.6,
+          "inputHit": 1,
           "output": 12
         }
       ],
       "usd": {
         "inputMiss": 2,
-        "inputHit": 0.3,
+        "inputHit": 0.5,
         "output": 6
       },
       "currency": "USD"
@@ -1076,7 +1076,7 @@
     },
     "anthropic::claude-opus-4-1": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.1 (retired, except on Bedrock and Google Cloud)；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 4.1 (retired, except on Bedrock and Google Cloud)；缓存写入（5 分钟 TTL）按输入价 1.25 倍；官方定价页标注 retired，仅 Bedrock 与 Google Cloud 可用",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
       "updatedAt": "2026-09-23",
       "flat": {
@@ -1116,7 +1116,7 @@
     },
     "anthropic::claude-3-5-haiku": {
       "provider": "anthropic",
-      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 3.5 (retired, except on Bedrock and Google Cloud)；缓存写入（5 分钟 TTL）按输入价 1.25 倍",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 3.5 (retired, except on Bedrock and Google Cloud)；缓存写入（5 分钟 TTL）按输入价 1.25 倍；官方定价页标注 retired，仅 Bedrock 与 Google Cloud 可用",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
       "updatedAt": "2026-09-23",
       "flat": {
@@ -2930,7 +2930,7 @@
     },
     "xai::grok-4.20-reasoning": {
       "provider": "xai",
-      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-reasoning",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-reasoning；官方现行登记名为 grok-4.20-0309-reasoning",
       "sourceUrl": "https://docs.x.ai/developers/models",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -2962,7 +2962,7 @@
     },
     "xai::grok-4.20-non-reasoning": {
       "provider": "xai",
-      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-non-reasoning",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-non-reasoning；官方现行登记名为 grok-4.20-0309-non-reasoning",
       "sourceUrl": "https://docs.x.ai/developers/models",
       "updatedAt": "2026-09-12",
       "flat": {
@@ -7812,6 +7812,2439 @@
         "output": 21
       },
       "contextWindow": 262144
+    },
+    "openai::gpt-6.1-sol": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-6.1-sol（旗舰）",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 0.68,
+        "cacheWrite": 17,
+        "output": 68
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.1,
+        "cacheWrite": 2.5,
+        "output": 10
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 2,
+          "inputHit": 0.1,
+          "cacheWrite": 2.5,
+          "output": 10
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 4,
+          "inputHit": 0.2,
+          "cacheWrite": 5,
+          "output": 15
+        }
+      ]
+    },
+    "openai::gpt-6-luna": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-6-luna（旗舰）",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.68,
+        "inputHit": 0.068,
+        "cacheWrite": 0.85,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.01,
+        "cacheWrite": 0.125,
+        "output": 0.5
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 0.1,
+          "inputHit": 0.01,
+          "cacheWrite": 0.125,
+          "output": 0.5
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 0.2,
+          "inputHit": 0.02,
+          "cacheWrite": 0.25,
+          "output": 0.75
+        }
+      ]
+    },
+    "openai::gpt-5.6-cyber": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-5.6-cyber（Cyber 系列）",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 85,
+        "inputHit": 8.5,
+        "cacheWrite": 106.25,
+        "output": 510
+      },
+      "usd": {
+        "inputMiss": 12.5,
+        "inputHit": 1.25,
+        "cacheWrite": 15.625,
+        "output": 75
+      },
+      "currency": "USD"
+    },
+    "openai::gpt-rosalind-research": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；生命科学系列，受限访问",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
+    },
+    "openai::gpt-rosalind-discovery": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；生命科学系列",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
+    },
+    "openai::chat-latest": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；ChatGPT 档",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 204
+      },
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 30
+      },
+      "currency": "USD"
+    },
+    "anthropic::claude-opus-5-5": {
+      "provider": "anthropic",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 5.5；缓存命中按输入价 5%",
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 1.36,
+        "cacheWrite": 34,
+        "output": 136
+      },
+      "usd": {
+        "inputMiss": 4,
+        "inputHit": 0.2,
+        "cacheWrite": 5,
+        "output": 20
+      },
+      "currency": "USD"
+    },
+    "anthropic::claude-sonnet-5-5": {
+      "provider": "anthropic",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 5.5；缓存命中按输入价 5%",
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 0.68,
+        "cacheWrite": 17,
+        "output": 68
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.1,
+        "cacheWrite": 2.5,
+        "output": 10
+      },
+      "currency": "USD"
+    },
+    "anthropic::claude-haiku-5-5": {
+      "provider": "anthropic",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 5.5；按 prompt 长度分档",
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.68,
+        "inputHit": 0.068,
+        "cacheWrite": 0.85,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.01,
+        "cacheWrite": 0.125,
+        "output": 0.5
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "prompt ≤100k tokens",
+          "inputMiss": 0.1,
+          "inputHit": 0.01,
+          "cacheWrite": 0.125,
+          "output": 0.5
+        },
+        {
+          "condition": "prompt >100k tokens",
+          "inputMiss": 0.5,
+          "inputHit": 0.05,
+          "cacheWrite": 0.625,
+          "output": 2.5
+        }
+      ]
+    },
+    "xai::grok-4.7": {
+      "provider": "xai",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；官方名 grok-4.7（新旗舰）；分段计价，此处为主档",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 3.4,
+        "output": 40.8
+      },
+      "contextWindow": 500000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 6
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 2,
+          "inputHit": 0.5,
+          "output": 6
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 4,
+          "inputHit": 1,
+          "output": 12
+        }
+      ]
+    },
+    "xai::grok-build-0.1": {
+      "provider": "xai",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；官方名 grok-build-0.1；分段计价，此处为主档",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 6.8,
+        "inputHit": 1.36,
+        "output": 13.6
+      },
+      "contextWindow": 256000,
+      "usd": {
+        "inputMiss": 1,
+        "inputHit": 0.2,
+        "output": 2
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 1,
+          "inputHit": 0.2,
+          "output": 2
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 2,
+          "inputHit": 0.4,
+          "output": 4
+        }
+      ]
+    },
+    "xai::grok-4.20-multi-agent-0309": {
+      "provider": "xai",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；官方名 grok-4.20-multi-agent-0309；分段计价，此处为主档",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 8.5,
+        "inputHit": 1.36,
+        "output": 17
+      },
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 1.25,
+          "inputHit": 0.2,
+          "output": 2.5
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 2.5,
+          "inputHit": 0.4,
+          "output": 5
+        }
+      ]
+    },
+    "mistral::mistral-large-4-0": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Mistral Large 4；当前 5 折促销价（原价 $1.36/$4.18）",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4.624,
+        "inputHit": 0.476,
+        "output": 14.212
+      },
+      "usd": {
+        "inputMiss": 0.68,
+        "inputHit": 0.07,
+        "output": 2.09
+      },
+      "currency": "USD"
+    },
+    "mistral::ministral-3-14b": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Ministral 3 14B",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.36,
+        "inputHit": 0.136,
+        "output": 1.36
+      },
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.02,
+        "output": 0.2
+      },
+      "currency": "USD"
+    },
+    "mistral::ministral-3-8b": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Ministral 3 8B",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.102,
+        "output": 1.02
+      },
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.015,
+        "output": 0.15
+      },
+      "currency": "USD"
+    },
+    "mistral::ministral-3-3b": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Ministral 3 3B",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.68,
+        "inputHit": 0.068,
+        "output": 0.68
+      },
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.01,
+        "output": 0.1
+      },
+      "currency": "USD"
+    },
+    "gemini::gemini-3.6-flash": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 3.6 Flash；促销价至 2026-12-31，2027-01-01 起 $1.50/$7.50",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 25.5
+      },
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 3.75
+      },
+      "currency": "USD"
+    },
+    "gemini::gemini-3.5-flash-lite": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 3.5 Flash-Lite",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.204,
+        "output": 17
+      },
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.03,
+        "output": 2.5
+      },
+      "currency": "USD"
+    },
+    "groq::qwen/qwen3.8-27b": {
+      "provider": "groq",
+      "source": "groq 官方模型页；官方美元价 ×6.8 折算；官方名 Qwen3.8-27B（Preview）；官方未列缓存命中价，按输入价计",
+      "sourceUrl": "https://console.groq.com/docs/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 5.44,
+        "inputHit": 5.44,
+        "output": 27.2
+      },
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.8,
+        "inputHit": 0.8,
+        "output": 4
+      },
+      "currency": "USD"
+    },
+    "groq::openai/gpt-oss-safeguard-20b": {
+      "provider": "groq",
+      "source": "groq 官方模型页；官方美元价 ×6.8 折算；官方名 Safety GPT OSS 20B（Preview）；官方未列缓存命中价，按输入价计",
+      "sourceUrl": "https://console.groq.com/docs/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.51,
+        "inputHit": 0.51,
+        "output": 2.04
+      },
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.075,
+        "inputHit": 0.075,
+        "output": 0.3
+      },
+      "currency": "USD"
+    },
+    "together::MiniMax-M3": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.408,
+        "output": 8.16
+      },
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.06,
+        "output": 1.2
+      },
+      "currency": "USD"
+    },
+    "together::Kimi-K3": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算；促销价至 2026-10-11",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 1.836,
+        "output": 102
+      },
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.27,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "together::GLM-5.3": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 9.52,
+        "inputHit": 1.768,
+        "output": 29.92
+      },
+      "usd": {
+        "inputMiss": 1.4,
+        "inputHit": 0.26,
+        "output": 4.4
+      },
+      "currency": "USD"
+    },
+    "together::GLM-5.3-Flash": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.204,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.03,
+        "output": 0.5
+      },
+      "currency": "USD"
+    },
+    "together::DeepSeek-V4.1-Flash": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.0408,
+        "output": 8.16
+      },
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.006,
+        "output": 1.2
+      },
+      "currency": "USD"
+    },
+    "together::Qwen3.8-2.4T-A95B": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 1.7,
+        "output": 40.8
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.25,
+        "output": 6
+      },
+      "currency": "USD"
+    },
+    "fireworks::ember-1": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 Ember-1（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 2.04,
+        "output": 102
+      },
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "fireworks::kimi-k3": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 Kimi K3（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 2.04,
+        "output": 102
+      },
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "fireworks::glm-5.3": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 GLM 5.3（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 9.52,
+        "inputHit": 1.768,
+        "output": 29.92
+      },
+      "usd": {
+        "inputMiss": 1.4,
+        "inputHit": 0.26,
+        "output": 4.4
+      },
+      "currency": "USD"
+    },
+    "fireworks::glm-5.3-flash": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 GLM 5.3 Flash（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.204,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.03,
+        "output": 0.5
+      },
+      "currency": "USD"
+    },
+    "fireworks::qwen3.8-max": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 Qwen 3.8 Max（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 1.7,
+        "output": 40.8
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.25,
+        "output": 6
+      },
+      "currency": "USD"
+    },
+    "fireworks::minimax-m3": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 MiniMax M3（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.408,
+        "output": 8.16
+      },
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.06,
+        "output": 1.2
+      },
+      "currency": "USD"
+    },
+    "perplexity::perplexity/kimi-k3": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 2.04,
+        "output": 102
+      },
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "perplexity::perplexity/glm-5.3": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 9.52,
+        "inputHit": 1.768,
+        "output": 29.92
+      },
+      "usd": {
+        "inputMiss": 1.4,
+        "inputHit": 0.26,
+        "output": 4.4
+      },
+      "currency": "USD"
+    },
+    "perplexity::perplexity/glm-5.3-flash": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算；仅支持缓存读",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.204,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.03,
+        "output": 0.5
+      },
+      "currency": "USD"
+    },
+    "perplexity::perplexity/nemotron-3-ultra-550b-a55b": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.7,
+        "inputHit": 1.7,
+        "output": 17
+      },
+      "usd": {
+        "inputMiss": 0.25,
+        "inputHit": 0.25,
+        "output": 2.5
+      },
+      "currency": "USD"
+    },
+    "zhipu::glm-5.3-flashx": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-5.3-FlashX",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2,
+        "inputHit": 0.57,
+        "output": 7
+      },
+      "contextWindow": 1000000
+    },
+    "zhipu::glm-4.6v": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.6V；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.2,
+        "output": 3
+      },
+      "contextWindow": 128000,
+      "tiers": [
+        {
+          "condition": "输入长度 [0, 32K)",
+          "inputMiss": 1,
+          "inputHit": 0.2,
+          "output": 3
+        },
+        {
+          "condition": "输入长度 [32K, 128K)",
+          "inputMiss": 2,
+          "inputHit": 0.4,
+          "output": 6
+        }
+      ]
+    },
+    "zhipu::glm-4.6v-flashx": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.6V-FlashX；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.15,
+        "inputHit": 0.03,
+        "output": 1.5
+      },
+      "contextWindow": 128000,
+      "tiers": [
+        {
+          "condition": "输入长度 [0, 32K)",
+          "inputMiss": 0.15,
+          "inputHit": 0.03,
+          "output": 1.5
+        },
+        {
+          "condition": "输入长度 [32K, 128K)",
+          "inputMiss": 0.3,
+          "inputHit": 0.03,
+          "output": 3
+        }
+      ]
+    },
+    "zhipu::glm-4.6v-flash": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.6V-Flash；免费",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0,
+        "inputHit": 0,
+        "output": 0
+      }
+    },
+    "zhipu::glm-4.5-air": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.5-Air；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.8,
+        "inputHit": 0.16,
+        "output": 2
+      },
+      "contextWindow": 128000,
+      "tiers": [
+        {
+          "condition": "输入 [0, 32K)，输出 [0, 0.2K)",
+          "inputMiss": 0.8,
+          "inputHit": 0.16,
+          "output": 2
+        },
+        {
+          "condition": "输入 [0, 32K)，输出 ≥0.2K",
+          "inputMiss": 0.8,
+          "inputHit": 0.16,
+          "output": 6
+        },
+        {
+          "condition": "输入 [32K, 128K)",
+          "inputMiss": 1.2,
+          "inputHit": 0.24,
+          "output": 8
+        }
+      ]
+    },
+    "zhipu::glm-4.7-flashx": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.7-FlashX",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.5,
+        "inputHit": 0.1,
+        "output": 3
+      },
+      "contextWindow": 200000
+    },
+    "zhipu::glm-4-long": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4-Long",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.5,
+        "output": 1
+      },
+      "contextWindow": 1000000
+    },
+    "zhipu::glm-4.5v": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.5V；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2,
+        "inputHit": 0.4,
+        "output": 6
+      },
+      "contextWindow": 64000,
+      "tiers": [
+        {
+          "condition": "输入长度 [0, 32K)",
+          "inputMiss": 2,
+          "inputHit": 0.4,
+          "output": 6
+        },
+        {
+          "condition": "输入长度 [32K, 64K)",
+          "inputMiss": 4,
+          "inputHit": 0.8,
+          "output": 12
+        }
+      ]
+    },
+    "zhipu::glm-4.6v-plus": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4V-Plus-0111",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 2,
+        "output": 4
+      },
+      "contextWindow": 16384
+    },
+    "stepfun::step-5-preview": {
+      "provider": "stepfun",
+      "source": "stepfun 官方定价页；官方名 step-5-preview",
+      "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 7,
+        "inputHit": 0.35,
+        "output": 20
+      }
+    },
+    "stepfun::step-3.7-flash": {
+      "provider": "stepfun",
+      "source": "stepfun 官方定价页；官方名 step-3.7-flash",
+      "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.35,
+        "inputHit": 0.27,
+        "output": 8.1
+      }
+    },
+    "stepfun::step-3.5-flash-2603": {
+      "provider": "stepfun",
+      "source": "stepfun 官方定价页；官方名 step-3.5-flash-2603",
+      "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.7,
+        "inputHit": 0.14,
+        "output": 2.1
+      }
+    },
+    "mimo::mimo-v2.6-pro": {
+      "provider": "mimo",
+      "source": "mimo 官方定价页；官方名 mimo-v2.6-pro；缓存写入限时免费",
+      "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 3,
+        "inputHit": 0.025,
+        "output": 6,
+        "cacheWrite": 0
+      },
+      "contextWindow": 1048576
+    },
+    "mimo::mimo-v2.6-flash": {
+      "provider": "mimo",
+      "source": "mimo 官方定价页；官方名 mimo-v2.6-flash；缓存写入限时免费",
+      "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.02,
+        "output": 2,
+        "cacheWrite": 0
+      },
+      "contextWindow": 1048576
+    },
+    "mimo::mimo-v2.6-pro-ultraspeed": {
+      "provider": "mimo",
+      "source": "mimo 官方定价页；官方名 mimo-v2.6-pro-ultraspeed；缓存写入限时免费",
+      "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 30,
+        "inputHit": 0.25,
+        "output": 60,
+        "cacheWrite": 0
+      },
+      "contextWindow": 1048576
+    },
+    "minimax::MiniMax-M2.1-highspeed": {
+      "provider": "minimax",
+      "source": "minimax 官方定价页；官方美元价 ×6.8 折算；官方名 MiniMax-M2.1-highspeed",
+      "sourceUrl": "https://platform.minimax.io/docs/guides/pricing-paygo",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4.08,
+        "inputHit": 0.204,
+        "output": 16.32,
+        "cacheWrite": 2.55
+      },
+      "usd": {
+        "inputMiss": 0.6,
+        "inputHit": 0.03,
+        "output": 2.4,
+        "cacheWrite": 0.375
+      },
+      "currency": "USD",
+      "contextWindow": 204800
+    },
+    "baichuan::Baichuan-M3-Plus": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.005/0.009 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 5,
+        "inputHit": 5,
+        "output": 9
+      },
+      "contextWindow": 32768
+    },
+    "baichuan::Baichuan-M3": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.01/0.03 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 10,
+        "inputHit": 10,
+        "output": 30
+      },
+      "contextWindow": 32768
+    },
+    "baichuan::Baichuan-M2-Plus": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.01/0.03 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 10,
+        "inputHit": 10,
+        "output": 30
+      },
+      "contextWindow": 32768
+    },
+    "baichuan::Baichuan-M2": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.002/0.02 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2,
+        "inputHit": 2,
+        "output": 20
+      },
+      "contextWindow": 32768
+    },
+    "baichuan::Baichuan4": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.1 元/千 tokens（含输入输出）折算为元/百万",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 100,
+        "inputHit": 100,
+        "output": 100
+      },
+      "contextWindow": 32768
+    },
+    "baichuan::Baichuan3-Turbo-128k": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.024 元/千 tokens（含输入输出）折算为元/百万",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 24,
+        "inputHit": 24,
+        "output": 24
+      },
+      "contextWindow": 131072
+    },
+    "dashscope::qwen3.8-max-prime": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.8-max-prime",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 24,
+        "inputHit": 24,
+        "output": 72
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 24,
+          "inputHit": 24,
+          "output": 72
+        }
+      ]
+    },
+    "dashscope::qwen3.8-max-0902": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.8-max-0902",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 12,
+        "inputHit": 12,
+        "output": 36
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 12,
+          "inputHit": 12,
+          "output": 36
+        }
+      ]
+    },
+    "dashscope::qwen3.7-max": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.7-max",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 12,
+        "inputHit": 12,
+        "output": 36
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 12,
+          "inputHit": 12,
+          "output": 36
+        }
+      ]
+    },
+    "dashscope::qwen3.7-max-preview": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.7-max-preview（仅思考模式）",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 12,
+        "inputHit": 12,
+        "output": 36
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 12,
+          "inputHit": 12,
+          "output": 36
+        }
+      ]
+    },
+    "dashscope::qwen3.7-flash": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.7-flash；分段计价，此处为主档",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.2,
+        "inputHit": 0.2,
+        "output": 0.8
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤32K",
+          "inputMiss": 0.2,
+          "inputHit": 0.2,
+          "output": 0.8
+        },
+        {
+          "condition": "32K<Token≤256K",
+          "inputMiss": 0.6,
+          "inputHit": 0.6,
+          "output": 2.4
+        },
+        {
+          "condition": "256K<Token≤1M",
+          "inputMiss": 1.2,
+          "inputHit": 1.2,
+          "output": 4.8
+        }
+      ]
+    },
+    "dashscope::qwen3.5-ocr": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.5-ocr",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.5,
+        "inputHit": 0.5,
+        "output": 2
+      }
+    },
+    "dashscope::qwen-vl-ocr": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen-vl-ocr",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.3,
+        "inputHit": 0.3,
+        "output": 0.5
+      }
+    },
+    "siliconflow::deepseek-v4-pro": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方名 deepseek-ai/DeepSeek-V4-Pro",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 12,
+        "inputHit": 1,
+        "output": 24
+      }
+    },
+    "siliconflow::deepseek-v4-flash": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方名 deepseek-ai/DeepSeek-V4-Flash；按时段计价，此处为主档",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 9
+      }
+    },
+    "siliconflow::deepseek-v3.1-terminus": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方名 deepseek-ai/DeepSeek-V3.1-Terminus",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 12
+      }
+    },
+    "agnes::agnes-2.5-pro": {
+      "provider": "agnes",
+      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；官方名 agnes-2.5-pro",
+      "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 3.06,
+        "inputHit": 0.306,
+        "output": 6.12
+      },
+      "usd": {
+        "inputMiss": 0.45,
+        "inputHit": 0.045,
+        "output": 0.9
+      },
+      "currency": "USD"
+    },
+    "agnes::agnes-3.0-flash": {
+      "provider": "agnes",
+      "source": "agnes 官方定价页；官方名 agnes-3.0-flash；当前优惠免费",
+      "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0,
+        "inputHit": 0,
+        "output": 0
+      },
+      "usd": {
+        "inputMiss": 0,
+        "inputHit": 0,
+        "output": 0
+      },
+      "currency": "USD"
+    },
+    "agnes::agnes-3.0-flash-max": {
+      "provider": "agnes",
+      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；官方名 agnes-3.0-flash-max",
+      "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.544,
+        "inputHit": 0.0544,
+        "output": 2.72
+      },
+      "usd": {
+        "inputMiss": 0.08,
+        "inputHit": 0.008,
+        "output": 0.4
+      },
+      "currency": "USD"
+    },
+    "gpt-6.1-sol": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-6.1-sol（旗舰）",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 0.68,
+        "cacheWrite": 17,
+        "output": 68
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.1,
+        "cacheWrite": 2.5,
+        "output": 10
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 2,
+          "inputHit": 0.1,
+          "cacheWrite": 2.5,
+          "output": 10
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 4,
+          "inputHit": 0.2,
+          "cacheWrite": 5,
+          "output": 15
+        }
+      ]
+    },
+    "gpt-6-luna": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-6-luna（旗舰）",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.68,
+        "inputHit": 0.068,
+        "cacheWrite": 0.85,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.01,
+        "cacheWrite": 0.125,
+        "output": 0.5
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 0.1,
+          "inputHit": 0.01,
+          "cacheWrite": 0.125,
+          "output": 0.5
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 0.2,
+          "inputHit": 0.02,
+          "cacheWrite": 0.25,
+          "output": 0.75
+        }
+      ]
+    },
+    "gpt-5.6-cyber": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-5.6-cyber（Cyber 系列）",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 85,
+        "inputHit": 8.5,
+        "cacheWrite": 106.25,
+        "output": 510
+      },
+      "usd": {
+        "inputMiss": 12.5,
+        "inputHit": 1.25,
+        "cacheWrite": 15.625,
+        "output": 75
+      },
+      "currency": "USD"
+    },
+    "gpt-rosalind-research": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；生命科学系列，受限访问",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
+    },
+    "gpt-rosalind-discovery": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；生命科学系列",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 170
+      },
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 25
+      },
+      "currency": "USD"
+    },
+    "chat-latest": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；ChatGPT 档",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 34,
+        "inputHit": 3.4,
+        "output": 204
+      },
+      "usd": {
+        "inputMiss": 5,
+        "inputHit": 0.5,
+        "output": 30
+      },
+      "currency": "USD"
+    },
+    "claude-opus-5-5": {
+      "provider": "anthropic",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 5.5；缓存命中按输入价 5%",
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 27.2,
+        "inputHit": 1.36,
+        "cacheWrite": 34,
+        "output": 136
+      },
+      "usd": {
+        "inputMiss": 4,
+        "inputHit": 0.2,
+        "cacheWrite": 5,
+        "output": 20
+      },
+      "currency": "USD"
+    },
+    "claude-sonnet-5-5": {
+      "provider": "anthropic",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 5.5；缓存命中按输入价 5%",
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 0.68,
+        "cacheWrite": 17,
+        "output": 68
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.1,
+        "cacheWrite": 2.5,
+        "output": 10
+      },
+      "currency": "USD"
+    },
+    "claude-haiku-5-5": {
+      "provider": "anthropic",
+      "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 5.5；按 prompt 长度分档",
+      "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.68,
+        "inputHit": 0.068,
+        "cacheWrite": 0.85,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.01,
+        "cacheWrite": 0.125,
+        "output": 0.5
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "prompt ≤100k tokens",
+          "inputMiss": 0.1,
+          "inputHit": 0.01,
+          "cacheWrite": 0.125,
+          "output": 0.5
+        },
+        {
+          "condition": "prompt >100k tokens",
+          "inputMiss": 0.5,
+          "inputHit": 0.05,
+          "cacheWrite": 0.625,
+          "output": 2.5
+        }
+      ]
+    },
+    "grok-4.7": {
+      "provider": "xai",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；官方名 grok-4.7（新旗舰）；分段计价，此处为主档",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 3.4,
+        "output": 40.8
+      },
+      "contextWindow": 500000,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.5,
+        "output": 6
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 2,
+          "inputHit": 0.5,
+          "output": 6
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 4,
+          "inputHit": 1,
+          "output": 12
+        }
+      ]
+    },
+    "grok-build-0.1": {
+      "provider": "xai",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；官方名 grok-build-0.1；分段计价，此处为主档",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 6.8,
+        "inputHit": 1.36,
+        "output": 13.6
+      },
+      "contextWindow": 256000,
+      "usd": {
+        "inputMiss": 1,
+        "inputHit": 0.2,
+        "output": 2
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 1,
+          "inputHit": 0.2,
+          "output": 2
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 2,
+          "inputHit": 0.4,
+          "output": 4
+        }
+      ]
+    },
+    "grok-4.20-multi-agent-0309": {
+      "provider": "xai",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；官方名 grok-4.20-multi-agent-0309；分段计价，此处为主档",
+      "sourceUrl": "https://docs.x.ai/developers/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 8.5,
+        "inputHit": 1.36,
+        "output": 17
+      },
+      "contextWindow": 1000000,
+      "usd": {
+        "inputMiss": 1.25,
+        "inputHit": 0.2,
+        "output": 2.5
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "condition": "< 200k prompt tokens",
+          "inputMiss": 1.25,
+          "inputHit": 0.2,
+          "output": 2.5
+        },
+        {
+          "condition": ">= 200k prompt tokens",
+          "inputMiss": 2.5,
+          "inputHit": 0.4,
+          "output": 5
+        }
+      ]
+    },
+    "mistral-large-4-0": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Mistral Large 4；当前 5 折促销价（原价 $1.36/$4.18）",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4.624,
+        "inputHit": 0.476,
+        "output": 14.212
+      },
+      "usd": {
+        "inputMiss": 0.68,
+        "inputHit": 0.07,
+        "output": 2.09
+      },
+      "currency": "USD"
+    },
+    "ministral-3-14b": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Ministral 3 14B",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.36,
+        "inputHit": 0.136,
+        "output": 1.36
+      },
+      "usd": {
+        "inputMiss": 0.2,
+        "inputHit": 0.02,
+        "output": 0.2
+      },
+      "currency": "USD"
+    },
+    "ministral-3-8b": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Ministral 3 8B",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.102,
+        "output": 1.02
+      },
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.015,
+        "output": 0.15
+      },
+      "currency": "USD"
+    },
+    "ministral-3-3b": {
+      "provider": "mistral",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Ministral 3 3B",
+      "sourceUrl": "https://docs.mistral.ai/inference/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.68,
+        "inputHit": 0.068,
+        "output": 0.68
+      },
+      "usd": {
+        "inputMiss": 0.1,
+        "inputHit": 0.01,
+        "output": 0.1
+      },
+      "currency": "USD"
+    },
+    "gemini-3.6-flash": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 3.6 Flash；促销价至 2026-12-31，2027-01-01 起 $1.50/$7.50",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 5.1,
+        "inputHit": 0.51,
+        "output": 25.5
+      },
+      "usd": {
+        "inputMiss": 0.75,
+        "inputHit": 0.075,
+        "output": 3.75
+      },
+      "currency": "USD"
+    },
+    "gemini-3.5-flash-lite": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 3.5 Flash-Lite",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.204,
+        "output": 17
+      },
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.03,
+        "output": 2.5
+      },
+      "currency": "USD"
+    },
+    "qwen/qwen3.8-27b": {
+      "provider": "groq",
+      "source": "groq 官方模型页；官方美元价 ×6.8 折算；官方名 Qwen3.8-27B（Preview）；官方未列缓存命中价，按输入价计",
+      "sourceUrl": "https://console.groq.com/docs/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 5.44,
+        "inputHit": 5.44,
+        "output": 27.2
+      },
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.8,
+        "inputHit": 0.8,
+        "output": 4
+      },
+      "currency": "USD"
+    },
+    "openai/gpt-oss-safeguard-20b": {
+      "provider": "groq",
+      "source": "groq 官方模型页；官方美元价 ×6.8 折算；官方名 Safety GPT OSS 20B（Preview）；官方未列缓存命中价，按输入价计",
+      "sourceUrl": "https://console.groq.com/docs/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.51,
+        "inputHit": 0.51,
+        "output": 2.04
+      },
+      "contextWindow": 131072,
+      "usd": {
+        "inputMiss": 0.075,
+        "inputHit": 0.075,
+        "output": 0.3
+      },
+      "currency": "USD"
+    },
+    "Kimi-K3": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算；促销价至 2026-10-11",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 1.836,
+        "output": 102
+      },
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.27,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "GLM-5.3": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 9.52,
+        "inputHit": 1.768,
+        "output": 29.92
+      },
+      "usd": {
+        "inputMiss": 1.4,
+        "inputHit": 0.26,
+        "output": 4.4
+      },
+      "currency": "USD"
+    },
+    "GLM-5.3-Flash": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.204,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.03,
+        "output": 0.5
+      },
+      "currency": "USD"
+    },
+    "DeepSeek-V4.1-Flash": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.0408,
+        "output": 8.16
+      },
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.006,
+        "output": 1.2
+      },
+      "currency": "USD"
+    },
+    "Qwen3.8-2.4T-A95B": {
+      "provider": "together",
+      "source": "together 官方定价页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://www.together.ai/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 1.7,
+        "output": 40.8
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.25,
+        "output": 6
+      },
+      "currency": "USD"
+    },
+    "ember-1": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 Ember-1（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 2.04,
+        "output": 102
+      },
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "minimax-m3": {
+      "provider": "fireworks",
+      "source": "fireworks 官方定价页；官方美元价 ×6.8 折算；官方名 MiniMax M3（Standard）",
+      "sourceUrl": "https://docs.fireworks.ai/serverless/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2.04,
+        "inputHit": 0.408,
+        "output": 8.16
+      },
+      "usd": {
+        "inputMiss": 0.3,
+        "inputHit": 0.06,
+        "output": 1.2
+      },
+      "currency": "USD"
+    },
+    "perplexity/kimi-k3": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 2.04,
+        "output": 102
+      },
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.3,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "perplexity/glm-5.3": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 9.52,
+        "inputHit": 1.768,
+        "output": 29.92
+      },
+      "usd": {
+        "inputMiss": 1.4,
+        "inputHit": 0.26,
+        "output": 4.4
+      },
+      "currency": "USD"
+    },
+    "perplexity/glm-5.3-flash": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算；仅支持缓存读",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.02,
+        "inputHit": 0.204,
+        "output": 3.4
+      },
+      "usd": {
+        "inputMiss": 0.15,
+        "inputHit": 0.03,
+        "output": 0.5
+      },
+      "currency": "USD"
+    },
+    "perplexity/nemotron-3-ultra-550b-a55b": {
+      "provider": "perplexity",
+      "source": "perplexity 官方 Orchestrator 模型页；官方美元价 ×6.8 折算",
+      "sourceUrl": "https://docs.perplexity.ai/docs/router/models",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.7,
+        "inputHit": 1.7,
+        "output": 17
+      },
+      "usd": {
+        "inputMiss": 0.25,
+        "inputHit": 0.25,
+        "output": 2.5
+      },
+      "currency": "USD"
+    },
+    "glm-5.3-flashx": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-5.3-FlashX",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2,
+        "inputHit": 0.57,
+        "output": 7
+      },
+      "contextWindow": 1000000
+    },
+    "glm-4.6v": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.6V；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.2,
+        "output": 3
+      },
+      "contextWindow": 128000,
+      "tiers": [
+        {
+          "condition": "输入长度 [0, 32K)",
+          "inputMiss": 1,
+          "inputHit": 0.2,
+          "output": 3
+        },
+        {
+          "condition": "输入长度 [32K, 128K)",
+          "inputMiss": 2,
+          "inputHit": 0.4,
+          "output": 6
+        }
+      ]
+    },
+    "glm-4.6v-flashx": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.6V-FlashX；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.15,
+        "inputHit": 0.03,
+        "output": 1.5
+      },
+      "contextWindow": 128000,
+      "tiers": [
+        {
+          "condition": "输入长度 [0, 32K)",
+          "inputMiss": 0.15,
+          "inputHit": 0.03,
+          "output": 1.5
+        },
+        {
+          "condition": "输入长度 [32K, 128K)",
+          "inputMiss": 0.3,
+          "inputHit": 0.03,
+          "output": 3
+        }
+      ]
+    },
+    "glm-4.6v-flash": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.6V-Flash；免费",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0,
+        "inputHit": 0,
+        "output": 0
+      }
+    },
+    "glm-4.5-air": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.5-Air；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.8,
+        "inputHit": 0.16,
+        "output": 2
+      },
+      "contextWindow": 128000,
+      "tiers": [
+        {
+          "condition": "输入 [0, 32K)，输出 [0, 0.2K)",
+          "inputMiss": 0.8,
+          "inputHit": 0.16,
+          "output": 2
+        },
+        {
+          "condition": "输入 [0, 32K)，输出 ≥0.2K",
+          "inputMiss": 0.8,
+          "inputHit": 0.16,
+          "output": 6
+        },
+        {
+          "condition": "输入 [32K, 128K)",
+          "inputMiss": 1.2,
+          "inputHit": 0.24,
+          "output": 8
+        }
+      ]
+    },
+    "glm-4.7-flashx": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.7-FlashX",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.5,
+        "inputHit": 0.1,
+        "output": 3
+      },
+      "contextWindow": 200000
+    },
+    "glm-4-long": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4-Long",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.5,
+        "output": 1
+      },
+      "contextWindow": 1000000
+    },
+    "glm-4.5v": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4.5V；分段计价，此处为主档",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2,
+        "inputHit": 0.4,
+        "output": 6
+      },
+      "contextWindow": 64000,
+      "tiers": [
+        {
+          "condition": "输入长度 [0, 32K)",
+          "inputMiss": 2,
+          "inputHit": 0.4,
+          "output": 6
+        },
+        {
+          "condition": "输入长度 [32K, 64K)",
+          "inputMiss": 4,
+          "inputHit": 0.8,
+          "output": 12
+        }
+      ]
+    },
+    "glm-4.6v-plus": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-4V-Plus-0111",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 2,
+        "output": 4
+      },
+      "contextWindow": 16384
+    },
+    "step-5-preview": {
+      "provider": "stepfun",
+      "source": "stepfun 官方定价页；官方名 step-5-preview",
+      "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 7,
+        "inputHit": 0.35,
+        "output": 20
+      }
+    },
+    "step-3.7-flash": {
+      "provider": "stepfun",
+      "source": "stepfun 官方定价页；官方名 step-3.7-flash",
+      "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1.35,
+        "inputHit": 0.27,
+        "output": 8.1
+      }
+    },
+    "step-3.5-flash-2603": {
+      "provider": "stepfun",
+      "source": "stepfun 官方定价页；官方名 step-3.5-flash-2603",
+      "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.7,
+        "inputHit": 0.14,
+        "output": 2.1
+      }
+    },
+    "mimo-v2.6-pro": {
+      "provider": "mimo",
+      "source": "mimo 官方定价页；官方名 mimo-v2.6-pro；缓存写入限时免费",
+      "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 3,
+        "inputHit": 0.025,
+        "output": 6,
+        "cacheWrite": 0
+      },
+      "contextWindow": 1048576
+    },
+    "mimo-v2.6-flash": {
+      "provider": "mimo",
+      "source": "mimo 官方定价页；官方名 mimo-v2.6-flash；缓存写入限时免费",
+      "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.02,
+        "output": 2,
+        "cacheWrite": 0
+      },
+      "contextWindow": 1048576
+    },
+    "mimo-v2.6-pro-ultraspeed": {
+      "provider": "mimo",
+      "source": "mimo 官方定价页；官方名 mimo-v2.6-pro-ultraspeed；缓存写入限时免费",
+      "sourceUrl": "https://mimo.mi.com/docs/zh-CN/price/pay-as-you-go",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 30,
+        "inputHit": 0.25,
+        "output": 60,
+        "cacheWrite": 0
+      },
+      "contextWindow": 1048576
+    },
+    "MiniMax-M2.1-highspeed": {
+      "provider": "minimax",
+      "source": "minimax 官方定价页；官方美元价 ×6.8 折算；官方名 MiniMax-M2.1-highspeed",
+      "sourceUrl": "https://platform.minimax.io/docs/guides/pricing-paygo",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4.08,
+        "inputHit": 0.204,
+        "output": 16.32,
+        "cacheWrite": 2.55
+      },
+      "usd": {
+        "inputMiss": 0.6,
+        "inputHit": 0.03,
+        "output": 2.4,
+        "cacheWrite": 0.375
+      },
+      "currency": "USD",
+      "contextWindow": 204800
+    },
+    "Baichuan-M3-Plus": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.005/0.009 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 5,
+        "inputHit": 5,
+        "output": 9
+      },
+      "contextWindow": 32768
+    },
+    "Baichuan-M3": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.01/0.03 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 10,
+        "inputHit": 10,
+        "output": 30
+      },
+      "contextWindow": 32768
+    },
+    "Baichuan-M2-Plus": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.01/0.03 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 10,
+        "inputHit": 10,
+        "output": 30
+      },
+      "contextWindow": 32768
+    },
+    "Baichuan-M2": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.002/0.02 元/千 tokens 折算为元/百万；官方页未列缓存命中价，按输入价计",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 2,
+        "inputHit": 2,
+        "output": 20
+      },
+      "contextWindow": 32768
+    },
+    "Baichuan4": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.1 元/千 tokens（含输入输出）折算为元/百万",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 100,
+        "inputHit": 100,
+        "output": 100
+      },
+      "contextWindow": 32768
+    },
+    "Baichuan3-Turbo-128k": {
+      "provider": "baichuan",
+      "source": "baichuan 官方定价页；官方 0.024 元/千 tokens（含输入输出）折算为元/百万",
+      "sourceUrl": "https://platform.baichuan-ai.com/prices",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 24,
+        "inputHit": 24,
+        "output": 24
+      },
+      "contextWindow": 131072
+    },
+    "qwen3.8-max-prime": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.8-max-prime",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 24,
+        "inputHit": 24,
+        "output": 72
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 24,
+          "inputHit": 24,
+          "output": 72
+        }
+      ]
+    },
+    "qwen3.8-max-0902": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.8-max-0902",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 12,
+        "inputHit": 12,
+        "output": 36
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 12,
+          "inputHit": 12,
+          "output": 36
+        }
+      ]
+    },
+    "qwen3.7-max": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.7-max",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 12,
+        "inputHit": 12,
+        "output": 36
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 12,
+          "inputHit": 12,
+          "output": 36
+        }
+      ]
+    },
+    "qwen3.7-max-preview": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.7-max-preview（仅思考模式）",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 12,
+        "inputHit": 12,
+        "output": 36
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤1M",
+          "inputMiss": 12,
+          "inputHit": 12,
+          "output": 36
+        }
+      ]
+    },
+    "qwen3.7-flash": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.7-flash；分段计价，此处为主档",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.2,
+        "inputHit": 0.2,
+        "output": 0.8
+      },
+      "contextWindow": 1000000,
+      "tiers": [
+        {
+          "condition": "0<Token≤32K",
+          "inputMiss": 0.2,
+          "inputHit": 0.2,
+          "output": 0.8
+        },
+        {
+          "condition": "32K<Token≤256K",
+          "inputMiss": 0.6,
+          "inputHit": 0.6,
+          "output": 2.4
+        },
+        {
+          "condition": "256K<Token≤1M",
+          "inputMiss": 1.2,
+          "inputHit": 1.2,
+          "output": 4.8
+        }
+      ]
+    },
+    "qwen3.5-ocr": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen3.5-ocr",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.5,
+        "inputHit": 0.5,
+        "output": 2
+      }
+    },
+    "qwen-vl-ocr": {
+      "provider": "dashscope",
+      "source": "dashscope 官方定价页；官方页未列缓存命中价，按输入价计；官方名 qwen-vl-ocr",
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/model-pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.3,
+        "inputHit": 0.3,
+        "output": 0.5
+      }
+    },
+    "deepseek-v3.1-terminus": {
+      "provider": "siliconflow",
+      "source": "siliconflow 官方定价页；官方名 deepseek-ai/DeepSeek-V3.1-Terminus",
+      "sourceUrl": "https://www.siliconflow.cn/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 12
+      }
+    },
+    "agnes-2.5-pro": {
+      "provider": "agnes",
+      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；官方名 agnes-2.5-pro",
+      "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 3.06,
+        "inputHit": 0.306,
+        "output": 6.12
+      },
+      "usd": {
+        "inputMiss": 0.45,
+        "inputHit": 0.045,
+        "output": 0.9
+      },
+      "currency": "USD"
+    },
+    "agnes-3.0-flash": {
+      "provider": "agnes",
+      "source": "agnes 官方定价页；官方名 agnes-3.0-flash；当前优惠免费",
+      "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0,
+        "inputHit": 0,
+        "output": 0
+      },
+      "usd": {
+        "inputMiss": 0,
+        "inputHit": 0,
+        "output": 0
+      },
+      "currency": "USD"
+    },
+    "agnes-3.0-flash-max": {
+      "provider": "agnes",
+      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；官方名 agnes-3.0-flash-max",
+      "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
+      "updatedAt": "2026-10-10",
+      "flat": {
+        "inputMiss": 0.544,
+        "inputHit": 0.0544,
+        "output": 2.72
+      },
+      "usd": {
+        "inputMiss": 0.08,
+        "inputHit": 0.008,
+        "output": 0.4
+      },
+      "currency": "USD"
     }
   }
 }
