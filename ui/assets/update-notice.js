@@ -2,13 +2,36 @@
 // 进页面自检一次：有新版才弹，没有就什么都不做。窗里写明版本与更新日志，并可跳到下载页。
 // 弹窗尺寸跟着宿主给的空间走：空间不够先压更新日志区，按钮始终留在窗内。
 import { hana } from "./sdk.js";
-import { apiFetch } from "./app-api.js";
+import { APP_ID, apiFetch } from "./app-api.js";
 
 const RELEASE_PAGE_URL = "https://github.com/youyongdemao/HanaAgent-session-insight/releases/latest";
 
 let modalEl = null;
 let releaseUrl = RELEASE_PAGE_URL;
 let currentVersion = "";
+
+// 自动弹出的节流：同一个版本只弹一次，且两次自动弹出之间至少隔一天。
+// 手动点「更新」不受这两条限制，随时能看。
+// 键名带 App id：几个 App 同源，不加前缀会互相压掉对方的「已提示」记录。
+const SEEN_KEY = "hana-update-notice-seen:" + APP_ID;
+const AUTO_POP_GAP_MS = 24 * 60 * 60 * 1000;
+
+function readSeen() {
+  try {
+    const obj = JSON.parse(localStorage.getItem(SEEN_KEY) || "null");
+    return obj && typeof obj === "object" ? obj : {};
+  } catch {
+    return {};
+  }
+}
+
+function markSeen(version) {
+  try {
+    localStorage.setItem(SEEN_KEY, JSON.stringify({ version, at: Date.now() }));
+  } catch {
+    /* 存不下就退回「每次都能弹」，不影响其它逻辑 */
+  }
+}
 
 /** "2026-09-22T01:00:00Z" → "9/22"（本地时区） */
 function shortDate(iso) {
@@ -122,6 +145,7 @@ function applyResult(info) {
     latest.textContent = `v${info.latestVersion}${info.publishedAt ? " · " + shortDate(info.publishedAt) : ""}`;
     setVerdict("有新版本可用", "new");
     renderNotes(info.noteGroups);
+    markSeen(info.latestVersion);
     return;
   }
 
@@ -175,11 +199,13 @@ export async function initUpdateNotice() {
   if (document.getElementById("siUpdateModal")) return null;
   build();
   const info = await check({ silent: true });
-  if (info?.updateAvailable) {
-    open(info, false);
-    return info;
-  }
-  return null;
+  if (!info?.updateAvailable) return null;
+  // 节流：同一版本提示过一次就不再自动弹；两次自动弹之间至少隔一天。
+  const seen = readSeen();
+  if (seen.version === info.latestVersion) return null;
+  if (typeof seen.at === "number" && Date.now() - seen.at < AUTO_POP_GAP_MS) return null;
+  open(info, false);
+  return info;
 }
 
 /** 手动打开：设置页「更新」按钮用。窗口先开，里面自己查。 */
