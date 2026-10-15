@@ -841,6 +841,13 @@ body:not([data-surface="widget"]) .hero-pricing .api-hero{grid-template-columns:
 .w-detail-overlay{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--bg,#f8f4ed) 40%,transparent);backdrop-filter:var(--fx-lens-sm);opacity:0;transition:opacity .2s ease;pointer-events:none}
 .w-detail-overlay.open{opacity:1;pointer-events:auto}
 .w-detail-overlay[hidden]{display:none}
+/* 详情弹窗是浮层，底下压着页面内容。毛玻璃背景关闭时 --fx-lens-* 为 none，玻璃底色失去模糊兜底，
+   下层页面的文字会直接透上来与弹窗内容重叠（issue #1）。所以：毛玻璃关闭时，把详情弹窗里的卡片
+   统一切成纯色不透明；毛玻璃开着时维持原来的玻璃观感。 */
+body[data-fx-glass="off"] .w-detail-overlay .w-detail-card,
+body[data-fx-glass="off"] .w-detail-overlay .card,
+body[data-fx-glass="off"] .w-detail-overlay .model-metric-card,
+body[data-fx-glass="off"] .w-detail-overlay .w-detail-visual{background:var(--bg-card)}
 /* 详情卡自己的滚动条原来是 none：滚轮能滚、却找不到条（系统开着「自动隐藏滚动条」时更明显）。
    改成常驻的细条，用 ::-webkit-scrollbar 画，这样不随空闲淡出。 */
 .w-detail-overlay .w-detail-card{overflow-x:hidden;overflow-y:auto;width:min(960px,calc(100vw - 24px));padding:35px 24px 26px;transform:scale(.95);transform-origin:center;transition:transform .24s var(--ease);scrollbar-width:auto;scrollbar-color:auto}
