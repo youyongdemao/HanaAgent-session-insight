@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "snapshotAt": "2026-10-10",
+  "snapshotAt": "2026-10-21",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
@@ -10245,6 +10245,94 @@
         "output": 0.4
       },
       "currency": "USD"
+    },
+    "gemini::gemini-4-argon": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 4 Argon；促销价有效期至 2026-11-30（2026-12-01 起输入 $4、输出 $20、缓存读取 $0.20）",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-10-21",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 0.68,
+        "output": 68
+      },
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.1,
+        "output": 10
+      },
+      "currency": "USD"
+    },
+    "gemini-4-argon": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 4 Argon；促销价有效期至 2026-11-30（2026-12-01 起输入 $4、输出 $20、缓存读取 $0.20）",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-10-21",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 0.68,
+        "output": 68
+      },
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.1,
+        "output": 10
+      },
+      "currency": "USD"
+    },
+    "minimax::MiniMax-M3.1-Flash": {
+      "provider": "minimax",
+      "source": "minimax 官方定价页（人民币刊例价）；官方名 MiniMax-M3.1-Flash；优先服务按标准价 1.5 倍（输入 1.5、缓存读取 0.15、输出 6）",
+      "sourceUrl": "https://platform.minimaxi.com/document/price",
+      "updatedAt": "2026-10-21",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.1,
+        "output": 4
+      },
+      "contextWindow": 1000000,
+      "currency": "CNY"
+    },
+    "MiniMax-M3.1-Flash": {
+      "provider": "minimax",
+      "source": "minimax 官方定价页（人民币刊例价）；官方名 MiniMax-M3.1-Flash；优先服务按标准价 1.5 倍（输入 1.5、缓存读取 0.15、输出 6）",
+      "sourceUrl": "https://platform.minimaxi.com/document/price",
+      "updatedAt": "2026-10-21",
+      "flat": {
+        "inputMiss": 1,
+        "inputHit": 0.1,
+        "output": 4
+      },
+      "contextWindow": 1000000,
+      "currency": "CNY"
+    },
+    "zhipu::GLM-OCR": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-OCR；官方页缓存命中标注「不支持」，按输入价计",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-21",
+      "flat": {
+        "inputMiss": 0.2,
+        "inputHit": 0.2,
+        "output": 0.2
+      },
+      "contextWindow": 32000,
+      "currency": "CNY"
+    },
+    "glm-ocr": {
+      "provider": "zhipu",
+      "source": "zhipu 官方定价页；官方名 GLM-OCR；官方页缓存命中标注「不支持」，按输入价计",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/guide/start/pricing",
+      "updatedAt": "2026-10-21",
+      "flat": {
+        "inputMiss": 0.2,
+        "inputHit": 0.2,
+        "output": 0.2
+      },
+      "contextWindow": 32000,
+      "currency": "CNY"
     }
   }
 }
