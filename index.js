@@ -21,7 +21,8 @@ import {
   baseName,
   estPromptTokens,
 } from "./lib/host-data.js";
-import { missInputOf } from "./lib/usage-parser.js";
+import { missInputOf, setLocalPricing } from "./lib/usage-parser.js";
+import { createCustomPricingStore, STORE_FILENAME } from "./lib/custom-pricing-store.js";
 
 export const name = "session-insight";
 
@@ -372,6 +373,23 @@ async function readReduceCardButtons(sdk) {
 
 export default defineApp(async (sdk) => {
   await sdk.logger.info("session-insight loaded");
+
+  // 本地自定义价：独立文件 custom-pricing.json，铺一层同步镜像给查价链（查价是同步的，不能 await）
+  const priceStore = createCustomPricingStore({ filePath: join(sdk.dataDir, STORE_FILENAME) });
+  async function refreshLocalPricingMirror() {
+    try {
+      const items = await priceStore.list();
+      const mirror = {};
+      for (const item of items) mirror[`${item.providerId}::${item.modelId}`] = item;
+      setLocalPricing(mirror);
+      return mirror;
+    } catch (error) {
+      // 文件损坏时不动镜像，保持公共表；不静默重置空表
+      await sdk.logger.warn(`local pricing mirror skipped: ${error?.message ?? error}`);
+      return null;
+    }
+  }
+  await refreshLocalPricingMirror();
 
   const ctx = await makeCtx(sdk);
 
