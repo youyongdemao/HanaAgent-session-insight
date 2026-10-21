@@ -1,0 +1,56 @@
+/* 套餐分摊模块的结构样式。主题、按钮、弹窗沿用 custom-pricing.css 的 cp-*。 */
+.sc-manager{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sc-manager *,.sc-dialog *{box-sizing:border-box}
+.sc-manager .cp-note,.sc-dialog .cp-note{max-width:100%}
+.sc-search{flex:1 1 160px}
+.sc-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin:2px 0}
+.sc-metric{display:flex;flex-direction:column;gap:3px;min-width:0;padding:10px 12px;border:1px solid var(--border,rgba(128,128,128,.18));border-radius:11px;background:var(--bg-card,color-mix(in srgb,var(--text,#30343b) 4%,transparent))}
+.sc-metric-label{color:var(--text-muted,#858991);font-size:11px}
+.sc-metric-value{font-size:16px;font-weight:650;line-height:1.25;overflow-wrap:anywhere}
+.sc-metric-sub{color:var(--text-muted,#858991);font-size:10.5px;overflow-wrap:anywhere}
+.sc-diags{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sc-diag-head{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--text-muted,#858991);font-size:11px}
+.sc-diag-head .cp-note{margin:0}
+.sc-diag{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;min-width:0;padding:6px 9px;border-radius:8px;background:color-mix(in srgb,var(--text,#30343b) 4%,transparent);font-size:11.5px}
+.sc-diag-prov{font-weight:550;overflow-wrap:anywhere}
+.sc-diag-state{flex:none;padding:1px 6px;border-radius:4px;border:1px solid transparent;font-size:10.5px}
+.sc-diag-state.sc-ok{color:var(--accent,#647787);border-color:color-mix(in srgb,var(--accent,#647787) 40%,transparent)}
+.sc-diag-state.sc-warn{color:var(--warn,#b08035);border-color:color-mix(in srgb,var(--warn,#b08035) 40%,transparent)}
+.sc-diag-state.sc-bad{color:var(--danger,#c76559);border-color:color-mix(in srgb,var(--danger,#c76559) 40%,transparent)}
+.sc-diag-note{color:var(--text-muted,#858991);min-width:0;overflow-wrap:anywhere}
+.sc-diag-empty{margin:0}
+.sc-diags-inline{margin-top:8px}
+.sc-sync-result{margin-top:6px;min-width:0}
+.sc-list{min-width:0}
+.sc-item{align-items:flex-start}
+.sc-item-main{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1 1 auto}
+.sc-title{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.sc-title strong{font-weight:600;overflow-wrap:anywhere}
+.sc-badge{flex:none;padding:1px 6px;border:1px solid color-mix(in srgb,var(--accent,#647787) 40%,transparent);border-radius:4px;color:var(--accent,#647787);font-size:10px;line-height:1.5}
+.sc-line{margin:0;font-size:11.5px}
+.sc-chips{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.sc-chip{max-width:100%;padding:2px 7px;border-radius:5px;background:color-mix(in srgb,var(--text,#30343b) 6%,transparent);font-size:10.5px;line-height:1.6;overflow-wrap:anywhere}
+.sc-chip-warn{color:var(--warn,#b08035);background:color-mix(in srgb,var(--warn,#b08035) 10%,transparent)}
+.sc-chip-ok{color:var(--text-muted,#858991)}
+.sc-progress{height:4px;width:100%;max-width:420px;border-radius:99px;background:color-mix(in srgb,var(--text,#30343b) 10%,transparent);overflow:hidden}
+.sc-progress i{display:block;height:100%;border-radius:inherit;background:var(--accent,#647787)}
+.sc-days{margin:0;font-size:10.5px}
+.sc-item-actions{flex:none}
+.sc-confirm-text{margin:0;max-width:240px}
+.sc-foot{margin:0}
+.sc-span{grid-column:1/-1;margin:0}
+.sc-provider-hint{margin:0;font-size:11px}
+.sc-warn-note{margin:6px 0 0;color:var(--warn,#b08035)}
+.sc-dialog .sc-span{margin:0}
+@media(max-width:500px){
+  .sc-item-actions{width:100%}
+  .sc-confirm-text{max-width:none}
+  .sc-summary{grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
+  .sc-metric{padding:8px 9px}
+  .sc-metric-value{font-size:14px}
+}
+@media(max-width:340px){
+  .sc-summary{grid-template-columns:minmax(0,1fr)}
+  .cp-toolbar .cp-btn{flex:1 1 auto}
+  .sc-chip{width:100%}
+}

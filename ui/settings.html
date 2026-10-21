@@ -7,6 +7,8 @@
   <!-- 主题不在这里加载：交给 assets/theme-sync.js 跟随宿主（宿主签发的样式表 + SDK 订阅）。
        光读 iframe URL 里那份 hana-css 会停在创建时的初值上，显示成默认主题。 -->
   <link rel="stylesheet" href="./assets/settings.css">
+  <link rel="stylesheet" href="./assets/custom-pricing.css">
+  <link rel="stylesheet" href="./assets/subscriptions.css">
   <link rel="stylesheet" href="./assets/update-notice.css">
 </head>
 <body class="is-settings" data-hana-theme="inherit">
@@ -70,6 +72,16 @@
         <h2>高级视觉效果</h2>
         <ul class="st-list" id="stFxList"></ul>
       </section>
+    </section>
+
+    <section class="st-block" id="stPricingBlock">
+      <h1 class="st-block-title">自定义计费</h1>
+      <div id="stPricingManager"></div>
+    </section>
+
+    <section class="st-block" id="stSubscriptionsBlock">
+      <h1 class="st-block-title">订阅套餐</h1>
+      <div id="stSubscriptionsManager"></div>
     </section>
 
     <section class="st-block" id="stLocalBlock" hidden>

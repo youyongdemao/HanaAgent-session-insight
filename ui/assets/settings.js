@@ -6,9 +6,15 @@ import { hana } from "./sdk.js";
 import { apiFetch } from "./app-api.js";
 import { initUpdateNotice, openUpdateNotice } from "./update-notice.js";
 import { initHostThemeSync } from "./theme-sync.js";
+import { mountPricingManager } from "./custom-pricing.js";
+import { mountSubscriptionsManager } from "./subscriptions.js";
 
 initHostThemeSync();
 hana.ready();
+const pricingManager = document.getElementById('stPricingManager');
+if (pricingManager) mountPricingManager(pricingManager);
+const subscriptionsManager = document.getElementById('stSubscriptionsManager');
+if (subscriptionsManager) mountSubscriptionsManager(subscriptionsManager);
 
 // 保存后写一个一次性标记，卡片那边轮询到配置变化就重排
 const BROADCAST_KEY = "si-live-layout";
@@ -63,7 +69,6 @@ function render() {
     listEl.append(
       makeToggleRow({
         label: it.label,
-        desc: it.desc,
         checked: onSet.has(it.id),
         onChange: (on) => {
           if (on) onSet.add(it.id);
@@ -263,7 +268,6 @@ function renderWidgetTable() {
       wBodyEl.append(
         makeToggleRow({
           label: b.label,
-          desc: b.desc,
           checked: wOnSet.has(b.id),
           onChange: (on) => {
             if (on) wOnSet.add(b.id);
@@ -297,7 +301,6 @@ function renderWidgetTable() {
       wBodyEl.append(
         makeToggleRow({
           label: x.label,
-          desc: x.desc,
           checked: wOnSet.has(x.id),
           sub: true,
           onChange: (on) => {
@@ -374,7 +377,7 @@ const FX_ROWS = [
   { key: "glass", label: "毛玻璃背景" },
   { key: "glow", label: "鼠标跟随光晕" },
 ];
-let fxState = { glass: false, glow: true };
+let fxState = { glass: true, glow: true };
 
 function renderFx() {
   if (!fxListEl) return;
@@ -414,7 +417,7 @@ async function saveFx() {
     // 写失败就回读一次，界面不撒谎
     try {
       const back = await apiFetch("api/fx-config");
-      fxState = { glass: !!back?.glass, glow: back?.glow !== false };
+      fxState = { glass: back?.glass !== false, glow: back?.glow !== false };
       renderFx();
     } catch {
       /* 读也失败就保持现状 */
@@ -426,7 +429,7 @@ async function loadFx() {
   if (!fxListEl) return;
   try {
     const fx = await apiFetch("api/fx-config");
-    fxState = { glass: !!fx?.glass, glow: fx?.glow !== false };
+    fxState = { glass: fx?.glass !== false, glow: fx?.glow !== false };
   } catch {
     /* 读不到按默认 */
   }

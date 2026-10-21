@@ -5,7 +5,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineApp } from "./sdk/app-contract/server-client.js";
-import registerLegacyRoutes, { calcEntryCost, resetBalanceCaches } from "./lib/legacy-api.js";
+import registerLegacyRoutes, { calcEntryCost, resetBalanceCaches, initializePricingDb } from "./lib/legacy-api.js";
 import { PROVIDER_DIRECTORY } from "./lib/provider-directory.js";
 import { registerUpdateRoutes } from "./lib/update-check.js";
 import { registerLaunchRoutes } from "./lib/local-launch.js";
@@ -21,8 +21,11 @@ import {
   baseName,
   estPromptTokens,
 } from "./lib/host-data.js";
-import { missInputOf, setLocalPricing } from "./lib/usage-parser.js";
+import { missInputOf, getLocalPricingRevision } from "./lib/usage-parser.js";
 import { createCustomPricingStore, STORE_FILENAME } from "./lib/custom-pricing-store.js";
+import { registerCustomPricingRoutes, rebuildLocalPricingMirror } from "./lib/custom-pricing-api.js";
+import { createSubscriptionsStore } from "./lib/subscriptions-store.js";
+import { createSubscriptionsService, registerSubscriptionsRoutes } from "./lib/subscriptions-service.js";
 
 export const name = "session-insight";
 
@@ -68,8 +71,7 @@ function summarizeUsage(entries) {
       hitRatioSum += ratio;
       hitRatioCount += 1;
     }
-    const hostCost = num(entry?.usage?.costTotal);
-    costTotal += hostCost != null && hostCost > 0 ? hostCost : (calcEntryCost(entry) ?? 0);
+    costTotal += calcEntryCost(entry) ?? 0;
 
     const key = `${entry?.model?.provider ?? "?"}::${entry?.model?.modelId ?? "?"}`;
     const bucket = byModel.get(key) ?? {
@@ -278,11 +280,10 @@ function parseHomeView(raw) {
 
 /**
  * 高级视觉效果开关（存 config.json 的 fxConfig，一段 JSON 字符串）。
- * 毛玻璃默认关：面板下面就是纯色页面背景，模糊纯色与纯色长得一样，实测视觉无差别，
- * 而它是鼠标移动掉帧的主要开销。鼠标光晕默认开，它才是观感的一部分。
- * 两个开关都是“用户自己按机器情况关”，不做自动检测。
+ * 毛玻璃背景与鼠标跟随光晕默认都开启。
+ * 已保存的显式关闭选择保持不变，用户可按机器情况自行关闭，不做自动检测。
  */
-const FX_DEFAULTS = { glass: false, glow: true };
+const FX_DEFAULTS = { glass: true, glow: true };
 function parseFx(raw) {
   let o = null;
   try {
@@ -376,26 +377,33 @@ export default defineApp(async (sdk) => {
 
   // 本地自定义价：独立文件 custom-pricing.json，铺一层同步镜像给查价链（查价是同步的，不能 await）
   const priceStore = createCustomPricingStore({ filePath: join(sdk.dataDir, STORE_FILENAME) });
-  async function refreshLocalPricingMirror() {
-    try {
-      const items = await priceStore.list();
-      const mirror = {};
-      for (const item of items) mirror[`${item.providerId}::${item.modelId}`] = item;
-      setLocalPricing(mirror);
-      return mirror;
-    } catch (error) {
-      // 文件损坏时不动镜像，保持公共表；不静默重置空表
-      await sdk.logger.warn(`local pricing mirror skipped: ${error?.message ?? error}`);
-      return null;
-    }
+  try {
+    await rebuildLocalPricingMirror(priceStore);
+  } catch (error) {
+    // 损坏数据不自动重置，管理接口会返回具体错误；不阻塞其余用量展示。
+    await sdk.logger.warn(`local pricing mirror skipped: ${error?.message ?? error}`);
   }
-  await refreshLocalPricingMirror();
 
   const ctx = await makeCtx(sdk);
+  // 仅恢复本地最后成功快照，不让启动等待网络；远端刷新仍走原有入口。
+  try {
+    const restored = await initializePricingDb(ctx);
+    if (restored.error) await sdk.logger.warn(`pricing cache restore: ${restored.error}`);
+  } catch (error) {
+    await sdk.logger.warn(`pricing cache restore skipped: ${error?.message ?? error}`);
+  }
+  const subscriptions = createSubscriptionsService({
+    store: createSubscriptionsStore({ filePath: join(sdk.dataDir, 'subscriptions.json') }),
+    getConfig: () => readAppConfig(sdk), sdk,
+  });
+  ctx.subscriptions = subscriptions;
+  subscriptions.scheduleSync();
 
   await sdk.routes.register((app) => {
     // v1 遗留端点（账本聚合、供应商、余额等）复用原实现，数据源已在内部换成宿主 API。
     registerLegacyRoutes(app, ctx, sdk);
+    registerCustomPricingRoutes(app, { sdk, ctx, store: priceStore });
+    registerSubscriptionsRoutes(app, subscriptions);
 
     // 检查更新：只查 GitHub 上最新的已发布版本，安装仍走「设置 → 扩展」
     registerUpdateRoutes(app, ctx);
@@ -538,10 +546,11 @@ export default defineApp(async (sdk) => {
     // 只做「在途合并」：请求一落地就从表里删掉，不缓存结果，所以不存在数据变旧的问题。
     const statsInflight = new Map();
     app.get("/api/stats", async (c) => {
-      const key = `${c.req.query("fast") === "1" ? "fast" : "full"}|${c.req.query("session") ?? c.req.query("file") ?? c.req.query("sessionId") ?? ""}`;
+      const revision = getLocalPricingRevision();
+      const key = `${revision}|${c.req.query("fast") === "1" ? "fast" : "full"}|${c.req.query("session") ?? c.req.query("file") ?? c.req.query("sessionId") ?? ""}`;
       let pending = statsInflight.get(key);
       if (!pending) {
-        pending = computeStats(c).finally(() => statsInflight.delete(key));
+        pending = computeStats(c).then(result => ({ ...result, body: { ...result.body, priceRevision: revision } })).finally(() => statsInflight.delete(key));
         statsInflight.set(key, pending);
       }
       const { status, body } = await pending;
@@ -766,9 +775,8 @@ export default defineApp(async (sdk) => {
         ? t1 - t0
         : num(entry?.durationMs);
     const raw = wall && wall >= 500 ? Math.round(outTok / (wall / 1000)) : null;
-    // 宿主 usage.costTotal 实测恒为 0，为 0 或缺失时按 pricing.json 自己算。
-    const hostCost = num(u?.costTotal);
-    const cost = hostCost != null && hostCost > 0 ? hostCost : calcEntryCost(entry);
+    // 共用计费入口：本地覆盖优先，避免输入栏绕过自定义价。
+    const cost = calcEntryCost(entry);
     return {
       modelId: entry?.model?.modelId ?? null,
       hitRatio: num(u?.cache?.hitRatio),

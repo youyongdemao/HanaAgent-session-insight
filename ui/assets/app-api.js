@@ -15,7 +15,14 @@ export async function apiFetch(path, init = {}, timeoutMs = 8000) {
     headers,
     signal: AbortSignal.timeout(timeoutMs),
   });
-  if (!res.ok) throw new Error("HTTP " + res.status);
+  if (!res.ok) {
+    const detail = await res.json().catch(() => null);
+    const messages = { 'revision-conflict': '计费配置已被另一窗口修改，请重新打开后再保存', 'store-corrupt': '计费配置文件损坏，已停止写入以保护原数据', 'invalid-body': '请求内容无效' };
+    const message = (Array.isArray(detail?.errors) ? detail.errors.join('；') : '') || messages[detail?.error] || detail?.message || detail?.error || '';
+    const error = new Error(message ? String(message) : "HTTP " + res.status);
+    error.status = res.status;
+    throw error;
+  }
   const ct = res.headers.get("content-type") || "";
   return ct.includes("json") ? res.json() : null;
 }
