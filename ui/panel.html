@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>会话用量</title>
-  <!-- 主题不在这里加载：交给 assets/theme-sync.js 跟随宿主（宿主签发的样式表 + SDK 订阅）。 -->
-  <link rel="stylesheet" href="./assets/panel-v2.css?v=2.1.5">
-  <link rel="stylesheet" href="./assets/update-notice.css?v=2.1.5">
-  <link rel="stylesheet" href="./assets/custom-pricing.css?v=2.1.5">
+  <!-- 主题不在这里加载：交�?assets/theme-sync.js 跟随宿主（宿主签发的样式�?+ SDK 订阅）�?-->
+  <link rel="stylesheet" href="./assets/panel-v2.css?v=2.1.6">
+  <link rel="stylesheet" href="./assets/update-notice.css?v=2.1.6">
+  <link rel="stylesheet" href="./assets/custom-pricing.css?v=2.1.6">
 </head>
 <body data-hana-theme="inherit" data-surface="page">
   <div id="root" data-surface="page"></div>
@@ -15,10 +15,10 @@
     window.addEventListener("error", function (e) {
       var root = document.getElementById("root");
       if (root && !root.innerHTML) {
-        root.innerHTML = '<div class="empty">面板加载失败：' + (e.message || "脚本错误") + "</div>";
+        root.innerHTML = '<div class="empty">面板加载失败�? + (e.message || "脚本错误") + "</div>";
       }
     });
   </script>
-  <script type="module" src="./assets/panel-v2.js?v=2.1.5"></script>
+  <script type="module" src="./assets/panel-v2.js?v=2.1.6"></script>
 </body>
 </html>

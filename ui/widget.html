@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>会话用量</title>
   <script>
-    // 初始主题：宿主只在主题“变化”时推送、不推初始值，页面需自行从 hana-css 加载一次。
+    // 初始主题：宿主只在主题“变化”时推送、不推初始值，页面需自行�?hana-css 加载一次�?
     (() => {
       const advertisedUrl = new URLSearchParams(window.location.search).get("hana-css");
       if (!advertisedUrl) return;
@@ -31,9 +31,9 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="./assets/panel-v2.css?v=2.1.5">
-  <link rel="stylesheet" href="./assets/update-notice.css?v=2.1.5">
-  <link rel="stylesheet" href="./assets/custom-pricing.css?v=2.1.5">
+  <link rel="stylesheet" href="./assets/panel-v2.css?v=2.1.6">
+  <link rel="stylesheet" href="./assets/update-notice.css?v=2.1.6">
+  <link rel="stylesheet" href="./assets/custom-pricing.css?v=2.1.6">
 </head>
 <body data-hana-theme="inherit" data-surface="widget">
   <div id="root" data-surface="widget"></div>
@@ -41,10 +41,10 @@
     window.addEventListener("error", function (e) {
       var root = document.getElementById("root");
       if (root && !root.innerHTML) {
-        root.innerHTML = '<div class="empty">面板加载失败：' + (e.message || "脚本错误") + "</div>";
+        root.innerHTML = '<div class="empty">面板加载失败�? + (e.message || "脚本错误") + "</div>";
       }
     });
   </script>
-  <script type="module" src="./assets/panel-v2.js?v=2.1.5"></script>
+  <script type="module" src="./assets/panel-v2.js?v=2.1.6"></script>
 </body>
 </html>

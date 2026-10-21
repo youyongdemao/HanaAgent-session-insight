@@ -35,7 +35,7 @@ const server=http.createServer(async(req,res)=>{
   if(api==='total-cost')return json({totalCost:2,perProvider:{deepseek:2},todayCost:2});
   if(api==='hero-stats')return json({tokens:1000000,calls:1,totalCost:2});
   if(api==='events')return json({events:[]});
-  if(api==='version')return json({version:'2.1.5'});
+  if(api==='version')return json({version:'2.1.6'});
   if(api==='rules')return json({});
   return json({ok:true});
  }catch(e){res.writeHead(500,{'content-type':'text/plain'});res.end(e.message);}
