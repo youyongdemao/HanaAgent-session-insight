@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "snapshotAt": "2026-10-21",
+  "snapshotAt": "2026-10-28",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
@@ -205,6 +205,32 @@
         "inputHit": 2,
         "output": 100,
         "cacheWrite": 20
+      },
+      "contextWindow": 1048576
+    },
+    "moonshot::kimi-k3.1-pro": {
+      "provider": "moonshot",
+      "source": "moonshot 官方定价页；缓存写入按默认 5min 档（1h 档 26 元），官方名 Kimi K3.1 Pro",
+      "sourceUrl": "https://platform.kimi.com/docs/pricing/chat",
+      "updatedAt": "2026-10-28",
+      "flat": {
+        "inputMiss": 13,
+        "inputHit": 1.3,
+        "output": 68,
+        "cacheWrite": 13
+      },
+      "contextWindow": 1048576
+    },
+    "moonshot::kimi-k3.1-pro-highspeed": {
+      "provider": "moonshot",
+      "source": "moonshot 官方定价页；缓存写入按默认 5min 档（1h 档 52 元），官方名 Kimi K3.1 Pro Highspeed",
+      "sourceUrl": "https://platform.kimi.com/docs/pricing/chat",
+      "updatedAt": "2026-10-28",
+      "flat": {
+        "inputMiss": 26,
+        "inputHit": 1.3,
+        "output": 136,
+        "cacheWrite": 26
       },
       "contextWindow": 1048576
     },
@@ -772,12 +798,12 @@
     },
     "xai::grok-4.5": {
       "provider": "xai",
-      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；2026-10-28 复核：缓存读取价回到 $0.30/$0.60（10-10 记录的 0.5/1.0 已不成立）",
       "sourceUrl": "https://docs.x.ai/developers/models",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-10-28",
       "flat": {
         "inputMiss": 13.6,
-        "inputHit": 3.4,
+        "inputHit": 2.04,
         "output": 40.8
       },
       "contextWindow": 500000,
@@ -785,19 +811,19 @@
         {
           "condition": "< 200k prompt tokens",
           "inputMiss": 2,
-          "inputHit": 0.5,
+          "inputHit": 0.3,
           "output": 6
         },
         {
           "condition": ">= 200k prompt tokens",
           "inputMiss": 4,
-          "inputHit": 1,
+          "inputHit": 0.6,
           "output": 12
         }
       ],
       "usd": {
         "inputMiss": 2,
-        "inputHit": 0.5,
+        "inputHit": 0.3,
         "output": 6
       },
       "currency": "USD"
@@ -3110,25 +3136,25 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 13.6,
-        "inputHit": 1.36,
-        "output": 68
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 136
       },
       "contextWindow": 1050000,
       "tiers": [
         {
           "minPromptTokens": 272000,
-          "inputMiss": 4,
-          "inputHit": 0.4,
-          "output": 15
+          "inputMiss": 8,
+          "inputHit": 0.8,
+          "output": 30
         }
       ],
       "usd": {
-        "inputMiss": 2,
-        "inputHit": 0.2,
-        "output": 10
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 20
       },
       "currency": "USD"
     },
@@ -3373,17 +3399,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-23",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 2.18,
-        "inputHit": 2.18,
-        "output": 6.05
+        "inputMiss": 1.75032,
+        "inputHit": 1.75032,
+        "output": 6.99516
       },
-      "contextWindow": 131072,
+      "contextWindow": 163840,
       "usd": {
-        "inputMiss": 0.32,
-        "inputHit": 0.32,
-        "output": 0.89
+        "inputMiss": 0.2574,
+        "inputHit": 0.2574,
+        "output": 1.0287
       },
       "currency": "USD"
     },
@@ -3391,35 +3417,35 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 1.83,
-        "inputHit": 0.91,
-        "output": 2.72
+        "inputMiss": 1.904,
+        "inputHit": 0.1904,
+        "output": 2.856
       },
-      "contextWindow": 131072,
+      "contextWindow": 163840,
       "usd": {
-        "inputMiss": 0.269118,
-        "inputHit": 0.133824,
-        "output": 0.4
+        "inputMiss": 0.28,
+        "inputHit": 0.028,
+        "output": 0.42
       },
       "currency": "USD"
     },
     "openrouter::z-ai/glm-5.3": {
       "provider": "openrouter",
-      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；该平台当前刊例输入价显著低于原厂，按平台售价记录",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-23",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 4.45,
-        "inputHit": 0.83,
-        "output": 13.97
+        "inputMiss": 0.47532,
+        "inputHit": 0.46852,
+        "output": 9.52
       },
       "contextWindow": 1048576,
       "usd": {
-        "inputMiss": 0.6538,
-        "inputHit": 0.12142,
-        "output": 2.0548
+        "inputMiss": 0.0699,
+        "inputHit": 0.0689,
+        "output": 1.4
       },
       "currency": "USD"
     },
@@ -3427,16 +3453,16 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-23",
+      "updatedAt": "2026-10-28",
       "flat": {
         "inputMiss": 1.02,
-        "inputHit": 0.34,
+        "inputHit": 0.204,
         "output": 3.4
       },
       "contextWindow": 1048576,
       "usd": {
         "inputMiss": 0.15,
-        "inputHit": 0.05,
+        "inputHit": 0.03,
         "output": 0.5
       },
       "currency": "USD"
@@ -3445,17 +3471,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 2.72,
-        "inputHit": 0.54,
-        "output": 11.9
+        "inputMiss": 3.672,
+        "inputHit": 0.6732,
+        "output": 13.464
       },
-      "contextWindow": 202752,
+      "contextWindow": 204800,
       "usd": {
-        "inputMiss": 0.4,
-        "inputHit": 0.079412,
-        "output": 1.75
+        "inputMiss": 0.54,
+        "inputHit": 0.099,
+        "output": 1.98
       },
       "currency": "USD"
     },
@@ -3463,17 +3489,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 3.06,
-        "inputHit": 0.48,
-        "output": 15.3
+        "inputMiss": 3.4,
+        "inputHit": 1.02,
+        "output": 17
       },
       "contextWindow": 262144,
       "usd": {
-        "inputMiss": 0.45,
-        "inputHit": 0.070588,
-        "output": 2.25
+        "inputMiss": 0.5,
+        "inputHit": 0.15,
+        "output": 2.5
       },
       "currency": "USD"
     },
@@ -3481,17 +3507,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 3.74,
-        "inputHit": 1.53,
-        "output": 23.8
+        "inputMiss": 3.4,
+        "inputHit": 2.04,
+        "output": 24.48
       },
-      "contextWindow": 256000,
+      "contextWindow": 262144,
       "usd": {
-        "inputMiss": 0.55,
-        "inputHit": 0.225,
-        "output": 3.5
+        "inputMiss": 0.5,
+        "inputHit": 0.3,
+        "output": 3.6
       },
       "currency": "USD"
     },
@@ -3499,17 +3525,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 1.84,
-        "inputHit": 0.18,
-        "output": 7.34
+        "inputMiss": 2.04,
+        "inputHit": 0.204,
+        "output": 8.16
       },
       "contextWindow": 204800,
       "usd": {
-        "inputMiss": 0.270588,
-        "inputHit": 0.026471,
-        "output": 1.079412
+        "inputMiss": 0.3,
+        "inputHit": 0.03,
+        "output": 1.2
       },
       "currency": "USD"
     },
@@ -6618,25 +6644,25 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 13.6,
-        "inputHit": 1.36,
-        "output": 68
+        "inputMiss": 27.2,
+        "inputHit": 2.72,
+        "output": 136
       },
       "contextWindow": 1050000,
       "tiers": [
         {
           "minPromptTokens": 272000,
-          "inputMiss": 4,
-          "inputHit": 0.4,
-          "output": 15
+          "inputMiss": 8,
+          "inputHit": 0.8,
+          "output": 30
         }
       ],
       "usd": {
-        "inputMiss": 2,
-        "inputHit": 0.2,
-        "output": 10
+        "inputMiss": 4,
+        "inputHit": 0.4,
+        "output": 20
       },
       "currency": "USD"
     },
@@ -6881,17 +6907,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；官方页未列缓存命中价，按输入价计",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-23",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 2.18,
-        "inputHit": 2.18,
-        "output": 6.05
+        "inputMiss": 1.75032,
+        "inputHit": 1.75032,
+        "output": 6.99516
       },
-      "contextWindow": 131072,
+      "contextWindow": 163840,
       "usd": {
-        "inputMiss": 0.32,
-        "inputHit": 0.32,
-        "output": 0.89
+        "inputMiss": 0.2574,
+        "inputHit": 0.2574,
+        "output": 1.0287
       },
       "currency": "USD"
     },
@@ -6899,35 +6925,35 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 1.83,
-        "inputHit": 0.91,
-        "output": 2.72
+        "inputMiss": 1.904,
+        "inputHit": 0.1904,
+        "output": 2.856
       },
-      "contextWindow": 131072,
+      "contextWindow": 163840,
       "usd": {
-        "inputMiss": 0.269118,
-        "inputHit": 0.133824,
-        "output": 0.4
+        "inputMiss": 0.28,
+        "inputHit": 0.028,
+        "output": 0.42
       },
       "currency": "USD"
     },
     "z-ai/glm-5.3": {
       "provider": "openrouter",
-      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
+      "source": "openrouter 官方定价页；官方美元价 ×6.8 折算；该平台当前刊例输入价显著低于原厂，按平台售价记录",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-23",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 4.45,
-        "inputHit": 0.83,
-        "output": 13.97
+        "inputMiss": 0.47532,
+        "inputHit": 0.46852,
+        "output": 9.52
       },
       "contextWindow": 1048576,
       "usd": {
-        "inputMiss": 0.6538,
-        "inputHit": 0.12142,
-        "output": 2.0548
+        "inputMiss": 0.0699,
+        "inputHit": 0.0689,
+        "output": 1.4
       },
       "currency": "USD"
     },
@@ -6935,16 +6961,16 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-23",
+      "updatedAt": "2026-10-28",
       "flat": {
         "inputMiss": 1.02,
-        "inputHit": 0.34,
+        "inputHit": 0.204,
         "output": 3.4
       },
       "contextWindow": 1048576,
       "usd": {
         "inputMiss": 0.15,
-        "inputHit": 0.05,
+        "inputHit": 0.03,
         "output": 0.5
       },
       "currency": "USD"
@@ -6953,17 +6979,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 2.72,
-        "inputHit": 0.54,
-        "output": 11.9
+        "inputMiss": 3.672,
+        "inputHit": 0.6732,
+        "output": 13.464
       },
-      "contextWindow": 202752,
+      "contextWindow": 204800,
       "usd": {
-        "inputMiss": 0.4,
-        "inputHit": 0.079412,
-        "output": 1.75
+        "inputMiss": 0.54,
+        "inputHit": 0.099,
+        "output": 1.98
       },
       "currency": "USD"
     },
@@ -6971,17 +6997,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 3.06,
-        "inputHit": 0.48,
-        "output": 15.3
+        "inputMiss": 3.4,
+        "inputHit": 1.02,
+        "output": 17
       },
       "contextWindow": 262144,
       "usd": {
-        "inputMiss": 0.45,
-        "inputHit": 0.070588,
-        "output": 2.25
+        "inputMiss": 0.5,
+        "inputHit": 0.15,
+        "output": 2.5
       },
       "currency": "USD"
     },
@@ -6989,17 +7015,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 3.74,
-        "inputHit": 1.53,
-        "output": 23.8
+        "inputMiss": 3.4,
+        "inputHit": 2.04,
+        "output": 24.48
       },
-      "contextWindow": 256000,
+      "contextWindow": 262144,
       "usd": {
-        "inputMiss": 0.55,
-        "inputHit": 0.225,
-        "output": 3.5
+        "inputMiss": 0.5,
+        "inputHit": 0.3,
+        "output": 3.6
       },
       "currency": "USD"
     },
@@ -7007,17 +7033,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 1.84,
-        "inputHit": 0.18,
-        "output": 7.34
+        "inputMiss": 2.04,
+        "inputHit": 0.204,
+        "output": 8.16
       },
       "contextWindow": 204800,
       "usd": {
-        "inputMiss": 0.270588,
-        "inputHit": 0.026471,
-        "output": 1.079412
+        "inputMiss": 0.3,
+        "inputHit": 0.03,
+        "output": 1.2
       },
       "currency": "USD"
     },
@@ -7848,6 +7874,76 @@
         }
       ]
     },
+    "openai::gpt-6.1-terra": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-6.1-terra",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-28",
+      "flat": {
+        "inputMiss": 6.8,
+        "inputHit": 0.34,
+        "cacheWrite": 8.5,
+        "output": 34
+      },
+      "usd": {
+        "inputMiss": 1,
+        "inputHit": 0.05,
+        "cacheWrite": 1.25,
+        "output": 5
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 1,
+          "inputHit": 0.05,
+          "cacheWrite": 1.25,
+          "output": 5
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 2,
+          "inputHit": 0.1,
+          "cacheWrite": 2.5,
+          "output": 7.5
+        }
+      ]
+    },
+    "openai::gpt-6-sol": {
+      "provider": "openai",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-6-sol",
+      "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+      "updatedAt": "2026-10-28",
+      "flat": {
+        "inputMiss": 13.6,
+        "inputHit": 1.36,
+        "cacheWrite": 17,
+        "output": 68
+      },
+      "usd": {
+        "inputMiss": 2,
+        "inputHit": 0.2,
+        "cacheWrite": 2.5,
+        "output": 10
+      },
+      "currency": "USD",
+      "tiers": [
+        {
+          "tier": "short context",
+          "inputMiss": 2,
+          "inputHit": 0.2,
+          "cacheWrite": 2.5,
+          "output": 10
+        },
+        {
+          "tier": "long context",
+          "inputMiss": 4,
+          "inputHit": 0.4,
+          "cacheWrite": 5,
+          "output": 15
+        }
+      ]
+    },
     "openai::gpt-6-luna": {
       "provider": "openai",
       "source": "openai 官方定价页；官方美元价 ×6.8 折算；官方名 gpt-6-luna（旗舰）",
@@ -8124,18 +8220,18 @@
     },
     "mistral::mistral-large-4-0": {
       "provider": "mistral",
-      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Mistral Large 4；当前 5 折促销价（原价 $1.36/$4.18）",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Mistral Large 4；原 5 折促销已于 2026-10 结束，恢复刊例价 $1.36/$4.18",
       "sourceUrl": "https://docs.mistral.ai/inference/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 4.624,
-        "inputHit": 0.476,
-        "output": 14.212
+        "inputMiss": 9.248,
+        "inputHit": 0.952,
+        "output": 28.424
       },
       "usd": {
-        "inputMiss": 0.68,
-        "inputHit": 0.07,
-        "output": 2.09
+        "inputMiss": 1.36,
+        "inputHit": 0.14,
+        "output": 4.18
       },
       "currency": "USD"
     },
@@ -8703,12 +8799,12 @@
     },
     "stepfun::step-5-preview": {
       "provider": "stepfun",
-      "source": "stepfun 官方定价页；官方名 step-5-preview",
+      "source": "stepfun 官方定价页；官方名 step-5-preview；官方公告：缓存命中输入价格自北京时间 2026-10-14 00:30 起由 0.35 元调整为 0.70 元，此前已调用过的用户仍按 0.35 元",
       "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-10-28",
       "flat": {
         "inputMiss": 7,
-        "inputHit": 0.35,
+        "inputHit": 0.7,
         "output": 20
       }
     },
@@ -9394,18 +9490,18 @@
     },
     "mistral-large-4-0": {
       "provider": "mistral",
-      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Mistral Large 4；当前 5 折促销价（原价 $1.36/$4.18）",
+      "source": "mistral 官方定价页；官方美元价 ×6.8 折算；官方名 Mistral Large 4；原 5 折促销已于 2026-10 结束，恢复刊例价 $1.36/$4.18",
       "sourceUrl": "https://docs.mistral.ai/inference/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-10-28",
       "flat": {
-        "inputMiss": 4.624,
-        "inputHit": 0.476,
-        "output": 14.212
+        "inputMiss": 9.248,
+        "inputHit": 0.952,
+        "output": 28.424
       },
       "usd": {
-        "inputMiss": 0.68,
-        "inputHit": 0.07,
-        "output": 2.09
+        "inputMiss": 1.36,
+        "inputHit": 0.14,
+        "output": 4.18
       },
       "currency": "USD"
     },
@@ -9888,12 +9984,12 @@
     },
     "step-5-preview": {
       "provider": "stepfun",
-      "source": "stepfun 官方定价页；官方名 step-5-preview",
+      "source": "stepfun 官方定价页；官方名 step-5-preview；官方公告：缓存命中输入价格自北京时间 2026-10-14 00:30 起由 0.35 元调整为 0.70 元，此前已调用过的用户仍按 0.35 元",
       "sourceUrl": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-10-28",
       "flat": {
         "inputMiss": 7,
-        "inputHit": 0.35,
+        "inputHit": 0.7,
         "output": 20
       }
     },
