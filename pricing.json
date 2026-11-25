@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "snapshotAt": "2026-11-18",
+  "snapshotAt": "2026-11-25",
   "currency": "CNY",
   "unit": "per_million_tokens",
   "note": "计费配置：单价 / 模型归属 / 上下文窗口 / 峰谷规则。键为「供应商::模型」限定键（同名模型跨厂商价格不同，如 kimi-k2）；全库唯一的模型另有裸键，供旧版插件回退。价格单位统一为「元 / 百万 tokens」，美元价按 6.8 折算并在 source 注明。",
@@ -342,9 +342,9 @@
     },
     "agnes::agnes-2.5-flash": {
       "provider": "agnes",
-      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方公告计划于 2026-11-30 下线",
       "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 0.34,
         "inputHit": 0.03,
@@ -2560,12 +2560,13 @@
     },
     "openai::gpt-6-astra": {
       "provider": "openai",
-      "source": "openai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；cacheWrite 为 30m 档",
       "sourceUrl": "https://developers.openai.com/api/docs/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 68,
         "inputHit": 6.8,
+        "cacheWrite": 85,
         "output": 340
       },
       "contextWindow": 1050000,
@@ -2588,6 +2589,7 @@
       "usd": {
         "inputMiss": 10,
         "inputHit": 1,
+        "cacheWrite": 12.5,
         "output": 50
       },
       "currency": "USD"
@@ -2978,15 +2980,15 @@
     },
     "xai::grok-4.20-reasoning": {
       "provider": "xai",
-      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-reasoning；官方现行登记名为 grok-4.20-0309-reasoning",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-reasoning；官方现行登记名为 grok-4.20-0309-reasoning；上下文窗口按官方模型页为 1M",
       "sourceUrl": "https://docs.x.ai/developers/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 8.5,
         "inputHit": 1.36,
         "output": 17
       },
-      "contextWindow": 2000000,
+      "contextWindow": 1000000,
       "tiers": [
         {
           "condition": "< 200k prompt tokens",
@@ -3010,15 +3012,15 @@
     },
     "xai::grok-4.20-non-reasoning": {
       "provider": "xai",
-      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-non-reasoning；官方现行登记名为 grok-4.20-0309-non-reasoning",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-non-reasoning；官方现行登记名为 grok-4.20-0309-non-reasoning；上下文窗口按官方模型页为 1M",
       "sourceUrl": "https://docs.x.ai/developers/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 8.5,
         "inputHit": 1.36,
         "output": 17
       },
-      "contextWindow": 2000000,
+      "contextWindow": 1000000,
       "tiers": [
         {
           "condition": "< 200k prompt tokens",
@@ -3476,17 +3478,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算；该平台当前刊例价显著低于原厂，按平台售价记录",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-11-18",
+      "updatedAt": "2026-11-25",
       "flat": {
-        "inputMiss": 1.02,
-        "inputHit": 0.204,
-        "output": 3.4
+        "inputMiss": 0.816,
+        "inputHit": 0.136,
+        "output": 2.584
       },
       "contextWindow": 1048576,
       "usd": {
-        "inputMiss": 0.15,
-        "inputHit": 0.03,
-        "output": 0.5
+        "inputMiss": 0.12,
+        "inputHit": 0.02,
+        "output": 0.38
       },
       "currency": "USD"
     },
@@ -3494,17 +3496,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-11-18",
+      "updatedAt": "2026-11-25",
       "flat": {
-        "inputMiss": 2.72,
-        "inputHit": 0.544,
-        "output": 11.9
+        "inputMiss": 4.08,
+        "inputHit": 0.748,
+        "output": 14.96
       },
       "contextWindow": 204800,
       "usd": {
-        "inputMiss": 0.4,
-        "inputHit": 0.08,
-        "output": 1.75
+        "inputMiss": 0.6,
+        "inputHit": 0.11,
+        "output": 2.2
       },
       "currency": "USD"
     },
@@ -3546,17 +3548,17 @@
     },
     "openrouter::minimax/minimax-m2.5": {
       "provider": "openrouter",
-      "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算",
+      "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算；上下文窗口按平台登记 64K",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-11-18",
+      "updatedAt": "2026-11-25",
       "flat": {
-        "inputMiss": 2.006,
+        "inputMiss": 2.04,
         "inputHit": 0.408,
         "output": 8.16
       },
-      "contextWindow": 198000,
+      "contextWindow": 65536,
       "usd": {
-        "inputMiss": 0.295,
+        "inputMiss": 0.3,
         "inputHit": 0.06,
         "output": 1.2
       },
@@ -3921,9 +3923,9 @@
     },
     "agnes-2.5-flash": {
       "provider": "agnes",
-      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "source": "agnes 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方公告计划于 2026-11-30 下线",
       "sourceUrl": "https://wiki.agnes-ai.com/zh-Hans/docs/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 0.34,
         "inputHit": 0.03,
@@ -6121,12 +6123,13 @@
     },
     "gpt-6-astra": {
       "provider": "openai",
-      "source": "openai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers",
+      "source": "openai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；cacheWrite 为 30m 档",
       "sourceUrl": "https://developers.openai.com/api/docs/pricing",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 68,
         "inputHit": 6.8,
+        "cacheWrite": 85,
         "output": 340
       },
       "contextWindow": 1050000,
@@ -6149,6 +6152,7 @@
       "usd": {
         "inputMiss": 10,
         "inputHit": 1,
+        "cacheWrite": 12.5,
         "output": 50
       },
       "currency": "USD"
@@ -6539,15 +6543,15 @@
     },
     "grok-4.20-reasoning": {
       "provider": "xai",
-      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-reasoning",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-reasoning；上下文窗口按官方模型页为 1M",
       "sourceUrl": "https://docs.x.ai/developers/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 8.5,
         "inputHit": 1.36,
         "output": 17
       },
-      "contextWindow": 2000000,
+      "contextWindow": 1000000,
       "tiers": [
         {
           "condition": "< 200k prompt tokens",
@@ -6571,15 +6575,15 @@
     },
     "grok-4.20-non-reasoning": {
       "provider": "xai",
-      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-non-reasoning",
+      "source": "xai 官方定价页；官方美元价 ×6.8 折算；分段计价，此处为主档，完整分档见 tiers；官方名 grok-4.20-0309-non-reasoning；上下文窗口按官方模型页为 1M",
       "sourceUrl": "https://docs.x.ai/developers/models",
-      "updatedAt": "2026-09-12",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 8.5,
         "inputHit": 1.36,
         "output": 17
       },
-      "contextWindow": 2000000,
+      "contextWindow": 1000000,
       "tiers": [
         {
           "condition": "< 200k prompt tokens",
@@ -7037,17 +7041,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算；该平台当前刊例价显著低于原厂，按平台售价记录",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-11-18",
+      "updatedAt": "2026-11-25",
       "flat": {
-        "inputMiss": 1.02,
-        "inputHit": 0.204,
-        "output": 3.4
+        "inputMiss": 0.816,
+        "inputHit": 0.136,
+        "output": 2.584
       },
       "contextWindow": 1048576,
       "usd": {
-        "inputMiss": 0.15,
-        "inputHit": 0.03,
-        "output": 0.5
+        "inputMiss": 0.12,
+        "inputHit": 0.02,
+        "output": 0.38
       },
       "currency": "USD"
     },
@@ -7055,17 +7059,17 @@
       "provider": "openrouter",
       "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-11-18",
+      "updatedAt": "2026-11-25",
       "flat": {
-        "inputMiss": 2.72,
-        "inputHit": 0.544,
-        "output": 11.9
+        "inputMiss": 4.08,
+        "inputHit": 0.748,
+        "output": 14.96
       },
       "contextWindow": 204800,
       "usd": {
-        "inputMiss": 0.4,
-        "inputHit": 0.08,
-        "output": 1.75
+        "inputMiss": 0.6,
+        "inputHit": 0.11,
+        "output": 2.2
       },
       "currency": "USD"
     },
@@ -7107,17 +7111,17 @@
     },
     "minimax/minimax-m2.5": {
       "provider": "openrouter",
-      "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算",
+      "source": "openrouter 官方定价页（/api/v1/models）；官方美元价 ×6.8 折算；上下文窗口按平台登记 64K",
       "sourceUrl": "https://openrouter.ai/api/v1/models",
-      "updatedAt": "2026-11-18",
+      "updatedAt": "2026-11-25",
       "flat": {
-        "inputMiss": 2.006,
+        "inputMiss": 2.04,
         "inputHit": 0.408,
         "output": 8.16
       },
-      "contextWindow": 198000,
+      "contextWindow": 65536,
       "usd": {
-        "inputMiss": 0.295,
+        "inputMiss": 0.3,
         "inputHit": 0.06,
         "output": 1.2
       },
@@ -8204,7 +8208,7 @@
       "provider": "anthropic",
       "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 5.5；缓存命中按输入价 5%",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 27.2,
         "inputHit": 1.36,
@@ -8217,13 +8221,14 @@
         "cacheWrite": 5,
         "output": 20
       },
+      "contextWindow": 1000000,
       "currency": "USD"
     },
     "anthropic::claude-sonnet-5-5": {
       "provider": "anthropic",
       "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 5.5；缓存命中按输入价 5%",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 13.6,
         "inputHit": 0.68,
@@ -8236,13 +8241,14 @@
         "cacheWrite": 2.5,
         "output": 10
       },
+      "contextWindow": 1000000,
       "currency": "USD"
     },
     "anthropic::claude-haiku-5-5": {
       "provider": "anthropic",
       "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 5.5；按 prompt 长度分档",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 0.68,
         "inputHit": 0.068,
@@ -8255,6 +8261,7 @@
         "cacheWrite": 0.125,
         "output": 0.5
       },
+      "contextWindow": 1000000,
       "currency": "USD",
       "tiers": [
         {
@@ -9549,7 +9556,7 @@
       "provider": "anthropic",
       "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Opus 5.5；缓存命中按输入价 5%",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 27.2,
         "inputHit": 1.36,
@@ -9562,13 +9569,14 @@
         "cacheWrite": 5,
         "output": 20
       },
+      "contextWindow": 1000000,
       "currency": "USD"
     },
     "claude-sonnet-5-5": {
       "provider": "anthropic",
       "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Sonnet 5.5；缓存命中按输入价 5%",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 13.6,
         "inputHit": 0.68,
@@ -9581,13 +9589,14 @@
         "cacheWrite": 2.5,
         "output": 10
       },
+      "contextWindow": 1000000,
       "currency": "USD"
     },
     "claude-haiku-5-5": {
       "provider": "anthropic",
       "source": "anthropic 官方定价页；官方美元价 ×6.8 折算；官方名 Claude Haiku 5.5；按 prompt 长度分档",
       "sourceUrl": "https://platform.claude.com/docs/en/about-claude/pricing",
-      "updatedAt": "2026-10-10",
+      "updatedAt": "2026-11-25",
       "flat": {
         "inputMiss": 0.68,
         "inputHit": 0.068,
@@ -9600,6 +9609,7 @@
         "cacheWrite": 0.125,
         "output": 0.5
       },
+      "contextWindow": 1000000,
       "currency": "USD",
       "tiers": [
         {
@@ -10752,6 +10762,42 @@
         "inputMiss": 1.5,
         "inputHit": 0.075,
         "output": 7.5
+      },
+      "currency": "USD"
+    },
+    "gemini::gemini-4-neon": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 4 Neon；仅支持隐式上下文缓存",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-11-25",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 1.02,
+        "output": 102
+      },
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.15,
+        "output": 15
+      },
+      "currency": "USD"
+    },
+    "gemini-4-neon": {
+      "provider": "gemini",
+      "source": "google 官方定价页；官方美元价 ×6.8 折算；官方名 Gemini 4 Neon；仅支持隐式上下文缓存",
+      "sourceUrl": "https://ai.google.dev/gemini-api/docs/pricing",
+      "updatedAt": "2026-11-25",
+      "flat": {
+        "inputMiss": 20.4,
+        "inputHit": 1.02,
+        "output": 102
+      },
+      "contextWindow": 1048576,
+      "usd": {
+        "inputMiss": 3,
+        "inputHit": 0.15,
+        "output": 15
       },
       "currency": "USD"
     },
